@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  /* מוודא שהכתובת נגמרת בלוכסן (/) כדי שהקישורים היחסיים לאפליקציות
+     יעבדו נכון גם בנייד. פותר את שגיאת "קובץ לא נמצא". */
+  (function () {
+    var p = location.pathname;
+    var last = p.substring(p.lastIndexOf('/') + 1);
+    if (last !== '' && last.indexOf('.') === -1) {
+      location.replace(p + '/' + location.search + location.hash);
+    }
+  })();
+</script>
 <title>מאורות אנרגיה — האפליקציות שלנו</title>
 <meta name="description" content="מרכז האפליקציות של מאורות אנרגיה — כניסה מהירה לכל הכלים במקום אחד.">
 
