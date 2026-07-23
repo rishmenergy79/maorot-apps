@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>נוהל בדיקות Off Grid – טופס בדיקות למערכת PV</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#1f9ed6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="מאורות Off Grid">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f2f7fb; --card:#ffffff; --ink:#1c2a33; --ink-soft:#5c6b76;
+    --line:#dfe8ef; --brand:#1f9ed6; --brand-dark:#157fb8; --brand-soft:#e7f4fb;
+    --accent:#f7a81e; --accent-soft:#fdefcf;
+    --ok:#1f8a4c; --ok-bg:#e7f6ec; --bad:#c23b3b; --bad-bg:#fbeaea;
+    --na:#8a8f98; --na-bg:#eef1f4; --exp:#157fb8; --exp-bg:#eaf5fc;
+    --radius:14px; --shadow:0 1px 3px rgba(20,40,55,.07),0 1px 2px rgba(20,40,55,.04);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);
+    font-family:'Rubik',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.45;padding-bottom:110px;}
+
+  /* לוגו מאורות */
+  .brandbar{background:#fff;padding:16px 16px 14px;border-bottom:3px solid var(--accent);}
+  .brandbar-inner{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:13px;}
+  .brand .txt{display:flex;flex-direction:column;line-height:1;}
+  .brand .name{font-size:34px;font-weight:900;color:var(--brand);letter-spacing:-.5px;}
+  .brand .tag{font-size:13.5px;font-weight:500;color:#45bfe8;margin-top:5px;}
+  .log-link{font-size:13px;font-weight:700;color:var(--brand-dark);text-decoration:none;
+    background:var(--soft-bg,#e7f4fb);padding:8px 14px;border-radius:20px;white-space:nowrap;}
+  .log-link:active{opacity:.8;}
+
+  header{background:linear-gradient(135deg,var(--brand),var(--brand-dark));color:#fff;padding:18px 16px 18px;}
+  header h1{margin:0 0 4px;font-size:19px;font-weight:700;}
+  header p{margin:0;font-size:13px;opacity:.9;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 12px 0;}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    margin-bottom:12px;overflow:hidden;border:1px solid var(--line);}
+  .card-title{font-size:14px;font-weight:700;padding:13px 14px 0;color:var(--brand);}
+  .general-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;}
+  .general-grid .full{grid-column:1/-1;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:4px;font-weight:600;}
+  .field input,.field textarea{width:100%;padding:9px 10px;border:1px solid var(--line);
+    border-radius:9px;font-size:14px;font-family:inherit;background:#fbfbfc;color:var(--ink);}
+  .field input:focus,.field textarea:focus{outline:2px solid var(--brand);outline-offset:0;background:#fff;}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;border-top:1px solid var(--line);gap:10px;}
+  .toggle-row .tlabel{font-size:13.5px;font-weight:600;flex:1;}
+  .toggle-group{display:flex;gap:5px;flex-shrink:0;}
+  .toggle-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;
+    font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .toggle-btn.yes.active{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .toggle-btn.no.active{background:var(--bad);border-color:var(--bad);color:#fff;}
+  .toggle-btn.opt.active{background:var(--brand);border-color:var(--brand);color:#fff;}
+
+  .loc-block{padding:0 14px 14px;}
+  .loc-btn{width:100%;padding:12px;border-radius:10px;border:none;background:#33ccff;
+    color:#03354a;font-size:14px;font-weight:700;cursor:pointer;display:flex;
+    align-items:center;justify-content:center;gap:6px;}
+  .loc-btn:active{opacity:.85;}
+  .loc-btn.captured{background:var(--ok-bg);color:var(--ok);}
+  .loc-result{margin-top:9px;font-size:13px;line-height:1.6;}
+  .loc-result .coords{color:var(--ink-soft);font-size:12.5px;}
+  .loc-result a{display:inline-flex;align-items:center;gap:6px;margin-top:6px;
+    background:#33ccff;color:#03354a;text-decoration:none;font-weight:700;
+    padding:9px 14px;border-radius:9px;font-size:13.5px;}
+  .loc-result .err{color:var(--bad);font-size:12.5px;}
+  .loc-btn-primary{background:var(--brand);}
+  .loc-btn-primary.needs-attention{animation:loc-shake .4s ease 2, loc-flash 1.6s ease;}
+  @keyframes loc-shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+  @keyframes loc-flash{0%{box-shadow:0 0 0 0 rgba(194,59,59,.6);}50%{box-shadow:0 0 0 8px rgba(194,59,59,0);}100%{box-shadow:0 0 0 0 rgba(194,59,59,0);}}
+  .loc-alt{display:flex;justify-content:center;gap:8px;margin-top:9px;font-size:12px;}
+  .loc-btn-text{background:none;border:none;color:var(--brand-dark);text-decoration:underline;
+    font-size:12px;cursor:pointer;padding:2px 4px;}
+  .loc-alt-sep{color:var(--ink-soft);}
+  .loc-manual{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);}
+  .loc-manual-label{font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-bottom:6px;}
+  .loc-manual-row{display:flex;gap:6px;}
+  .loc-manual-row input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+    font-size:13px;font-family:inherit;background:#fbfbfc;}
+  .loc-manual-row button{background:var(--brand);color:#fff;border:none;border-radius:9px;
+    padding:0 16px;font-size:13.5px;font-weight:700;cursor:pointer;flex-shrink:0;}
+  .loc-manual-row button:active{opacity:.85;}
+  .loc-manual-hint{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+  .loc-url-row{display:flex;gap:6px;margin-top:8px;}
+  .loc-url-row input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+    font-size:12px;font-family:Consolas,Menlo,monospace;direction:ltr;text-align:left;
+    background:#f7fafc;color:#0b4a68;min-width:0;}
+  .loc-url-row button{width:42px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    font-size:15px;cursor:pointer;flex-shrink:0;}
+  .loc-url-row button:active{background:var(--brand-soft);}
+
+  .progress-bar-wrap{padding:12px 14px;}
+  .progress-top{display:flex;justify-content:space-between;align-items:center;
+    font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;}
+  .progress-track{height:8px;background:var(--line);border-radius:5px;overflow:hidden;display:flex;}
+  .progress-fill-ok{background:var(--ok);height:100%;}
+  .progress-fill-bad{background:var(--bad);height:100%;}
+  .badge-issues{display:none;align-items:center;gap:5px;background:var(--bad-bg);color:var(--bad);
+    font-weight:700;font-size:12.5px;padding:4px 9px;border-radius:20px;}
+  .badge-issues.show{display:inline-flex;}
+
+  .part-header{font-size:15px;font-weight:700;color:var(--brand-dark);
+    padding:6px 4px 6px 4px;margin-top:6px;letter-spacing:.2px;
+    border-right:4px solid var(--accent);padding-right:10px;}
+  .part-note{font-size:12px;color:var(--ink-soft);padding:0 4px 8px;line-height:1.55;}
+
+  .section{border-bottom:1px solid var(--line);}
+  .section:last-child{border-bottom:none;}
+  .section-head{display:flex;align-items:center;justify-content:space-between;
+    padding:13px 14px;cursor:pointer;user-select:none;background:#fff;}
+  .section-head:active{background:#fafafa;}
+  .section-title{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .section-count{font-size:11.5px;font-weight:600;color:var(--ink-soft);
+    background:var(--na-bg);padding:2px 8px;border-radius:20px;white-space:nowrap;}
+  .section-count.complete{color:var(--ok);background:var(--ok-bg);}
+  .chevron{width:10px;height:10px;border-right:2px solid var(--ink-soft);
+    border-bottom:2px solid var(--ink-soft);transform:rotate(45deg);transition:transform .18s ease;margin-left:4px;}
+  .section.open .chevron{transform:rotate(-135deg);}
+  .section-body{max-height:0;overflow:hidden;transition:max-height .3s ease;background:#fcfcfd;}
+  .section.open .section-body{max-height:20000px;}
+
+  .item{padding:12px 14px;border-top:1px solid var(--line);}
+  .item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .item-text{font-size:13.6px;color:var(--ink);flex:1;padding-top:2px;}
+  .item-num{color:var(--ink-soft);font-weight:700;margin-left:5px;}
+  .item-exp{font-size:12.5px;color:#2b4a7a;background:var(--exp-bg);
+    border-radius:8px;padding:7px 9px;margin-top:8px;line-height:1.5;}
+  .item-exp b{color:var(--exp);font-weight:700;}
+  .status-group{display:flex;gap:5px;flex-shrink:0;}
+  .status-btn{min-width:40px;height:34px;padding:0 7px;border-radius:9px;border:1px solid var(--line);
+    background:#fff;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap;
+    display:flex;align-items:center;justify-content:center;}
+  .status-btn.na{min-width:64px;}
+  .status-btn.ok.active{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .status-btn.bad.active{background:var(--bad);border-color:var(--bad);color:#fff;}
+  .status-btn.na.active{background:var(--na);border-color:var(--na);color:#fff;}
+  .item-note{margin-top:8px;}
+  .item-note label{font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:3px;}
+  .item-note input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;
+    font-size:13px;font-family:inherit;background:#fff;}
+  .item-note input::placeholder{color:#a8adb5;}
+  .note-row{display:flex;gap:6px;}
+  .note-row input[type=text]{flex:1;min-width:0;}
+  .photo-btn{width:42px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    font-size:16px;cursor:pointer;flex-shrink:0;}
+  .photo-btn:active{background:var(--brand-soft);}
+  .photo-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .photo-thumb{position:relative;}
+  .photo-thumb img{width:76px;height:76px;object-fit:cover;border-radius:8px;
+    border:1px solid var(--line);display:block;}
+  .photo-thumb button{position:absolute;top:-6px;left:-6px;width:20px;height:20px;
+    border-radius:50%;border:none;background:var(--bad);color:#fff;font-size:11px;
+    cursor:pointer;line-height:1;padding:0;}
+
+  .footer-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;
+    box-shadow:0 -2px 10px rgba(0,0,0,.06);z-index:20;}
+  .btn{flex:1;padding:12px 8px;border-radius:10px;border:none;font-size:13.5px;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-secondary{background:var(--brand-soft);color:var(--brand);}
+  .btn-ghost{background:var(--na-bg);color:var(--ink);}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1c2230;color:#fff;
+    padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;
+    transition:opacity .25s ease;z-index:30;}
+  .toast.show{opacity:1;}
+
+  .note-block{padding:14px;}
+  .note-block textarea{min-height:70px;resize:vertical;}
+  .signoff{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 14px;}
+  .verdict-group{padding:0 14px 14px;display:flex;gap:8px;flex-wrap:wrap;}
+  .verdict-btn{flex:1;min-width:150px;padding:12px 10px;border-radius:10px;border:1.5px solid var(--line);
+    background:#fff;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink-soft);}
+  .verdict-btn.pass.active{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);}
+  .verdict-btn.fail.active{border-color:var(--bad);background:var(--bad-bg);color:var(--bad);}
+  .email-block{padding:2px 14px 14px;}
+  .recipients{background:var(--brand-soft);border-radius:9px;padding:9px 11px;margin:4px 0 10px;font-size:12.5px;line-height:1.6;}
+  .recipients .rlabel{font-weight:700;color:var(--brand-dark);margin-left:5px;}
+  .recipients .rlist{color:var(--ink);}
+  .email-send-btn{width:100%;padding:13px;border-radius:10px;border:none;
+    background:var(--accent);color:#4a3200;font-size:14.5px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:7px;}
+  .email-send-btn:active{opacity:.88;}
+  .email-send-btn:disabled{opacity:.7;}
+  .email-hint{font-size:11.5px;color:var(--ink-soft);margin-top:7px;line-height:1.5;}
+  .disclaimer{font-size:11.5px;color:var(--ink-soft);padding:10px 14px 4px;line-height:1.6;}
+
+  /* ===== מסך כניסה (נעילה) ===== */
+  #auth-gate{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;
+    align-items:center;justify-content:center;padding:20px;}
+  .auth-card{background:#fff;border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 8px 30px rgba(20,40,55,.12);padding:28px 24px;width:100%;max-width:360px;text-align:center;}
+  .auth-card .auth-logo{margin-bottom:6px;}
+  .auth-card h2{margin:4px 0 2px;font-size:18px;color:var(--brand-dark);}
+  .auth-card .auth-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .auth-field{text-align:right;margin-bottom:11px;}
+  .auth-field label{display:block;font-size:12px;color:var(--ink-soft);font-weight:600;margin-bottom:4px;}
+  .auth-field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+    font-size:15px;font-family:inherit;background:#fbfbfc;}
+  .auth-field input:focus{outline:2px solid var(--brand);outline-offset:0;background:#fff;}
+  .auth-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--brand);
+    color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
+  .auth-btn:active{opacity:.85;}
+  .auth-bio-btn{width:100%;padding:12px;border:1.5px solid var(--brand);border-radius:10px;background:#fff;
+    color:var(--brand-dark);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px;display:none;}
+  .auth-err{color:var(--bad);font-size:12.5px;margin-top:10px;display:none;}
+  .auth-note{font-size:11px;color:var(--ink-soft);margin-top:14px;line-height:1.5;}
+  body.locked > :not(#auth-gate){filter:blur(4px);pointer-events:none;user-select:none;}
+
+  @media print{
+    body{padding-bottom:0;background:#fff;}
+    header{background:#fff !important;color:#000;padding:8px 0;}
+    header p{color:#333;}
+    .footer-actions,.toast{display:none !important;}
+    .section-body{max-height:none !important;}
+    .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid;}
+    .section,.item{break-inside:avoid;}
+    .status-btn{border:1px solid #999;}
+    .chevron{display:none;}
+  }
+</style>
+</head>
+<body class="locked">
+
+<!-- מסך כניסה - הטופס נעול עד הזדהות -->
+<div id="auth-gate">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="58" height="58" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M96 30 A46 46 0 1 0 104 66" stroke="#f5a623" stroke-width="5" stroke-linecap="round"/>
+        <path d="M86 34 A36 36 0 1 0 94 58" stroke="#f7a81e" stroke-width="10" stroke-linecap="round"/>
+        <path d="M70 54 L104 22" stroke="#2f6fb0" stroke-width="10" stroke-linecap="round"/>
+        <path d="M88 20 L106 20 L106 38" stroke="#2f6fb0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M42 74 L54 60 L64 68 L82 44" stroke="#1f9ed6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M42 82 L74 82" stroke="#f7a81e" stroke-width="7" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h2>נוהל בדיקות Off Grid</h2>
+    <div class="auth-sub">גישה לבודקים מורשים בלבד - נא להזדהות</div>
+    <form id="auth-form">
+      <div class="auth-field"><label>שם משתמש</label>
+        <input type="text" id="auth-user" autocomplete="username" inputmode="text" autocapitalize="none"></div>
+      <div class="auth-field"><label>סיסמה</label>
+        <input type="password" id="auth-pass" autocomplete="current-password"></div>
+      <button type="submit" class="auth-btn">🔓 כניסה</button>
+    </form>
+    <button type="button" id="auth-bio" class="auth-bio-btn">👆 כניסה עם טביעת אצבע / זיהוי פנים</button>
+    <div id="auth-err" class="auth-err"></div>
+    <div class="auth-note">לאחר כניסה ראשונה מוצלחת במכשיר זה, תוצע הפעלת כניסה ביומטרית מהירה.</div>
+  </div>
+</div>
+
+<div class="brandbar">
+  <div class="brandbar-inner">
+    <div class="brand">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH0AAAB9CAYAAACPgGwlAABvvElEQVR4nMT955NmyZXmif2Ou1/xitCRWlWW1gWgIBqye4BpMTvNIadH7NrOcoxG0sivFMZ/gR/4mWNGW1vj0naXXOPszOxsTw+3u9ECuoACUFohK7OyUkdGZshXXeHuhx/8vhGRhQJQvd3ouWZhERni5vve4378nOc85zmiqvz6rogSAUWwgIH5fycRmP8zHvyFAOCO/F76Un7B/xBCSPfRkO4pAqKICKhQNen3LAISMd2NjWh6XSKHfwfdv+f/W6TVgBGH4ACHjTL/EVHBuvnr9B95ZaZ7f+n1ydHHLNkveDd/O5f8Oo2uHJrTzr/xwJsHpAY8igEcQnb4e0q6g8bO6qZ7lgaVo0sFfPDEGLEiWAFrDCqRJmpaNJqMIHOjdUaxtvu3RKJEVAOqkYgiKmTaw5ju/Wj66NYTMUacM0A8eC2mu2/3yg++L4BJLwTzC5fw387lfvWv/E+/hPRo5Vesq8NNLR8xOMng839ITHecfwZaHxARjHFkBgSFqMQ24NWTFTkBkPRKDgw4v2XsrCLGYNSgxnYeISI4TDh8/U0bCbFJ1rPpe4aC+VfAEeP//HsMAqKC+Q9r81/vTn/AgJI+PrpD0xUx8/V/1OACcMRtznf70b+MySiqyVegBg52L/i2RcUgIp3h0041D9yze23aLQLRdFxgaJtInjuMDXitiFpr8g5OFIOjx4PH1vyTT99Sd+Dx5u99vkz+Q12/1p0O/JzRAxAPDGkwGCzmQW9g0k5OD8t1v/ngJZ3bF98gRASvSHeuxwh4UI9zRw+Z7k6avAEAbThyT7Biu1VhQBwOBSlAIJNAegeONnptasH1Bgf79sFzW7vXKEiKKAiAEWiB/5Cn+q/f6HTnsRjSI/MooVsDmgw+9+ACmEgg4jujd2uFuWlM92+LAQmIVAozYAJmDH4Es/uwfw+m97h95U2MVkRNZ36MnhBaVLX7EIQMZ3Kcy8lcnyLvked9ghswfOaL4BdIZiogX4RilUwKEfORxSocOZaydDSpAgGRjz7s+B8soPv1unc4CMLSW4dIQIlYQLBYdQ94AzXQHjG6g+53I5aWtE9qhQnoDKabsHWNzduXGG/fIFY7GJ1CmOLChKWswcYKJaRwS1siAWIKvgwWjUKMgoQMIcdIjjU5re1zb2apZQB2SDk8xokzT7B04SlYPQNmAUyZPAGZIPNXazjwTardM+gWgBzxOmJA8l/v8/+Y69cevdcxokZxRIR0rpqj7rxtmO/nVoHcEQValCZOdME4sTpTIzPQPag2YHKT2e13uHP1dQqZYOIIE2o0NBBTGiYiZCq4ymM0gnhUIkJInzWiohgMqkqMBgkGQ4aQkRlHNBmTusHkOT4IbRDIBngpaGWA6x/n7OMvIicegeWzUCwDPUZVxPYWRchwOKyCqEdiA4R0dBhD8h5/C872I9ev1eiBFIYpYGiwCFazw1xGILQttswO/qJpW4wNONum3VxtQdiD6X12br7L5rXXoL7DSlFRMkKbfTJpcJJ2LZKh0RHUIFHQuk2BnsQjh+5hMmVMCiA1CqIKMQUeEoWA0mqLGsHXHo1CUfRQyfHeEdwQGRyjsotU+Qor555h5eHnYOUcmD5N61AdiHUFThQ0pA/AR0Ojln7+tx/W/dp3egP4GHChJbcGUQcYOt+KGvAKoY2ITimymWIm4LehukW8+kPqvRuM97fw032czhjkYLWime7hNGBRrDisOFBDDNAGIWqDuJYoh4GjHrjeFH+1dYMxBicGI2BiSEFe9DQAwyFqc6QGaSN5sOAVaVvEGvanE9xgkdoNqO0itV2jv36Rk4+9CGefhv4JMAOiV+qgYEvJXB8PtBEWPhqh/i1cv3737gOEiEXJnE27zSuIQ61QdxFaJjOsGyvhLuxdJd58i+nmO4T9D7Bhhxg9GhssgcykfFtjxIhD1aDeEdURgiWGtNNVFFMGoglpdSEo3aLrrqaaYSVgJOIIGGkRPFZTyDkOnrzoU1BgWkGqgLQtpRjIHFqNkCIjmoJWSmahT6Ulki1TF+uc+szfJTv5KKyeBunReEdNKc71EKD8tT39X3z9LeTpgQMkA0BrvJ+pGsFmTmIwOBsgbin7V2hv/ojR7dcIOzcxzQ79THGmwVgF8USt8erBCMbleM3xMcP7AU0s8TokMkBkgJDTNE33Ujrw5CDBiiCBIo8QZ6ATCFMMMww1mQlYaZF6itWYjg61HdrqyHCglqLXp5lWVFWDqlLkJc7lzKqGPe+oFy8wOPM0xy6+gD39OCycBVmQNmZUTWChHP76nv8vuH7N0XsEH7so1XQASA2m7sK2CpjBzjXGG+8wuvMm9dbb2NldlmxgsZfRtFMU8KKIzZAsp4pKFQy4IbuTgOQr9Pon6C+dZmn5HPnKaRiuQ7EIce7Oj/hR6aJpAmgN1S7s3GW8fZPR1i1Goy1m0z1Mvc+ZoaWdbBGaGmMhs4bcWTRE6lkNXildyUJ/gPpAU88gekQVWw7Z15LtJqfOVlm58BynnvoynHkG3AqxEUy5/reOz/3ajR6bFmMMQQxRBesUQwV6X5l9SL3xCtPNN5hsvoOp79M3gdKC0Yig1O2UrDckmj6VLjBuB4zaPm5wmuUTT3D8uS8CfZAeSArkkA4hM5K+BhJ8C+hBhaQrDoT04T1oC9GDzFGBKfe+9++I07tEv4e2u/h6E6v7lNJAO6WXObTxZLZEgkUk1Q8mswrRyHDomExr9mqLL9bIli8yPPMciw9/Ds4+B/n5vxWjz2Yzer1eeue/0ujz/PlIxCvznfPL/lRiB0OmFCooxNiQ2RZ0R3XnLSabrzK6+RLZ9BquuU/PeIxxRLV4NURb4F2fUWNp45D1U0+x9NiXYPEh0FVwS9CUBJsTcIKRLl1TTHeiRFWiHH2ph7teVLBYRLvI/2AhdIidTkG3lbgLfh/uvs+H777MeOsKQzdh6Gpsuwf1lEFm0FZBHUYyppMWK5GMEbl1kC0w8xlbU2VmVli9+ALrj/0GPP+//rUa/X6bqhdFiCyVCfX/5UafI5gCwbQoTZdnO0SPVMPkyO8qYBW1Ho8mbNxHjAjOTJXmOpO7r7B9/TtU997iWFZRNPtkwWOdIRhHhaWhZGrXMKvPsHr2ecoTj4BbAZbALoOWoq2Cyw5wbe0en0aYG1dsBkRUtSt/HgIkRjt4Zl46VYPGtPGNghgFGYPxqVSHBxqYbLJz5afcu/pjGF9mEO6T+x3yOKUURyYO31jqumZhuU89rpnWgnEleW6IYqgxTO0qZ7/wj+BT/8e/ccNPxxNm5UCvBnjnZ3f558+fOAIX/5WMXpOQZAdaPLjTlYR5K+CE1rQEDfiq1mHPCTpR3XqP3Y0f0Gy/gUwvY6q79IJnkJUgfaaVYWsGMjzOyUdewF38PAweAXscKCA4NBSC5ERcSgVdKqH+HL7e5YMyr43Pf6crnc4XQuZSnqxRCJHk/g1Yk4K+NjZgDIpFfCQ3gpEWmnvK5CaMrrDxznfZv/kGS65iIA3t/g4Ow8LSIjubG5TFgKxcQlUJzYjWTxETaNwSs+w85dkvsPz4N7CP/u7fiPFrYLtSfWdzxHeu7nD//n3+xT968RMavTOmCgjtkQdrD89GnX/yqRaNAWNTyhQaCtcAd5Xtn3Lv0p8x2fghfd1kmAecBKzpsT8xTJpl8uXHWTr3RYrTn4KFC+CWiaYvjSaoVERSLi6HFekY0/lr5mALR42shNCmHasGEYtBUAXT1ddVj5AnjElxAKmeHqPHdrVYAQgBgnZpfgDxSrUProabP+Pqa3/JdOMd1ospS4yoR/corMGJI2JofI2XFmMVKwavlv1pQds/RX7mU6w+8Rv0n/5n/5MMv7W9oXm/L6Zc5GaDvnTlHq99uMHN3SmmHvMv/1ffOLjvL8UA9eDhzd/2PPUyBy5ddV4yVLxRVAIOyFVAWgibGjde5v6Hf0p9/1WW9DYD1yDBMPOOcczJFx/m2IlPU5x6EZZfgPw0ypJMG4Gu6GWFVLlSj4YK1VYNgdzMo3A4WJQHx07EZK57oa57oRbBCh1IJOI6TDxwyOaJeAJBAxJziIpBETHgLMRI8IKPTopyGZ2NkdNrevHss3DrNW7+5I+5evstlrNjlFmkrce0bU2UiLhEBFGxZJJzfLHH2I/YvfYSt/dvszbZ0JXP/Z//SobfrnY1X12RlkIvj+EH793kJx9ucXdSM1wcdtXBw+tXAL9H3ab5yOduKYiCQCOGlqCGKA4PWkHY1Pban7J76yX8zrscy1vKbIVQVew3PWp3nPLkCyyf/Qzm3Itg1sH3mU4FTIPLCmLjcdbgTES0BVMrtgYmqaJmA1B3EOfc2KY75C3U6awm2vSBBVNoKpc6cEXHrFCiKkEE7Yo91uZILFK1ViLWdeVek25tgf29VheHQwEvtCgnP8XZ3ztHdfUtbr/7PTbvvkHRjiiykn4/I2rNZDIiYhiWOW2rDDTQ8zuMN7Zp613qqtHi8X8A608J9ldDdoNyWW4p+v33t/nee/e4tR9oWcSWQvNzNK5fYfR5fHa47MzBMS4PLIZ53SxgqFV0D/bvwvgy+1f/EmaXGcouuTH4mWFULWEXn+TEuc8jT/wmmOOoLlG3uSAFvUGG4CFOwNYKHsIUwgiaHdjfYOvuB+zev0Ez28Wqx6pCDAk/11QzVyyTRpCubJoXJWV/kV5/gaK3hBQl/bXTSrkA/SVMOcBoBuqoQ8SHnDw7JtiOfkUHGcdD77O4lEkz9YR6omVpkXwZXEn52BoPX3yae9/9f9PefZd6d4M4bennSt9l1FFo2goJltDW9OKMvrOM9j9k+82/oKxLlp/0KscelZaMQAMiRBwSLRZBnMU7eOP2tn7r8gav355yp+rj7QK9vMBm0MRRoiccteuvztPnLs90pdG0wq36zqU6IjAxqahScF/d9Arxwx/j7/6UdvcNSrOLmppaC0I8Sbb4Ar2zX4czL0K+CtmyNGTUquAjPQk4mSpxB9pNuH+FyZ1L7Gx9SFttYOOMwrQ4QCufqmNqICbGi2hA8UDEZgURJcSWGJtU2BXA5ESTs18ZBkunWTr2CMPVh8kWzya8fLgO2SqhKkSLATYD1UBQ3y11i4hlNpky6OdpBYSaqq3UOItzhRgqDTuXqG+8xvTt7xBvv8UCO/R60AqMq5pBOaQZj3G+pigKalOwH0p0cBpdf4GTX/nfw8rDEp0wqhvVUFKUufgAmzP00t6Yv3znfV65vkUcrDNYPEvjFd/MMDYimWch7POv//FnPtmZnox6CF8eLpj4wO+E2OLw5Gasljsw+Rn1vR+xc+0l1ocVJnPMZIkpxxme+gK9h78Bi89BWCCETNQCpqYnlTpXQbsDO1fRrStsXPkxWm8iOiaXMXkcQTuhNMog7xMAKw5Vh6BE9SgR1RYkkmE7omODSiK8RQAxqBYMXYafTJmN7rF3+W3UrTJcPsexkxdh7SHshWcUW6XKG2Bw4DIBQWMky7uwL4JXIdpScEKFEKKhXHmU/so6/eEqox+X7F1/mVCNcHnAqqepp2RFBs4yaVuizOi7SJhdY+fGjP23LrD45NfVnLyApZCpzbV26K1dePXD+3zz9TeZDRZxJx6iJme3nmFVyV3AGqVumo7I8Ul3ukIzm5H3eviuxp0hiDZIHTHWgslomzFZr1LiLeoPvsnu1W9R7F+mJzvkPdgYOcLilzjxxN8nO/15NFsnmgzt6upWPOg+unuF6e1XqO68idu5irS7BJeCQ0ODqO9cecCGxL4xIZ3dKQo3XY4OsTuUEp8tRZwyT9G1y8dwRDUEMpQcr44gGV4tQSyV7aHHHub4w8/TO/8cDE5ALIASshwlk4BFJJVNmjbRtFwWUCptwwxjM0oEiQG2rlK9/sdsvPVN8un7rA8FJKNuIyEanHM4mxg9US219Jn1TpGd+gyrT/8+7uGvyIdq9NuXPD/62WWube9B3qc2ObUr8V2mkRHo+zqhmi5j4Cf8y//4hU+40wWyIvHDgk+UX8k0Mb6cBWtp6pq8F6G9Sf3hd2g2fsSS3sUWntbnbM4yBqdfZPHCH8CJL+Hz09JiceyqYwfRCbpzg73NS0zvvYsZXaJX3WYYtjHSUGtJwCQeXIyJQdMZdp52zc2sAsHo/F/QpY9z1CaRL6WjKQtGpaO8t0DAqhIxRE1YTBYLtu/c58b2ZXrv/5jVM08yePhTsHYBGBKmaHBDMEYym5NnBtGctp2CgcwOiDiZYShNjlnrUT4b9KSz7F8q2dy6wkKRJ268tagRorZo69Hgcbai9TeZlatsX7vK/dExfa1a5ad3p9wc17S9BSyOQE7sqOPRxAMPbTR9bT+yr381bcN2wZxCpgYb9RCbloizNeiWcvenVDe+jR2/i2FCS5+6OIsZPM3iI1+HE18AXRENQs/W4O/D+BJ+4zVm2+8z3rpCM71LLlOwSswiGjIIBSLzN+ARIpGIqCVgDkqlQRSVSJQWpCV0Uasx/WT8qB3vPC0cEzRRnrVbHHMGDYKqHFC1ThhlvH+d8e4H3N5+k+G911k++yl6p1/ErT6OwwlqUv6OdMBOD9W+xK7WFDRQBaXvCjj+JGVeYHsrjD58jdnGB2TNLsY0CU8gkT/yFhp1hLLHrSry4Z09rty/w3t1y61KIYNhafFtcl9GU0rhouI0GS0eLPC/gtG1Y7QZApmxiJnz0jWRG32tJptQ3fgxs2vfpvA3yO2E0aimLk/TX/00Kw//bkLVmpJogmb5GKo7xI0f43deZ/v6j8jDJv04ZtE1WEmEBgmOqJLQgQ4V1DnrgkSaRhNSpiKJ5IghSki1+sQ95WjuAR2DhuQRUvPCHHY8BGo0ClHAxkjuI2u5sOyUqW6ze+3H7N/+kKWzNzl24XPY8y8qxXEwPaGBQI7JHCLgA3iBTCwqgUmtFK4vbvkRzZ5ZZPXsE+x8/4+o710ijD6kR0tRFMR8QKMF+26Z+8NTXAnHeXe/z63cspuX0CsQmeHbtBmtRsT4lEtKOtgipgOxfj7l/5U73ceAESE3Nj2boGAUcQqMYfYz9m5+l7D1OsP+DC8ZlVsiW/sUi+e/CmtPgu9DiBg7gvo2zfWXuH/t25jqGrlu0zMzSgFRCx5iMEgoEYkEU4MJJHZpl2fPgRZIwVkyY9dF0sGvMUdIsKnMsXdA4xyJO4ASu/sA+FSc6XIcNZZZbNFWcAYWspyBtIxmN5lc3ubqrTc4tXOFwelPwclPKe6k2OCIbSr4ZRaoxmS9ArUZVRQmPmi/WJBsWEJ/QZef32f3Ekyv3ib4fVoDU7fMpjnDdXmIyzzJFY6z6ZeYuWWi6eGsw4dA1TQMnUE0Ilqj1AQBRA4RdDnKIfhERjcYkeQWaVEfCUFwxgA1hC2m176PzN6hZ7fwbWQW1+mdeJ7lR78GJ59BW4fkCroNt99kevNlpjvvYKtr2LhLz4LTmIKGIBAEoxlqDNYagk5R8YhaVCwSO8qTgkr31rpCiigYTZRaVYONBkfomiE6vEaTx9Cu+ja3uigo6QiYLwhRGA76zMY1YdrQNoF+kZM5oWTKqLnNrbf+hP792xybTCjOf1bpnxNjeod1CZsI3KJZh9tnokCNw8Ya9+inWZGK6HfY3XyfSczY4hjX3BNciRe46R9h267TDHO8K6kJXVcPFFkB2mJInjc1kwh6tIXGmL+a0QWw2gEltKgJBO3hjMJ0V8POJfZu/oglcxtXNFS+h1l5nOWHfhOOPwuyiJgKqltw7wfsv/+XzO68Qd/W9HoD1JRUTYWKBY1YUcQmHD/YKu26AGjepVhyWOY187WcagJC6DpcpDur264EbFFJjyUZXbpSqzkAceaXjd3j6BohBEW1YVBm4HK8hzooVjJyY1kyhjjbprn1U+5WO6xNrzN49IvKyhNg16WOjpj3iBoo2o4YatKR06IEm4mTZeXC5yi1YDO+ybt3azb0FDeyJ7njV2htj6bI8YXQmkirKaDuYXHWELwSBKKZv8+UugoNSCAaCB851n+lezdzSM6AGENmBZigo0vsXP8BOr1CtriPRgvFSYYnvwjHXgS7gNa7SDFm9M4fs3ftz1gIN1jv7yFti85AJcdZgziDtYJoxNce7xt8jAgWY22H+ZmOzeoRNZ1bT0CMIaBoR7Hu2pc6W4Z5ubV7P3qkD+7wPXZHRectDpdBZDzep1f0cVLgPTStYG1MzZGhYX2xx7jZYf/2q9ydbLFeVyw+GWDtWS3sorTz4oGxzBsfiArGgfS4P/Ms9h6W5uJxvXVniTfv3eWeHGc3f4Rdycid0mpN03o0F4xNC05bpaoqiiy5b5VUsk0dNV2/3C9A8N3HdZYdXGoQgdlkSrHgmNUT7WVR4J5Obn4Tv/M9lpcrtvf3cfYYaxe/CKd+D+QsNBuIu8Pmn/7nDP11Vs0WojN8CCm/j8nXOhtptWEcIsYYssxgycnbAaihYUYQj0SPESFzDise71t8W+MO3pg56FZRNQgOLwq2a7DoWk5NUGTe94YhKvigqePVCiYzYJQ2tkTf0lspaacNsYlkroc1ljYGyISlXo/gKwYmUIplurvJ/ps/pN4asf7MLvLQpzSTZdqpEPMlMaUl4mnxQEaDQXtLfPvaWH/w1iV+thHYNWdpsmWCWLLCErXGCMnQYZ44pTiLzBHRA6jcdCVjQVKXroKIhfpB/P1X5Omp/lyUqTe7zHOM7Cl3X6PeeoO+3KOuxlCssXTyt+DklyA7nhLD/evsvP+HDP2H9OMGgZqgASWxV+VI/gypcGOtkFmHRIe0isbAbDKht1BQ9nrUdc3uaEwIStHr0++fZDStiVhUM1QyIEOtQ1UIIkRJrFjBY2LA4BFtsT71umViyMrU4tA2FePxGNVAUWT0+31C0yJiUWNT4mIE1UDTeJp2QukMmQoZYGKNVPeI999nckUoZntkj/4m2fCEoIbJrEWdYvMBNege8O9+cI2rOzM+2Fa2WCH2+mAHmACEKhFCidguozigBzB/fIdeK/0oHonYDR+34d3PtwYevTwNY82yXHwrZFZhdpnd69/FT26x0HdsTywLp1/AnftHsPQ8tHswuUZz+5vcvfynnFtWWhpEA6IGG0rAEkWIBoyUaNDETYt1AoB8jbZjvPesLPVpYmAy3qdRh5TLYIeMdchmlUO2hmQLuGKJfLhErz+kHPTJywwxJSZbgaD4ep96eo/JeIN6/w7V+B7Ue7TjHQZeGBhhIVtgmC+Bbwl1RX2/xmQ9RFP3XUCSN7AZuTdEL/hZjWQZzhmi8cR6l2avIrQ73Nva5KHjDyPFQFvv0ZhJnveZgf7w2oyXL9/k7Vvb7Kljpg51GSazWPWY4IhREZPSr3nP7dyAKS1L1osPGPZomvbxXvxX5OlKqzME1RhEqHdo7rxMvfU6S0WDBoPNH2Zw6quw+CyEAnZfY3rrO4zufJeVfB80uSCjqRlfJIUZKpqCs+iwscDEWaqVk6pk0SrROranSj5YxfQHRJ8xiSWud4Kl449zeuUC8tCzQB9MkfIkTMd2VYgupYvicFLjZMZAR2lh+j1ox4wuv0m9vcn07g0me9v0tWUxKygkp1+0tKFBrBA10hLweDLryEyiYtVti6gj4lBRnFWIU2Q6Q9uGW2//BSuPtQzOPEFWrrMxRn94dYe/eP8679zdpc4GRFMCXUtz3eDwZFpgRR6IvOXBkudBvGW0WwQfd4ar6bKvT2h0iJ07qcmcqo5vMLrzCmV7g3Jo2dlUVp76XTj2NTA9pnuXCLf+nNnN75LVG6wslszqQMBiiKiJSNeemMq0GWEmZJKR2V7ns5QgBi37BFli7JeodAkjS6yefpQL55+H9YdBFhIvyCwdGrtrQ9aY8GujJpWzjBVcAWYZtSdRF0C9mlix8KnPszDZRDeusHf9baa3fsbWeIM8TMjx9CwYiVgntAhtaIi+QmMiipR5gdiMoCUmKoX19FzAUpPrNh+89K9wo3sMit+HhSf1O69s89/+5Co3zJDh6UcIMyE3AzIKom/xOkZtQ7SeoIrpunYeMDwP7vj5KWk+8rOj3/vERk9suAJHhbi71NO3YHqVvq1Bl/BuGffQ16A4DuEWze4rtBuv0G83GPQN+OYgMk4JkCEYCB0hUWPaFVmWpXqtOtoYmYaSijUqdxKWH+PU6adYPPsYLJwGXYBQgu0LeUkbUt1cjHb8PT08x5QE56khmvThNUX02kEYuanIltZVFs6zfPZplrc+QG/9jM3r77B59wor7GHaKRGLzRwZkdjUaPCIcRibQqkQWnxQjCjOCk6FGCoeX8kZ330T//YQ86hlbek4D507TjOGup4QRg02awlugQCoFcQ4hNRa/Umuj3qAIyY/5AZ+UqODw4YlEdOozl5j5+6fM2QTI4796QJrj/4WLJyBZpfZ1p8RNr5FUd1i2OULTdt2ohApqo4CUSXlzNFgYsBlU3DpVGqDYaQL+N55ZPgsxeARTr74HwH9rjJWgC0FU+C9MKsD1hWJ3xa7vBpNYI0mUMbZlONL5wYtHHYNIzjXIwYR0wYlOwXnjiEnn2L9wucZbL7N7IM/p9n5gFA3DKKjR0aIgokVzmW03iNWwXpCjKnFSgui76G+Ju+1VNsfcP0tz8lynd/6/H/KCy98mqt78MGdKT955XX2mHI91Gw2Hu8NfdNjqDkuRKKkjXIYwc0xhHTN99TBKS6HZFCj8YGffTKjK0i0QI3feZu9uz9mJa9p/AJ32mWeeOYridFS3WR2+yXqu6+waizEwHQyI+sXSPAgtmNHJ/qiqMFEMOoxbkY0StsOGIVV2v7DDE5+hsWzX4Jjz0CzCG4gOJuAmQiIxTpLf87NPHBhgmiSOkBSlN2GiMzVpowk6MIcPq0YFGtL6OUSfA00asoF5OxxhidOk+WRvatDJneu4bQhizU0AQ0RMUqMis0MxoIzqdQrAhJS/DId77M86FH7Mfff+yG9/nGWnvy7PLt0Vh5Z7OvXn/wiH+zAd2/e4acf3ubObqr5O3FEA76Dhi0/f3VY1cE1P9PnGz8KuF/k3mPkwJWk1ukOpgwtaAvNDhs/e5n1rMYZYVt6nP/K/wLcEEZX2Hn3z2H3Q04OS2RcE4KnKHLqtqawhrqpwCjW5VhNMK4VpW1bJFO2J4FxWGbx5Bc59fjvwqlPg11BmxzprcgBEZPY0bQU1GOlQ9XmJfPOryfqlk05uz1MZUxXZU/OpwNwpOugFYN1BYFMkmxCJM8Kiqf/iR6/+BusX36J669+k/r+JU71M3IKmv0JkhVozPCaUEKXQawnBO+xWY6RPq039Nsaf+8qozf+gtWlVfKHh1o3JTmZPL5o9fxzp/j9507xYQv/t//iLzAnHmZ/4g+EkeYGPUzZDgmrKZWz6f3PLa7zECn+3IJxc4ksaw2qMUXXGjrhnhaxe1rdep0i7NIzUIc+xdojZCuniATqO68h4/cpwhgjHsUjFkxu6cUeIQSyIqkteF+DD4hLrUdiLPfHJbJ4gdVjX6Z/8suw+iLYs4JYvEsLZJ6ayJEqGzrnsR++GekWwDyNgaM7YR4MzTsyOlmUB1LWJJgw//8CGcaUIkWu5pznvDGMLi+zc/sSvdmEQW+B2LaYqGhsaLXGZhmWiHUJe0AVGwKFRha0wuzeoL7yU/oLp1hef4zoIypWBlgKnH7/8j0GZc54NiUYh4g5RAllnoMfJmkfjdjnu18/8v0HjB6jYox0K6i7oaSoXWSixBvcu/1DFsIYMSVjznLs1GfB9dDZLfZuv0E+u4W1CfVpaTA2FWpEhDYaiqJAY4XRpmsFbgnRUuky9J5ncPJL9B/+TVh+EpV1aclSocQqNZHYVYUNqX5h5zQuNZ3x5/X9kGBISeJFfMS1aad7c2h4AfEduaJDsPSI5p0xBMnBLYpdfUrNykkWB6eYyHfYu/EW6nfp2ZaMBrRKqhoqmCxHnENU6REJ6rHGURJox3fZufQqfvE8i8snMLJMEwU1BfsRXnnvfdywT7M7oewtcCB3KB8T1EnK4OOB7Q5+QBRzQJ74uTP9kC7V7fAO4hMEpIbpFfz0A4yZMW0sbukJOP4cTO8zvf0GUt0hs1NypygtXgKZGPCBtgXE0caARI+1gusKF1Xo0ebnOf7w78Oxz8LyE3hZlCphW4iatFMOioS/AEQ6cNPxiKs3h+/08O3NSwgcDW8OlpMe+V09/DASqbG0LEohPeSc0+Omx651bF9+mWNSk0sgMznWCF4dGrOEhRMorXRFo0hmYNg2zO59yPjqKyyeOgtnntcQhlKBvvL+JtfujwkrywRpKGyRmjkk7WzRRMM1xAM/n/rwDsGa+ftOqVr82Kfm5vxW1UDUrkTZlThgRnP7LRbMNl5mjOshp9aeB3sSrv2PNDd/Sm4nWNukiNl3hWSTgwohNJgCom/Q2JKZnDZmjNsM6V9kcOpLcP63oTwvKjkzAlFrzSjFxhyiUGTS5fXhEJES6Yx9lIt/aOgDrTrhQKjvaF5rD7zERxfQkdsB4Al+rM7lMtOMsXc6yE5K76Fcl+MMH2bsffgKzgslipGADZFWDU2mibJlDFGE0ERKF8ktDJsR43vvsPXeImtnzoHt604L33v7NlV2gnHbI5YLtMahcZbq5Z0hzQMvVTGS6jciycBReWBBIKTFcuQyKbyPKKE709POinhoRuxtvEthRngsbniSfPUhaCL15iUYf0ChY0xs0bZJEKqziE3ctMJlZCIIASuKj8LEZ9TZacoTnye/+A0oz0C2QEuGxZKLkUI0RfeJ0IpNhOODgOzwTE7nss57G45s1vlxMH+7R7tuHzD2zx0Bc62cxBpqfYNDKSQjk5w2lgRWxJ15npOf/W3C2kVGbpnKJ7qSqDnI2T3CrA3UqjRRCcGDhX4BbrLB7odvws4GIiKX7za8v7mPG6zgW8hcTgjpxRmla91On61q93G408386+7z4dc/fyy41Nqb0h5jDLbr5WrbWrPxNmGygStmBLPMiTPPQb8HN99hNrtCUWzjAljfER8sYAON1phgMbZE/ZRCIBphGgSfrzA89jzlua+lMzxaaUm174IMO9+mGtI2jSZ9zMPYLvw+NGI8svTnqpNzl59igAftGh/c9t3e0cOfPrBAbOe1cjyZOGmDpvp+cQrOFBx7dpPRpe+zf+cdDCOc9ZjQyaKQJ3q4ddgs0uBTmlcKuffoaJ+NN94hf/FZfentDxgj5H5GqVBGR123WNcdRnO4VTqjwkFgJ93uNh1X4KOo3ccaPbkJ19WoEzFB2nvE2U1KUxF9QMs13MlHwE0Y3X0dwm6S7pglVgumRJwFDbRti/GB0uXEJmALQ7Q5tSwRB48xPP1FWH8OWBF1EDVg2jmo4FKaKG2ymBSHW/iBd2G6EG9+5idw5qM+eu63zMEtfv6UO2pwjvyOIWLznsS2RUOFtT1yZ4EMH4figtfe07/FdH+b2e4N2lBjFUwTkpQYlkCg6LpN6npG1FQiLq1SorzzziVOPTLltUu30MFZppMRvaKPiQ3iW6x1Hb4hhE4SLQXagV6csRR2KWKNiKE2JSO7RG2HeCnS05EUwD5g9BjqJASAw3sQbciLmebmOjcu/wUnnMf7PnuzgtMLK3Dzp4T6PWwIaJMnXrmNBAIxRoxYyqzAmIwYI9573MIK23Wg6p3mwtN/AMe+TJgtCnmONZ1oj7UHjzypSbSdRT4SxB05ow/0ZH8uEzUHHqGTDDyyDMzPuXfvE6smy9LdmiYm9C6ztLHCZkI0ltB5jsZD2xr6xaoYVNe+8B+xPfqQrcvbrGY9ZpNd1hZL6llFZgKxnjIiQ8lwwWDbFisVpmgYqfDtP/ku9J8lyAK53UdiBUCZOzQIkpf4IuuecQVhjGjDitzlM/oWJ5oNUMO2Pc6V8mnu2LPskTHTDJsPKd0vaWAUMTg6/lt7B6f3EQlEk7O+/nDqyR9fQ9vbOALOFGgMRIkECURNkmEHfHTxFGVJ3SrBrdM/9gwMHgWOi7eW/Ghz3pEo+4ET+Zfkmx+3aw/v8dHz/Yjgthz5YarwE1TRYBELRWbQWvHVDMnT3zYoIUSMsWQOnLH4qDi3KMYd05WHP0u9d5+dzQ8Y9ofUdY0h4jTQRJIXjAaHYLAECUwlZ9sssGsWqU0PLxlOHAZPIOX40TdkmcM3kSp68hwy67B+wqDe4qH2Eg9NL2OjYcudxKomWbRMUVlBG1ha6j9odBEhJiAaK3TQRAvTPTTWeISglmOnL8Jowv7WLbzfT2xYESRajIFwUM6cF+67TKCXM55a3PIFjh1/HvrHUypk6eRgjpzVDxgtxdl/nSsdFuaB40G73S8S0t2bFnEZTiyY2LWfC5J5XDAdsdGQYfBNpPGeInM4ozjnU/FIhsijX2S4u8Pm/XtYN2EyHtF3ionpCMpiDQiFClEcYzdgK1vjtq6wxRKVSdBhkIyITVRqhWhG5NbgWo8EpS0XsCYjr2EleI41O5xsNihCYMXvUYSanh+jfYUcZrVjpTj2oNExggZNcZKJoF6JU+rRPTQ2yeiSwfIy3LnDdHSf0rRJKsT7TpUCDgOqlC9bDUSSzIZ3yywuPwPLT4P0CTG1G8UYD/XXxXPgeDS9ND6Gz/ZXuo6G892t5j15hjR1QmKjeBVsTq2W1qbMvRSLSKBtImKSoEGZZ1jTIW3SIiRM33uLy8+ycOHzTG68S7X5Duo0fbQgMSbGL8lDTCjYMmvctie4HdfZNgu0GKKkAgsYPBkqLba0RNtivaGXCTML0k44UW/zKPustXsshRF5iJQasJ1e3sz2KKjYCMu4mQHOHhpdsKh6kJRn4hvwY6b7d7G0NGTYfAFiy2RvA4kzej3BEairGdYMSHot8eAJmy6vVskZeUu+epHe8c9AcRF8LiomeQfvMV1veCJ/KWh2pJDw1zD40Wv+0nS+FlKXjCWCc0IwNJpRu9TprkBlDGhJniWZXwdIUMRXkKXd70PEWkcVgkR65Mee1hMPf46rdz+gbw0hVliyJHykvsMMLDM74EZ2mqv2HBtynD1ZIIh0ihld2VkgGItamMaWvh2SWcNMKxbaTZ5pLvOcXmG12cVFiKZAsCyEMeeam4jUrMRNjq1+AfyDWnUu5behm4HigQr8mGZ0D0cgUrCyegJG96nGm5RWyY0eQcvoQBLHXOf5MPGxNLLC8ePPwuoToCsSIkiejDlv4zlQSSZ2PDc+Jlr/a1j8I9HrXJQ4kSkjkveoDVwbo+9sbHF3d4ueKgtFwdlTp/XEcs7JDOlZwVeVOgxaDCSYpE5lTM64Fl3tr4pc+Izm7/wI3dkitOMkMRptesZiqGzBll3khjnLh3KaXbdEbbMkVRpbjKYA1ri867O0TENLbpLCh61nnM6U5/pjjt27Th7rjneYFCgzaVgK97D1CKORhy9+g/vmo0bXpMCQip8eQg3NiHa2RZ4HqjDEHDsLu7fQOi2E0EaMa3EZidumDjTrHmfTJYpKoIf0zuPWnob8JNQZlAZE8KHBmQdZIT93/XUNPxcJVA6g2XkEbzqJ7hbD9gx9a7PlW+9d5uUr19jc36M0MCgzTqxf45kz63z96fP6wokF6Q9KgUCL6wAhJbOOnhHBB1h6iGOPfJ7tl98jY4KQdXi/0lIwsYvcdSf40F7kppyhznqoCQgRq54sVkkWLeYEW+ClR9AWskhsZiy2nhcurPN8O6S+dZ/WKDPTJw9DBI+aMYaGgW9ZkT1W+4GT60sPPBaTmMgdhINXYg1xCu0IJ4GgDhZXaGebaHsfow3NrMK3EWstDwAkD6RWFk8PKS5A+RBoKTMfFZuy6bZNLFPmxRPMQb39b/JSQCXOpWFTeKh0vDZDm8PbG1P+zfdf4X98+T1uTh3l6aeR009yz67w+uaMP33zCn/5+tt8sDvSmoI6OpoOIGmqFiOGXinMKg9uRYqLn8YzJLND5to2qiWVGXLPHed2foYNd5YtXSEYhxOfdrHGeZ2brGug7oujcAU2yyE0rMSKZ48vsX72OG1s8cbQyrxVO7GCoiTUrggNYfsaa1nzoNFVlSxPXRH4GnKoNm+yspghoSYvBtAGZtU9nJlQZkK/1yM0IXWL+LbrMEygjESHkYJZMExCycnP/gPIL4DJKJeyDiyK9MrBR6Cyrk/tb9jgTWyZhZpApA6eUHmI4KvI/gzd8Oj/8MNXeHNjG10+iRkeZ+xL7o2gLlYxK+cYu0V+8M5V/uzVd7irRhtTMptGNRHKPIfYoOpx/RxsCeUapy++wLg2eO9p6wYlw5fHuV2c4Z1qjVvNEm2+mt55bHC+SoibtYhNMqTUNTKbkgUIrSM3GY8sOb7w1ENC3mfWXyG6MjWKmCYVyDBE6dOaPmpztm9cpsge5L2bZIK5F42gHvUzjNZI1xlOWyNxhjBNYj8IiYPiOMTu2xQIYmi9w1Ni+idA1kGWJRq6wkl6AR/12mkMwN9Q4HbkikAbgza0iT8pESK00WB7yPffvseVvX12sVQmIwaTOqW8IBRMZh7NFxmZAS9f3uCbr99iG3QwMFKNq1RkigFvoNLAFIHFdeypx6B/PJWvnMWbkh1d5IacYiM/w8ysoFp0nicNIjAaCeR4yVFSe7a0Lab2ECJ5iHzp2acI4x1ldQUp+50RA8H4xD9MQuiAJAGHZgRx9vNGT5OMtDv/PE0zBfVY0+JMhNkYCTVWA8QWNKQSiOSoOGIIYGqMDdhoaduMxizSX30IZBWl6PDylrT/QtcB+1ETfYzRP4bu88mvpAbpxIpqWlLGGIJCa9NAkL984w1ujiaEzCAmUMSGnq/o+5Z+jDivGMmpZYH3bs/4k1dv8Mat9NJLl6gW0RgCjuBKnYZGyTI4foFZsYIXwWaOxi2wGYZcjevcy44TXZHEkXQOHaWgtpEejfQPDR9SBU8mezx29gRPPbqc6uSZo18aMq0x6vHiqE2ONyntzWNLGWqY7SebffQpP/CoY6BuKjR6hECeAbN9NDYpFZtPPzhAzRwhph52Z1IBIHhDa5fprT4EZtCVvA+reWmExoPmOUz45v/66xp8Du9YclfguoUdJaYco0TfvK1c3d6jynJsr8BZJVdPGT25RgpVFrKM6JVo+8TBCa7tR771+jV+dser6ecEY2jjvBteJI32Ehgeo+2v0RiHdwXbbpmbusrtuMq+WUFtYrwaTRLiELs83eIlJxhBBawTSgmsmZbf/NQ5rEIxGAjTmqJc7OBoj0iNoTmssuGxtMSqgvCRM33e/3T4pISmadBuYkKZKX66nWaQiHQspVTI1xhBEm4vXQkVaYkYvFvBLJ8HcUf64rvFEuVwskaHkT9orDkj5q8f1gUvB3NUom8TmJLBBPjua28zI8f1FnAuhxAQbbA0ZBKR0Cbv5gNRCsqV47TZkJ9euclfvnmZGzPUu5wghiZEtUBpnICFpRP0z1yksgX7dsBNe4JrcpytuExFr6Nhe1CbqnEC8SCFFYIYgsRUZav3+PxDJ3lhNYlVBxuBAXnvJIECQSl0j1L3yaLHampm9Aa899B+zJkOKfVI3xHatu1IhhHjoK1GoO1hFQzXjbdKqBuSpUg+pJZm64Rgl6F3jLmIWTJ3wuXlAME7NOy8VvbA5v5r7nSA2LUdOwwaPcYm8Of2CN66epvW9Anaw7eK94EmdELGmaElUtczMKk2XgclOsdW0/Kj6/f55hvXGIM6l2N8JFPop+YEwfUpVk9RuwE7MuCaWeemPcXELnY7OXW+0u30YFLkbWICYQ2BaCJBGnpZ4DefPU8ZYbGIjKYjZXAMU66jmnXPVxNvQVOxKIohiCXECM1HdjrQSXcoc03OOTNWNIJT2tkIxHdEv6zLySOIJ6JY6xCKrpm/wmaKugHkC0DUOZyqemSGiyipS+8X7Ohflr9/wksB47qjRCOu05JpQF95d4OdSSDGPsE7YshRyWiNZWYtsyxnZgyNTVyAVluqZgpSI70e11rHN392i5ffv0cEFsVI3kasOmIDRCEbrlC7kvv0+UCOczs7QeMGpNBL8KajhanBG0MwkUxbitAipMlOPtY889QjPLQORT2jp1NxGkAGaLZy0J7cSh9PV1gRn7qEcAnsaj9yph+oJM8fsk3qSoeXoK1PwjwCURRsOILIhQMPoCGlXMZlncxWr7t3TDwefaCoR4ruEvQoXez+wEkghqQbHx+A0T/OS3zc9yFVbEP0pDlsyizCXoDX3r/OVJOMWFSLEUuWl8QsozUmlVIRiqJg3r1rRLHGkBcDptLjw92WP/nh29wcoSEzifhOImpjC8zCcXazU2yYU9wxx9h1K0SbYSR0QW3sAB6DF0vohI7nR66lpmz2+PIzFzABFopM6slYh/0FCZMpsSO8qEDUnED+cyxYN4fWjxr9gE89/44mTheQKMXRkNkirdzM0sqIRke4MieEgLUN6mcwg1wWQEpqFbKiDzhowI9mHdExeRUxoDFA3UAToQlY36KhIQZP6yNBE0Le+hqPp4Y0tw1IkxgqCOnBzUFfPUgJ4uFxEdvUbRs9JutTGfStG4FLG2Nif5noHC4jdY3HFmxqJDS+pYgRE1NPeymOnsmgEUKr5FJgskV+thP4L/74ZS5P0YmBvXqmtigIkoksP8R1HuX9cJE7zRJjzVKTozQYbTHqCbSMmhm4Aq850xrEllibkdUTvv7IcR4yFX2DtDiK/JioFtihwcoIJDw4BVIPUU7BU6hP+MtRox/VV6FzgyJHAq3O1duOU6XGE03LfC5456hIgrsZiAPJDnXWrRHX6yE2aZ+02vWSWQd5mSSY0u/hrdBaR3SG2E1ycu5wNKVIQvKIMdGnYpICNQdEibmvOKBL4IzQthXkPSbB0ADff/U9YjZgf3b0YTx4xNjO+xzwzY6iCN1DDWTM3JBL98d8790b3PWo6fVkijCLOfTOyA05xW13nnG2QjBFYtbEFOurGKy1qc0ZxRhDmTl8XSF1xfFexhefOM/5hVJcVx0MamlbD6FCaQ5alz56zcehmDmJbnTtYGkc5OkHRDkNGDOvcUUIFdKJ9aCGNCx23iUKQVNj4oFVuvYhi02kLus1ZilNCkBwSTk+GAMWWm0VJ1RiGWN1i6jboDUkVQgcsfW47n9RgSYqSb4pNVHMX20Kf9xcfYZ5N0xUw9QLITP63ga8/rNLtBrROMe8O5IhnaGPPLw53Sh2EHE0qfs2mJiCryxnY3fEt19+jXc+2GIG2uC0lVy3I3o9LHPXruHtgIyMLIALhkgPTw9VwQkEP8XZmrIIuHqPpbbi6ZMnuXBqPT3nVLjE2tS7gxicnYsu/JL4Z/6c5BDtdAe2n79TVQqXJVQKhTBLo6roxPE5YD8c7ubDJ3/AOU4/M2iMtKRVh0nZW6BL99Xgh0uyp+hugJ02slNXiIdTRV9PDdNIHmsLom9SidJY6M5bO2fXdEtwvrDMgcED3te4vM/9cat26PjTl15hhmVWV5Rl/1BJav7yFUTiwYNMyBgceoL5Z0sUqFUpFpa5tbvBd954n15vwDPnSqyBb716i1u6wJ5bIkgfqxYbuzM/FkTr8HWNsUr0HrUBK4KECef6S3zh0YfIFaJ4vCdJr9iO/hkjbVM98IoO33fS60EFtRkUgwfWgdMjDy7dQcjzAvGJ5EiYpMRfBdQdWRvpYT0wO6UL7HQ+XlINIqW4kLRTjUnzj72qFoh4A/ug33l3i++88hY/u3WHzfEIg+fRtTWeOb3GP/2dr+nF5UxyA9PRtvZ6A3EuSYdWPnSo2Mem++k1+aDRGdFhwfsjeOXKDRis4CuPmMBBZ0v32NJDSwZFj5KsUt3fKASTHmwwMG2VhZVjBPW8eeMetrxM/9izFBb+/NX32WSRShbJyXHEBLpgEbWYkEAZlxmyblyIj1OGWeDR9QWeOWXJFTGS4imRFBNr8EhomYx2u65gc1BNPIp/qBiiLSEbHLKJmTcwcqTUIZas6GFmeTrj2wkmbXskpkebdnE4PBaki+NjBI0p5Yu+O3PdnHEExITrSyFiHRNF//uXb/O9dz7k9cv3mEkP21tCYsWl/Yqd6W2y4qf8g698Sh9fK6XsD0RjN5f8ABGUg/B9Lmh5QMDQiLWZTEnf/9ar1xiR08SILXJm1Yy8tJ2x54vfHNxSDQkx644J09EsRQ1GUlQjWc7WpCK3PYI43t7YIfvJBsM859akpS6WiFJ04hiKF4NYh1WDBLBZElcqYg8JU7SdcmKlx5Onj7HsEBtTDp7ZNOr9gOWUCdpWzKP3BwxO8liKIdhe2ulHxna7o7sWDBhLnvdR44gh9WFL1zOlag9cumiKkEUkgauqeBQTUmFFY9vBf7FrCk/AjdFKc1dKHeHNaw3/+tuv8MHUsOsXKIoFhq6HSs1es8t4tsfkJ++QFwX9rz6n5wd9yaRJKaRz5F2ZVuQQALIPgMoOlRav6J0WXrtynYnNqYLSK0lsIeYE6UMyZhTpzvEuXjlw753SqqbyJRhMnrO1tc/yoCQbDLlfTfj+petkAnVvEacGR4uRSNBAcCbx4L2C1klGLRqQAYSGUj2PnjrO4xcWOyUpj48+KVJEDjeQBprZJGneYxIh8oGgNoW4wRaQ9x4404+wEucF5wxxBUpBxEJsmbf9aafGeND0fngDVJSAppbdqEicgVZgPGo0qUvR4kwSwrm7j7705iWu7k5peosMjp8m5j3Go5pqpvhsmTBc534s+e47V/nBOzfYBw0mT2O/YsRoQvTn5VqOBmLdlveamjneurLP9syzO2uIztEGT1FkB7sC7bRwMClt7b7WLmBT4aBD1JCqySYCbaAsBvSX1pgGx1gzJrbgXu2pjMUayNSDNniTevUxNsUNeNq2pWlaYkwZwwoVD6+WHF9ANCQCaRojlWAAZwVipUx22NveeDBdO3JFEiLnpQDbgyPxlzGdckE9rcD1hFYZrJyg0awr06XK2+HNFN9GvE9uXKzFhwY1gjEm9bbHlna6DeyDm+hERkyZ6pSpWptJi+HOrOXPX30d7fWpo6dq93GmYiFXegI2WoL20OEaV0eef/nt1/jpDc8MmDSdC2+maGwIse0WXErhUPBtijC8KdgHfvT6O+zNWlxviJqcGCNtW2MMeI3UrU9UbTUH51+ILZIZpu2EYMAj7I0maBQGZY9QNxAifZczHdWEKJCVVMGgeY8QwcWACTV+rnEbInHW0sQKdZFer4cTQ1XvMzANJ3TElx4+jlWwecLOrbWoD/i2SeXrpoZ2wkJmKLLkfY0B29lStRt+KDkrJx+CFuIDinvdShfXReUmB9fHS0Gg6Kpj8510eM2rORrn5VIORl/lRrA6hukGMEOJ6nDk9KWOlhnoS+9+wGYd6YjIKdeXGqFJXxMJYph4aIol7umAf/3tV3nnHpovlMzGE8WChgZBqUNLq0oISgwhsW2BYIU3Lm9x4942XhIsaYzDZgVZVjCZTHDOUQz6mCzHx5BAJw04PE2zz8rqEMkFj2dxbYUosLe3x/JggSwmJk5i45jU7dOJEqfqGYm5IwGVpFWfWohTg0UQA+oZMmadHR7KZxzTCcW8okk6Qp1L+XwaC9rC7l0yGoKv0Zh+N6pPwafNUHF4dWSLa2B6hAfP+6TEZG3WRS4FFAuoXSB0Uld02PyhGoKk0EdBfdvJe6T7iBpyo5g4xm/dBBSnThy5WPq02uPmCL799iVGtiRSYKPr3JQSbUs0bWKBSCp+aLnAvbbgL9+6wZ/85Cr3I+oGC2nMJhFrBLEZakpaSXpvYqAOMAb9wZuXuLM1QkyWXqOk9HN+HIk1GJd1FWPBipCFGmknSNhnOrlHVe8jLvWep2bEgLFgVHEx4GIkjxEXIy6Cix2mLhnNkSkWrjsWbOxoY0YRpqyHe5yJd3h8wWPMCKsNEnz3bFPkfmj0gL99DReSbFlS0opEH4gCxhZEHK1kDNZOgu3h46HVzVzGwposKceaMhVKiiW89InzlTvf7QcTiQ2ISfVx2y2EbqdnIri4x3jrGsRu0HxjCdERLfrTS3d4/+42driC4pBOxBeE1hgaF9PMcwnkeYnajHE0NL1lvvXm+/wP37/JzEG0PQIZYMnIkt5MtIhLFOJZRN+9E3j31k5KXayDoGiINLWnbQKDwQCvkfFsTIyessjIJGJ8xVBrPvf4ORjfg9kewzJjNpugAoPFJUajEcnpR6x2H/Od3zlGb9LQMrDYOEcKuzlvKJGGQkecqW9zvt7g3JIjiSu0GmODtZYw97cKaQZdYGfjeqJja4toxBpSqkyC0VsVoi0YrJ0i2kL8kQKWEY3Jjcg8080gH1IMV4kUxPlMVbRzU/Fgt9MhfKkzBkQsVk2CMMOI2f5tqPexClkoiApj4FuvX2IcMzQrUCwmOiQWqKZpRY1xBImYTqivqVrEWoqFBa6NZvz/fvIG3/twqtuIxqxHVSuxjlivB+BPTSLf/vlr73JrCsXSOmn4bQJ1RCyIw+UZ3jc0TZV2LuBnI4Y0PH1qhX/ytSf46qNnOe7AzCZIDDjnCJL4dyqp2jjn7Zsul59vgDmaZ0KOqOumT8wXSiI/DOM+j9S3uDC7zfHlLqfuxJES4SR5ltTJa6CZUO/vkMeaTBQxeoCiRhW8WjyWrLcIi6t4yQh6GPIZM49/uxpsVCNQMFg8RisFUU2XoR5JBE2K4hFJ06sNnUZN5xWCx+gUbe7D1gcgU6UQWgtvb8Kb128TXc6sqogSiMZ3MUI3qQF7UHeXoLTTin5hmVQj6JfcmDb8l//+O/xsB2agmAzTzUEtTHKbFejdKfzg3Q/ZixmmGBCC4iTDYCmLIUXRo6nTuNAsc2SZIbQzwmzMyYUeX3nmMZ4t4e9/5nkuLvaZ3d2gFMFay3g6olwYEExivCRjxkOFpzkfQWPC29ViNIkBRROThj0teRyzEvd5JOxyOkxYXl4FCoIYUddlEZoEiwkB8MrOFtpMyYziTMpkjsZcPiqIY2llHVzCD5aHg6OBXCoqxKgItkt4CuzSOmkYTM5hYvYxtW+TJhGlFqXu94LHSYW1e9zbeAXkDt7M2AL9o5ffYMsnUENjg9oZaipEZmkKU0y66y5aXMhQn1CxLEwxYYLt50zznFfu7PKHP/qAy/fBZKTBA8EfKDzPgO++/jO2GqHKFpgFwYdIZi1t3eDm516bSB9ZbiF6NDYMC8tDJ1b57KNrDAJ89mSPLz36KKcGPVzTpnTNGNQIwUBrldZ6vI14E2nNoeR4Hjx59Eh0RM1TcGkCrQ0YqVloJ5wKFQ9JwwmjmKXTzNwiteSoWBoCSIePdODX7p0bhHaCJQn8hxDQGNMzEJt6R7KSlWMnAUv7kXqrke6GMfruxgLkUJyh1VVUTXIrh3/SNcHbg5wzdKvRHvDgPEaU0nhG9y9B2GDKRLcifOvVNwi9RTLXp+f6KeIlgoRUweuUMESTnqwTQ6/ICHXF0uKQGCNVsBRr5/iTl9/he+9uMAaNxkBbE3wS1h5F+PZP3qEcrFLYHnUTU3HIOmZ1RcDTtBXWZlhX0ihUoSaXlpOLlgvLPc71oKxVVjPkay+c5bOPXcDVY1ycsbiwwM7+Hl2K302Z8Kn+LxFvUn0ciZ1WTJJosV2EH0VwWrHW3OFUuMNyPqMoDQyX8LYUSMFyCAGV1CpNbJR6h/HdK1CP0JCOlxACxG7BS2LHhWwZu3QaorCYP0gtN2mmieAy0Fglwj0DtLnA+umvoDFLtOfgEbEUrsTG1LyIdYQ2IsZ2mm4p6hYXsCbDBM9Q99i9+ioGz59+/4fse0vlC8T3cb5P3vaxoUhnpA141+Bti5oKTJXSk6hYW9DOIlIbSimpG0OTLfJff/MlvncDdgt0ZDJalzNR9LX3Z0zqIT1fYKYN2nhcWTILgWJhgA8TJLYYzWkaR2N7eAML2YzebJN/8tVHyWsVy4y2CZxegN/5jSd58swCcXSParwH6ghBsGIpjKN0jlBP8d6T9RcYeaEWixdPtCNER+SNoWgGEHsUWvGku8lD7gpTtlj7wqcAxQUoomJDjbPQhDph9rGF7ffxN16lDDX9skerYAqLeI+NLSYEam9h6WE493yK0T5ymRSFp06TlMqoEnMRd4Ji4QKeMqFwLkMUQl0hGrBZwrZDR4yk261zHRgwuOjJ6w0Y3eDa7cu8+94HKBnYgqkPVD65cxdJM9JUsDGFDkEcQboioCgRRyQnpZAWxdFKgS4e4//1h3/JlT3QXs4kRrUC9zc22b5zh2Y0ojSGzBm8b1JjvyS8Os+yjr3vCL4lt6DVHl9+8SlshNIIvTJPREmQC2vw1ece5eLqAnndcHJxBYKjrS1N5TEByryHEaGtU1UwCngjCd3UBONmMVLGyIqf8aRssza6ieuXsLiSOAYYYrAIeYKVoybSZhbh+hsM4x5ZSAohQS1iiuSgrWWqEV8MKI5dgHwZhus/V4c6jOMPauomVVCyXNzKccjXqHSAGodYaJtZGmmZC21sDwIvNR4V36Vxqc/LUpH5W+jeB9x8531u/ewOLhiMs0ycMssD0U5xOqPwjn5T0G8cecgIOqRhQBB7QJXqqH9pQZjEGG3JeP/mPf71n/6QOzWaZUaMwosXFvjqUyfx7YhoA86kD5EkjBi9kpmMHCEPFf1mxKCdsDbM+cJnX8RrwlbEGDIjGN+yYpAvPr3Gbzz2OKddRm/aMJABmQygLVCfU5ohhTpMM6O0HeVacjQsE3SRYALWjliOY840I55sZizvjxmuX4SVh8CUEk3GTDIamyFakHmhF2bg97hz5W0sdeqNDy0mOAw9gs3wuWNPBD9YZPn8RXDlz+3y5N7nw+i6vmhjHF2GD71lypWHmeoisyb1khsLUVswbadRc4jAR4kHZ1zsyn25bYnTu9jdy5wwewzDBNvOIItoEfG2SVFuNB1IY5MerabcNt1Xuo/DUu5c0no0mzFcO853Xnuff/uXbzEmCSk/eXaV/+Tvf5nzx/o4nRLqfTKTWrhiN/88zkk7vmEYGopqxGeeeITjvY5bp+B96tlznYjBuoUvPXOc5x86RtjdoMQzyHLKLA0rkJDAa6eR0mXJM5ETTEmUgiiRwsw4Hu5zNm5STu8ysIaT55+G4VlQSw6oOYykcgCpldvvM92+QWz3yYuEwElwWHoELI3LmZicuLyOO3EuAW0fZ/SDzd6pUSR9SwPRAD3y409T2WNMmwhGO6GdiPoKtaHzvocOIxyJXFGLuAXwE8649/jahV3W/RZusk/BFDV114CXH/x9ytNz8thShERn+ijZL+mqJZqWMYZRG9HFU/zZK5f59z+8laapV2MePTHgG59/guN9T7O/hfoaY1Jp02CIHnyMGFEKX3FmIeOLzz2BAYoOiggCtQ8YcUjbYOqZPLYGX/j0Gc6eypHpbWy7RZ61qFREv4ulBjUEbzAxI+LwRvHWgxF6ccZpvcpJ+yH7zTV6Z5eQs4+BXRZmLVlsKExiKkYBayP4HfYv/Zi+jsGPcEXHk+9oaqqWWh1xsEZ57BwsHaOZH48ft9NFDBoTUE836ikGhZjDyiPY4cME6SddM5uifa8dRDinUXWGn+erRtOs70COiTNOuVt84fQeTww2WI13cO2UUPlUDTIRNZ5gWrxNeTumSeiAcEjHOuB2B6y2WALDfkEdoM4X2WXAH37vDb71zg7FcChG4OsvnuGzF9dZ64FWY7RtsOIwkoNkeAQxhr6JfPbxR3hkuYeLSbcyE8ito609qkrhBOOn2iPKM2cLfvdLTzHIZrTVLrWfocZSq6QjSaGtG0yETCMZLZYakRk92eFsvM4JuUNwnpVHn4SVMyC9zk0GMvVYfOIimkq5d4Wd62+yYNN9vKbqZdqAAchpQ8Zw9RxrZx4HOyAfrHwcr2TOkQOMIXaTiekG1WB6kJ1hsP4kbnCMWR2JnoN8XDrJSqtz0r7rxl6Gg9t7oMgiQ3+bs+YDvnz2Ns8u3WIhBKTtpUKFNAQ7I7gJmDGYKcEEvIVWXEp90G6issfS4KhwWmHwlGXJ9rghDI7zwRj+zfff4soMjQJnMuR3nzvHl564yFJmE/E/xI5X5QhZQaPK2uKQzz7zOANgKEFyIsYHxENpOsaQQJaXYmg5QZQvPnaMT7/wKK5vqWIkZgMau07NIsZZchu7CQ8Nw1Az0Ak5uwzY4GS4xvF4n4VjZ8ke+wJkQ0bGQdEHEUwIFARgBnGX2QevYCZ3sH5MYYVZXaHWYJ1HTIs1PYIusLT2KMXpJ4ntL+bNHfwk8SLn/LYuB5dSYIFi6SJZ7wyzpqTypCPAzDVcu+L9R5oTRA1GhZaAK0CaXcrqGl84ucOnl25zntushl2KkCpD3kS89YhUJM5qPEJRnJf95/Ldc4BIqaopddOQD4fstQqLJ3lvc8q/+O++xwwgwGfOr8mXn36YswNH6adIM8M3CdrNCkfTTji+2OPhYxYJDX0BNKJNTaynuF4O1jBtPSbLsXhsvaGnzRb/8PkVnupts9RuUtiKYJXKCjhD0TNHXjP0fc16e5uTzU2OtTv0IwzWHoeTT7HrHTOvqs6iagg+JgozE8XfY+fG2wyYEKsJucuoZm3q08sjuEDMB9QypFg6CwunqX+Z0Z07wp068rWxXb+4W5Rs7VHywcPY8iy2XGRvPCOzfVzMupLiYbNCssV8VKdCptQxnc29OOFE+yG/c27E3z19k/PNayzGhroC0x+yMxmRW8dSXuDaSJjVFFlGXc+o6mmaL56XVK0yayJZ2U+IoEvKFtEIMzXM3ALXJ47/x799Pc0GmMHXn1nntz/9JMNmlxUXyaygGmmbCevDjL/3m59lGSitkTnfX3ILPfDiabGYrEeLEnWmzuxTtlcZ/9H/la9WP+T57Cq9yWXUbhOLhiabUUtLYxQtegTbwzUznqiv83zYZC0KrV/m7Of+Adiz9PMlKY1JGkbWIbYgcfJ2uPL9P2Jy/yqFNOSZpa08K/01bBSCHyNZ5Nb+lOHZp8gf/wyYPlnR/1jXDr9yWlOCDq0sMlh9hnr3OpPxHguLa7QNZCKJHUOHRiGgHW4OCAktypzBlj1sE8nY5by7wZeWQC6c589uXmPXnyD6jMFwmeiVrTt3OJb1ePjUad66cZ3+8jL93oDZdEarLb3BAsYYtiYThmXKi21HYRJjqFvDzb0ZeTXiu6/f09987pgYj/z2Z8/pKET+mz95iZPnP8WtzfsM+4FPPXGah1YtJQg+IraDno1lLsXZqNLWlS6XUQxTuPM2e299l4fGbzMIPcamIYgSWstWrAnGpTTXQJxtMZgGLnCfZ80mJ6s79AZLrD/6IixfIDIUURjMgbM4L2w1Gm+8h9u7ifX7OOmOJnUYnyZHi4Gd6RSzepGlR56FpRNgSglifqFx3UFP0AGj9cErqmAZwNpz5Pc+ZGd8jaVewez+LlmRgdYdKJOISuZAdChdVsGYDLISDVNgwrLe48UeLOcljc9hO/L+2JL1T4NGVvIhv//s47z4wuP83/9wm81mBFKQZRmzOtJIQVH0mU1bsmhSxSA2WGnJ8wIKg6+F2/sV/+pbb7K89HV94aEkj/D7X7igm/e2+dPXPuD42jrMbvL5x17gfInYWKFkRLHEmCjHRg3NbAbSstqzQthXrr1JfO2P0as/ZckGbLbAC+YWeRCcN1xBuZefwJcOp3ustNs81oz4XH6XJ2QzEUzWnqT36S9DvkDrEyXNugJ8qnq6TCBO2Xnvx+T3Pkz1fRsIHRMwCyYVVoqcPQ8L5x8ne/wFKBaoMUj2i1U9fuWs1RgB2xOKU1quPoUbvcu4uY4h61grho7J3n24g8VjNFJCggajpY2KDQ2ZbrOogXM4fvtMH3GW9m5kc9bQVJanT5/hH335cR4/D7vVF/n/fPMvuLV9j6VTF/DWMprVRFvSHywRfJVAl9gkImbQNFTAJdf/2q0t/vCHb3Dq1PM6dLDq4B9/49O8/rNbxGaLc8d6PHV8gRJPFltaUyZyQwQn4GepDLpQCMQ95forTN74U/TG6wzZp8UyFMcZ2cRIJI+edZ1wI86Y+QHabHLOjnl2cJ9Hwh0Wm3uY/oDe6Ytw7AyIE49SmFTj8Joo0cSpcvcK02tv0R9vUnQNJyEqRmx3fBoqzbBLx1i6+AKsnmWcJk/qkss+uXs/SLG7zwZJFCrfx609ylLzGe5f3mK9mOLrCZlNhIrQcbNSuna4y616Yh0YK9RYnCvTuGffUrZ3eSIT3MppcrvOa/fvcXtvwGdPnuep4yBT5O99ZlHv33+UP/nh2+zs7+CKVaxCO5syGPQAR2YNzkJbNfh6ghGPdQW1ddiV43zv6h1Wv2f4T7/xLDlwYgD/u3/8O/w//6v/mr/3O7/DhYElo0aMwaR2dEQbWhVa5xnkBmYbOnnvu1Tv/xnZ3gfYbMwIj7iSgKcXdjgX9liL13gyLnOnOc/UL+KbKScWIyfK28Tdm7S+x+lHv0D5yFOAocGrcX2JFDSAdx5HTdy6zOar38Ls36Hw0xSDiCGodFL3gagZ+22fxUc+w+D8cyiL0oSguZNfaPBPtNMT89Uyi5be4BT9E8+S3XqXTMcp/enur7hUIZM2xdYyj+CVGD1BLdZm5NkAZwQrnl6ckDdXeXohoLnnpJuwsXiM33nOslSOpZ16NSzLP/zNZ7WNwr/93pv4YFgcrlP5mnbaIhpoc0fmhCzLqEND27Z4dTRRWFxZ5d5uxR+9+h4nzp7gd544xtDAlx/J2fvNT/Plp8/RA2lbT24EVNOc81JBR5rnHnaus/veDxh/8BLl7jtYGRPEpK5RE1Oxw1eUGlhV5ZjscSJMmfoSUWXgAb/BTjPDrj1O+fgX4dSjxJiDtWRznmAERwPT2zq58gN2Ln2bEzrCiceQp1Zvm56zNwEvPbQ4x7ELL8LSRRpKMtvKkPwXmbMz+s/NBvn5UN9HxWcGT4nrXeD4mRcIt99H3ByGtUSyxJyVGYkJ309N8SYjqFCSSreWEokxqSEVqQacs8XTOuXkwgKj9T0e7r9C3AuaLT2Grzb1fHlcvv75Z3Rjt+blK7dp4pTcCuOqBmOpo2DyDGcNxhWosUSbE0QZhxlmMOBmXfNf/dkPOZ59kS89vC60qv/0658RAzRtxErR8Ya0wxkmWm++R1FfY+u971Jde5WluEfP1dTVDK8ZZb+PNg1GfeK0RSVKiYjQZ58ee1htcK1l4g0Ly0+x/OzvwfnPgVklRCt50zV9AmiE8Q1tLn+L+r1/z0r9Pr1ckrCCRjAOYzOiVtSmobKLnH7ic8jZ54GhGM1ZkF9u8GT0X3GpCm1ocZkTT61OlrEnn2V06zs4uYfIHkCCGlGQHkIk6zRioxEQS+5BVGibNqFJNInHLYLxI4bNmMLskU+vce+1Te633+ezX/uP6S2fJtb7+qnVRxl/5XE27m1weXOL4coJvHHYckjVtASfeH4qilqX+svVU0+nLC4NkOwYN3du84ff+QmnFr6qF48NREKNFYcNFb2yQEIFoVbCBKbXGV36Npfe+jOWdYsl3abXwauZTbVu6jr1rEsEa7uuXCF2AJKVSGzHBFmmdifonfsMwye/Av1zsjubaL/MEz4+b+7THWXrZ+y+8xfMrr/G6WVHVKGR5C1zEsW8ihmVWkZmifWnvwirFwkhIxj4JfHbwSWH3S0fY3DmXJkGqLHaaBIb2oG7P2Hn8h9hZi9RZlNG4xyxA2KW0XeQjXfJ8YxDQ5H3yEJGO2sT+7N0qFV8U9OPYIIlaNmxUSe0ZMw4Rs0qC6sPsfT4l+HEi+zbx+TH9wr9F//dd/j+m7c5/8SL7IybToddMTYgJiQKUyfU09Y+UZx7OcuZ0t+/yecvrvB/+IOvMdBK8nampY3JYTV7sPkB9fVX2b/6Y6r7l1lwAccMqy0ibdcCHA+YY22rZHmPKFmSJyGNBJdYJwCInO2wSP/5v8fxL/4TWHpG2jDAmpgImq1CW2kvb2DzVba+918yvfZjVnpKngnRZEgM1KMtesaQ9Qbc3pySn3me6dLTnP/H/xfITkkjSZ/q40ssD16/eqfHABpxNkNA0AzEKMNnGJzaYfuD96nqTYqVh/jwbsOHNwNPXzzD2ew6cXKLstfrBtZDVpZYPE1oCQrOZMQAc912qx6JoYNZoceE7Q9vMt65jh++zPDhr+hnT32V/+yzy5Sj23x471XWylUaUxKsJRpBrEFFDk6pYqHHrJpQb++wF6ZU1V3qYx78iCH7alwFOxtMbl9j99b71Hev4CbXWWrusCQzJNjD7hZN+mzAQV942eszayO1D6ixaRKyj2QqmKzP1a2G48++yLFn/g4sPJQ09lTJjCRNdj/V/pKHO29w9aV/Rbb5LscXDRIi02mFKQzVbMSCEbKiYHdrxPrZp/mgWebJr/zPwS6J7wz+Sa9fMWAXom9TZQoHZITYYo0Ig7Oan/kUxf3n2bp/iRGP8OOdXb73AWwvP82Xe8q5POBkiq/3aGMkK0uMQNYEbB3IXI6P6QzKYprS46WgFUksXCLryyVNe4fxnTu0u+9TnPgRz9cLzJZGvNEq15shO6yxL4vUDAixB7FAQpIOz4cWF6YsuZpjZct6WfFcsc3xnTcw9R22XvkOUu/QzkbIbIdBvU+p+yywn4inMU9D+WI6nhBJBA4SkdR7cHmfzAj1rCEqDIrE5d/3jpXnvsLKp34POfEC6IpkYnFGqbRC4lj75QS2f8a9V/8t1a0fMDSe0EZCNabfy5k0Y5xRekXJzvaEfOUiN6c5T37jfwZnHgGb2r9/5e79pEYHcHZOyjNdTznEIFjnxPTO68pDX2dHTvHyrYofbmS8OV2hvbZIvrbO4vkSnXyA9TVRGgh16r/WtBMIdPrmYPFdql8kVE8i0NKMxxTW0c8szXTC7NJ1+vkqX1w5zuPrS3wwnrBlK3biLnu+x6TKqKukuBFCoKyVTALD0nKyb1ms73N2r2bz+2/g710ib/fImVJaxUqLyVpMmBGahtZHyDvhg46ti5qDnR8EmqZFqZNW3aBHW0XGMyUrlrAr5zj3d/4ZLD4KLCUWpVNEGpxU6mQCm69z7eV/x+zySxwvlZKMan+KJeAyMN6ztLzC1u17mP46d+oepz71NXjqCxDyVAchHg4f/KXJ2icyesTYju4c0v3E2MReCS25WRFz/Mvay5/lJ699h1d3R+z0L/Da9oy8PYHLeryYTTlTQtbbo233qZqGTA2lnZc2U6eoNfMmga6jxqT2nV4RCb7CukUyV+CnLaI7FGFCz8PJzKQWLNfHFwV+WBDIk366GsooiI9IiJRGQCeUWjPcahmPNhiUBqXBx5AkQBDyIodeQSEZs3GDjaYbeXVYYUi1qcCgFMaTLSTLWVg4RhVy7s+EtZWnWH/x78HKZ1BZlHkrtNeAkUad7sPsBhsv/Ru48xbLpiVXSz2ryIseWWHZn+2xMFxk6/4OsVxlJy5RPvQig6/+Q4iLVHYo83TvoM36E1yf6EwXSSOiBZcWFuC9o5UBQTKpFs7r9foqd9td7OIZtmfbvDKeMXpvRrx4gaYccq63jZjrxOouQRvUudQ/51OoGE33uomgSd0xgTw5vq5o6gk2VwqniSlnGpRAPZsCdH3k3VQjEsvGqGEhX0CC4puAlTSzPctzkMhgyVL7CpXU3hdF0OhoWmEWBQkNOYLpYhLV1JWiOm9ZTjNWFocLRJS7+/tMzQlWnvg0a09/Ax76HOiCRCmwBNAGZwMwhdvvsv/et6g+fIsVNyUzBl+3GE0THmofiOJoW2XqHXF4jLj4CGd/5z+B7Bhkq9IlmIdVx084CeNX7vQ2Vpq5TNRkaWYorltb6UVN6ekrV+6yMVpAiwG1b2iLgjtynnsjg95ruBZX+BK3eTRvWHW7OL9DZZNQrnhJs9joyDrqUSRx8GNB63OsW8SZGpWKoInQMPMunbXlsSS2IWAkUGjAqJJpRMWytb+FcRm2a4CKKCHkzOqGsuynx6WpodRg0Ggg5ojmKIHIjGBarEaipsVlVDExUbjqGnqDIZUxzDSjOP00xz7723D2C2hYSN0neNogiZcaJ8rdd9l+/Zts/ex7HJNIUYMGITeGWEZmzZTYCIPBCts7Y1bPPc3VdpVn//7/EhbOom5R6CCdLqxED0rOf22jk/jwOKKRNGucFtXY4bRpAfz01TcZbY8Z9NbZmN2FYUkcniS4IS9tfsDupGUaTtKcLXmuZxk2H9DohKxtyRMj7LAwK3S926AmYqzF5TltU1PVLdZBlmVodIRgaEPSh/ExYGIkhhoTPG3ojFSWuMJiW7CxBY2I9cSYUjmd97qHFo0BjZqIWOI6YkkgkIogNqZFyVx4SCzZ0ho3dlva3irrT36BpWd/C9afwDOkkVKkarR0oat/zJTdq+y98WdsX/o+x4uGvG0xwSAhzdJBG3qZIxaWKkAs17k1znn2D/45nHiKyg9pg6O0EJqAKzoeYWcvS1LpJjrmihofBWV/aZ6eyqVtl6/3OtmCuQxXlnRfCFy61+h//q9e59+89Bb+5ApmfZW92jO0jpVqjGu3KXo1F3t3+M8em/CkeZ9T7hplcy+VRFtPQMhtTq4ZITS0MkNMSLFEdIlxq5YYkqJlkNQzn1tzoHdnYiJ1Jn2cSBChMooapQwVNnisRjTaQ9GFAFYDWUwKjUlLxlLjaEUoyxJfe7SNmJC4vxhoNDDVjBHLLJz7DMee/Drm7GcSudEOJXSklGoy1mHPAFvo1R+z+cqfEO6+w9COyKShmrUs5kvoXgTf4hYMtd9jN4yxK+cIC89w4jN/Hx77IpqdkIohgsEFIARc1k156hAVO4/mYtdgGlNX7l9hpyc6c+wy6QcWjBqMQInyyLGe/G/+4Dd0YW2F/++PfsTdO2P6a8dpq5Zg+tQ2Yz9z3L/vMeOW3zq2zjfOK8t1TU88w8JQGMVPZtSzMcZGtAx4anKrYBwx5hhxOFuiqrjQorHFxUSjItru3LWHtGxSD5kEj1FzUAiaz1NVTMrrQ8cIDkkfL4SAl0hUy2S6T6/okxWJIzhrauoY0WwRX64zMyc4/8zvYJ74O+BXZH8q2uvnZA5ivafDYYTty4w//BHjD39K3HqHATs4GnxTUfYG7O3fY7VcAsmoxrvIYMjC8TPcmBU88elvwNnnIFuj1SKNyCb1MRrpAiGN3dfmMIDvZuLMexA+sdGVNOPEzO9B7GhU6ecChLqmlzueOoH88997Qsu+8Ic/epXbo3vkS8epGkMgx7URcSf4IC4yuxYxYcTXLz5FKVOa+j553KO0AsMSuoaEJhpskXTklIY2pjBNo0O8Qz0U1mLUI+qJ0qKmSfLZmoFaspBEfWzXIOxNxBNpTSRqxGLJXIH1FhsLRCETi0iGU4sYD03LuJoyFaFyJU25SpOdZJad5MV/9n8iTgt2pwXFsE9ZIOIjTGtMVsOdH7J35QeM3n8d3btNwQxbRNQIMQr7OxucOL5GmG7S1JFi/QR3Jj3a8BhP/N4/hbNPQb4G9ES9phFhdt4gqV1XUUQ0YfiHfjt5LRF30JP/iYyeNJWOtCwejMCc06YhywratkLVcXHRyf/29x7X5dLy337/h3y4ew/Kc5TDJcL0PtbkSG+Vnf3r3Nv1rB87ywoTqnszpuMdxEAeI943xDJnYbhAnI47F5+a9CJ1ohFYgzVdv7lwAIvO+8qieCQaTNcUmSRFEoyRmFzpPXjvEZWUskVFQyKONKSA0I4n5L0+drCMSkltV8iPP8ZDT34Z9/BnidMesrAqQ5PThhrCTJ3xwAh2rnL1O/8Ndv8D+rN9SufR/3915/Yjx3Hd4e9UdXVPz4XLXZK72pUokZSoiy3JSWzlaseOEwTIU2wECILkNY/5n5KnAAHyngBB4AS+QUhsRbLskJQpiZJokVzuZXZ2pqe765KH0zM7S9kQk5ACVAABcofb0zOnq+rUuXw/afAhkmJB4QbYQWA+n2AKqG3O7Toj3/4Sl37923Dxd8GV0uLARwxW+bxxsVIpY58FNXLlO+gkdHVyPrCpP1QgxywNnk4ZXLeOjGCDtuSGyNPWyF997dmUDxx/+68/4ua4RjKPMx5pJvjxPq9ccLy6mSOH73L/eJ+tnXUGW1e498Et4uGE9bV1JEvs3T1kozcgF4Oz4K2nja2qF6V22fEiyeiyLtrAH9DOUJEGG1Ln02qZkUTIklWiZTIdjdJr0oRIsok2gRdNdvTXSw6anFk8z/CpL3P1xa/BxZehWCO1YAY9Sd6ThVnKTA3ZMRz8nF/85N/54M3vcNGMGcYxRe5xmdCklrqCmPo4O8RlkWRq9ucV9xnirnyTi6/9OWy+RH0Mdr2PJ5FLxFqnbOWQuvax1IEBTgIzJ/67dA0sn4zWfGrCpdMp0H0zJZY8su7qtdTUwdOzA4z3ZLNpYrQmHwnpO+96/u6f/4sfv/shmJatM0J25wbfesHzF8++w5nxj9g+u87u/l2yszmbz14F3+P4+i0m02POnV3n+P4BLtMGSzGeSEUKFSm2pBDJjRZSELJlH32SSKRVZlawy+CKKsqbjo2jH8OJIcagKBKgxdEax9wUtOSEVLKx8xIbl38btl6B8mkwQyHvawNOewTtYUKmUO/SXP8hN97+N0L1MU+tOwbTQ5yf0oYjyASX92lCj2Y+xEiPanKPYv0MHwconvkKl//ob6B/leogUA43xDvBEzVeEJWNa0U6hGpcsallVe3KJn7luf1TvPdu6ZDFMq8idrJY802klklSsa0zuARZPSOmNtXlmhxD+u77Ff/4vbf4l+t3GWY1z83/k7/8UsM3t/+b0fHPsFNYOzukdlP2JxX90RXWdl6GKmdy6xe0JuGbY8J8TBZnlGZOYSIWr158UPhfSItChNRlwRR46LsZLd1r2pKvTFiTtGWpDlDHjFZGhOICsXeBmJ+ncmd5/o+/DdkQTF//yEBSJ3JgUpXw+zB9n/De69y99gOavZucsYGeSdRVRZ4XWBMI7QEpJXq981jp01QQvCW5nF1KLnz5Dxn85p+Ae4LjpsfQnRViBni8JDCOGBOxqegtoFAhaO2hnMggLqi9p5QzHhgPsbyrhePKk2QXFxOoY03W1ZXVdSKzgslyyWONzCO/f6nkwrnfYvwPr3Pz2hu8cvkJXr3aox6/h/geG4OM8eSQkI0p84L5dJ/q2htsDp5kdPlp2NmB3TscfXiT6eF9Kl8QEqSgMt3W5UTMsmbfpNDV4WvDRSNJoRkx095MhCWJo8ODNNYSe2u40Q6jzauMtl6A88/AcEuVHzJHTsAkD/4gSawRCSAz7v7HPzH56E3i3nXWzBHbPY9p5qS54LKcST1nuFaS2SHzWc10pnMxBEfIhqRyi0vf+FO4/Bo+DoiMJM8LYqvFGZgOQQL6d2O00S4m6qpKRdaT04b99ADNp8z0xUUWPsFyt1juIanD/Xb6xSyAtKBU5nEzTzbvcXMfvv/d19kZBb71B89hj3/MtR/8Pf3mPUb2Pj0mJF8R2kxbdKXAm5KZ7bP55GVk5xkYnIMmg4OK2cd73N3dw1hd8nw9J4ag4GkjWDFYErP5WB0Z40iSk+gh2RDXGyL5iI2ti6zvXILNi6qp1oh29mQlWCdNXaU8F+2Vb/fh6BfEOzfYvfU244/fYcCUXpyRhxkm1FiEzFpSNLTBU4eGzFmcgA8WHwYEt0Eon6DqPckzf/bXkJ0DuyENBQmtQ8pY6Mef9splYZPF2axTlly14qflXB7C6P/3sRCybTG0jWE2a1K/yGVUemhuJ46vMbn9Q/z4ber9G0h9n0Fu6OeO1MK09kyjJRVDsuwMrjjHaP0i2dZlOLsNeV/jR9ZBluue3bYqVLPovLVGXxcHkgMOpKcGllxp16bj4IYIzoDr/JZqAkUGR3eZ37nB3kc/Zb73c7L5PfJ6H9secSY3ZDERvNeTgLHYXGPiC/CfcyVttBzO4DiOGG6/yPbLX4err4HbBHNGPMVyjioEZiHB4XjYRMrDjsdu9BbPvJ6TZwWFdVo/18xJTZVMEaC9D4fXOLjzfQ7vvIE/vkWfwFo2pHQZPk4U5xEcbZuRbIHJ14h2QBVKnnz1qzA4D6PzYAvd52ICKcCOgJHO3GS7c0zX5B+VrkHPgTSqFJEqDcKHGeH+xxzcuc3eO9cp0wzxY1J7QJbG9G1L34BLcHxwTL8cYl2Ptm2pfUUb5iQXKFwPF/qMj4VxGlJsPc/mF79K8dxXYLgDlGBKOaFFdF74Ayekh0mX/m/GYzd6ow1BWCJNPU9ZSNisJ2BVW8QFMIeJ5ibN3lsc3X6L+e4H2EqXzNIc0nMKMWpiom4DTTTUIaNJJW0c4Mrz5OVZTDYgkWFNTtkfYspzDH7tG5DKziHtjjgxgp+Bn3Nw7SckP6Wa7jM9ukdoJggqzWX9FMZ7DF2gdCDSgp9jUquy2lGwpqBuoW4CRa/P4MyIOjZMphNaL/h6SH/jCmcuvUp+6TfgqS9CcYEm9WRStWmtPxJLVBBsoqvOMSeGfrSTHPiMZrrqQQRFh3vHgr0aY0u0HmOaZKggTaC6C3vvMr79JtW967D/PqOsxpbaqKctFYEU1X+pZjXqWpaEmBOSwgZNrgCh0FhS6EBKRlOoRuKSJOXbhtIpbSKGltioXIgxhsx6rJ1pVC5Y2ibi64QxGc5ZnHPaQ5eEeRN1u5AR87lgzJDhhcvIxhXKi1+Ap1+C8jzB9zjyGSYfULhMFugFWRyJ04mIwuOY5fAZGL1qa6zVXrNMHHhDbAI4SzARcRBTVC1RSUCVCLswex8mH3Lw09dhvkvT7hHCAY45hoo81ZhYa8NDAEWp5miDr9BEZa8NXIEEzaqlpJomSlrRrve2bohRixRNB/VXyTEBEwhMtNUlFgRv8K0oRdNoTV7VNmTliIacNg2Q7AImO8f5zeconn8Ntq6AGUByJFMQbCkYbUIOEYoOCyEPOmd0kbXHYJfHanQAHwPW2OW5MQaIMZDliiGbzxvyvIftiIcqajYH2yaYA8dw/xaT2zeY3bsO0xvk7V1KxvTEE6sGgnZ/SKcfk1Ki9ZpuzQrbNQMaNa7mbDEm0yqZvIfvnDCV8hAQJVxHH7BBj4CLUKaqSAktjkYK2nxE6zaYpDWK9Stc+sLv4bavAkPIR8wpREyB5US1clmFIx28lwfpfAvFmEXR6OfIkQPVF3fO0bSRLFeZrhA9zhraNiApwyIdcYJldEFP2RGaw5RLpU5Wex8OrlHffpvJvWu0R7v0bVdFmzxCoxUqxI6MEfFSg1WQQkodly2iRjeGedXocm0UxCAxEcLiC1eEaYxa2qxdPI5aMlp6zKQk9s7x7Mu/Q77zIhSbMNgmUspRLQnXB6Nn7CwFsaElTwsItyEFQfLiVHBFjR2w+G6WL7g1j248XqMnVpvi0Co0/YfuY5woKwtgPAh4be5RRE9sIc1BfNLOE4+SX6fAEZOffY/66AOqgw+J1QG97guLYUZsZuQSlJEumjswHVY8PTiTotXoXuxy9sHgMaS8h7cDWkpqPyDlm6xvv8DOlVdg52lw5clRkAIoBIplAeUCjG6JSx6neuknS/giq6H34zG0yDIAXvD5M/oiJWtjF8vXqhNLFx9evr3vSk4FJa3rR87jAoQrRMlWvrYWw3GCPWjvKVt+PobpmGqyz+Rwl/lkD398qCK5Erv36ISFJCqUoPU6o02OEYeRHGMcgsWLY+vyc5Rnt2HtIpTbYDbAnAU7AFsIdrXmXF1WZb0vf6Tvu7pErwRUPtlUFjuDL4QVPo8zvRPz08JxCA+0xOtT3QV3V2U5RSE7oSvkkI5uIatlvpKYzY7JMp8KF3WloNUzeBMh1KiHF7p8ZNud4z2Ervo1z8BIF8SxerKwRs/0kpFqg+QjyAZAT/QeOzY+qYtJp+XHlS5cvYx9J05S0qve+C8x+jIntjTJyu89wvEZzXS6VODqE+5JJKR7og1OGyqWt1ODROWc4rCrRofldVZRNzGBxDmSwJJ3Rx/P6SDlys2tNm9qRoYTW0WUhKl5hRAghqAdOMYonZuIzRZqTvopFtUrwEli6tSDGleM/8nOlKUS5qn7+iW3//8Yn92evhiqdkPCd99HzmLOa3XnIkghy4vopFIs+PK63W+pL72qD97NUkDEKru2EyA4eWpWjB1Ct9wu81P649TttysaB2pS35kqKAM2U6zn8j+tGnjlXk9G9xAujblS2MHJS6e3h0c7Hu1m8eAQTlW1AN0XrDX0XZsDXZiMpTGEk6U+JeWZd7MynSoMSBpoWU5PXZK1mCAQosYDFitsIpKCJ3VndomJPO9pjD6Z1cuqUgJdCj7qBQI1YlL3PGqQZllJ9KCxf2USZJEHX311UYV48jFWS9Ie9fgfmPKADUVt3lsAAAAASUVORK5CYII=" width="70" height="70" alt="מאורות" style="display:block;">
+      <div class="txt">
+        <span class="name">מאורות</span>
+        <span class="tag">כל האנרגיה בשבילך</span>
+      </div>
+    </div>
+    <a href="reports_log.html" class="log-link" target="_blank" rel="noopener">📋 יומן דוחות</a>
+  </div>
+</div>
+<header>
+  <div class="wrap" style="padding:0;">
+    <h1>נוהל בדיקות Off Grid – טופס בדיקות למערכת PV</h1>
+    <p>רשימת תיוג לבדיקה מכאנית וחשמלית של מערכת פוטו-וולטאית עצמאית (Off-Grid)</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- פרטי הפרויקט -->
+  <div class="card">
+    <div class="card-title">פרטי הפרויקט</div>
+    <div class="general-grid">
+      <div class="field full"><label>שם ומספר הפרוייקט</label><input type="text" id="gen-project" placeholder="שם ומספר"></div>
+      <div class="field"><label>תאריך הבדיקה</label><input type="date" id="gen-date"></div>
+      <div class="field"><label>מנהל הבדיקה</label><input type="text" id="gen-manager" placeholder="שם מלא"></div>
+      <div class="field full"><label>הקבלן המבצע</label><input type="text" id="gen-contractor" placeholder="שם הקבלן"></div>
+    </div>
+    <!-- מיקום Waze -->
+    <div class="loc-block">
+      <button type="button" id="btn-location-secure" class="loc-btn loc-btn-primary">📍 תפוס מיקום נוכחי (חובה)</button>
+      <div id="loc-result" class="loc-result"></div>
+      <div class="loc-alt">
+        <button type="button" id="btn-location-manual-toggle" class="loc-btn-text">הדבקת קישור ידנית</button>
+      </div>
+      <div class="loc-manual" id="loc-manual-box" style="display:none;">
+        <div class="loc-manual-row">
+          <input type="text" id="loc-manual-input" placeholder="הדבק כאן קישור Waze (או קואורדינטות)">
+          <button type="button" id="loc-manual-save">שמור</button>
+        </div>
+        <div class="loc-manual-hint">באפליקציית Waze: לחץ על המיקום שלך ← שתף ← העתק קישור, וחזור לכאן להדביק.</div>
+      </div>
+    </div>
+    <!-- ריכוז בדיקות -->
+    <div class="card-title" style="padding-top:6px;">ריכוז בדיקות (OFF-GRID)</div>
+    <div class="toggle-row" data-toggle="strings">
+      <span class="tlabel">תוכניות סטרינגים</span>
+      <div class="toggle-group">
+        <button class="toggle-btn yes" data-val="יש">יש</button>
+        <button class="toggle-btn no" data-val="אין">אין</button>
+      </div>
+    </div>
+    <div class="toggle-row" data-toggle="drone">
+      <span class="tlabel">צילום רחפן גובה 30 מטר</span>
+      <div class="toggle-group">
+        <button class="toggle-btn yes" data-val="יש">יש</button>
+        <button class="toggle-btn no" data-val="אין">אין</button>
+      </div>
+    </div>
+    <div class="toggle-row" data-toggle="internet">
+      <span class="tlabel">תקשורת אינטרנט</span>
+      <div class="toggle-group">
+        <button class="toggle-btn yes" data-val="יש">יש</button>
+        <button class="toggle-btn no" data-val="אין">אין</button>
+      </div>
+    </div>
+    <div class="toggle-row" data-toggle="commtype">
+      <span class="tlabel">סוג התקשורת</span>
+      <div class="toggle-group">
+        <button class="toggle-btn opt" data-val="קווי">קווי</button>
+        <button class="toggle-btn opt" data-val="WiFi">WiFi</button>
+        <button class="toggle-btn opt" data-val="סים">סים</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- פס התקדמות -->
+  <div class="card">
+    <div class="progress-bar-wrap">
+      <div class="progress-top">
+        <span id="progress-label">0 מתוך 0 סעיפים נבדקו</span>
+        <span id="badge-issues" class="badge-issues">⚠ <span id="issues-count">0</span> נכשלו</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill-ok" id="fill-ok" style="width:0%"></div>
+        <div class="progress-fill-bad" id="fill-bad" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="parts-container"></div>
+
+  <!-- סיכום -->
+  <div class="card">
+    <div class="section-head" style="cursor:default;"><div class="section-title">סיכום ומסקנות</div></div>
+    <div class="note-block">
+      <div class="field"><label>הערות כלליות / ליקויים שהתגלו</label>
+        <textarea id="summary-notes" placeholder="פירוט חופשי של ממצאים, ליקויים ופעולות נדרשות..."></textarea>
+      </div>
+    </div>
+    <div class="verdict-group">
+      <button class="verdict-btn pass" data-verdict="pass">✔ המערכת עברה את הבדיקה</button>
+      <button class="verdict-btn fail" data-verdict="fail">✖ נדרש תיקון / בדיקה חוזרת</button>
+    </div>
+    <div class="signoff">
+      <div class="field"><label>שם וחתימת הבודק</label><input type="text" id="signoff-name" placeholder="שם"></div>
+      <div class="field"><label>תאריך</label><input type="date" id="signoff-date"></div>
+    </div>
+    <!-- שליחת דוח במייל -->
+    <div class="email-block">
+      <div class="recipients">
+        <span class="rlabel">הדוח יישלח אל:</span>
+        <span class="rlist">dror@menergy.co.il, eng@menergy.co.il, Tiful@menergy.co.il</span>
+      </div>
+      <button type="button" id="btn-send-email" class="email-send-btn">✉ שליחת הדוח</button>
+      <div class="email-hint">לאחר חיבור השירות (Power Automate): לחיצה אחת שולחת אוטומטית PDF לשלושת הנמענים. עד אז — לחיצה מעתיקה את הדוח ופותחת מייל מוכן.</div>
+    </div>
+    <div class="disclaimer">
+      הבדיקות החשמליות יבוצעו במכשירי מדידה שעברו כיול במעבדה מוסמכת בשנה האחרונה; טווח הסטייה של מכשירי המדידה לא יעלה על 2%. מסמך זה הוא רשימת תיוג לסיוע בבדיקה ואינו מהווה תחליף לבדיקת חשמלאי/בודק מוסמך ולעמידה בתקנים הרלוונטיים (לרבות ת"י 981 ותקנות החשמל התקפות).
+    </div>
+  </div>
+
+</div>
+
+<div class="footer-actions">
+  <button class="btn btn-ghost" id="btn-reset">איפוס</button>
+  <button class="btn btn-secondary" id="btn-copy">העתק סיכום</button>
+  <button class="btn btn-primary" id="btn-print">ייצוא / הדפסה</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== אבטחת גישה - משתמש/סיסמה + ביומטרי =====
+// המשתמשים המורשים. הסיסמה שמורה כ-SHA-256 (לא כתובה כאן גלוי).
+const AUTH_USERS = [
+  { user: 'דרור',   hash: 'a2f076754d676b280f6acfdd645b551084161b055f138a68897c17403fddb920' },
+  { user: 'נדב',    hash: '867a14236db605417998771c017d727af4e29b6da2e4cfe6bd162a39f91ac44e' },
+  { user: 'דניאל',  hash: 'a38109705d26e99c914f980e2ac249bc47e5677b59f8e4a19e4de7e3349898d8' },
+  { user: 'שי',     hash: '6b6edfe841920b1c92e7610da18be79abe27c41f91fc7fecf8ed24f2b0e81ab1' },
+  { user: 'חגי',    hash: 'a7722ddcbb02b8eb99c1bffd417546ae873f317e764219b14da9bbb0a959476d' },
+  { user: 'אייל',   hash: '69b157cec0f84e8dcdedda4187d4e670a75daee6504a593edd141efa81cf76b6' },
+  { user: 'ניסן',   hash: 'd7a6a03f09972885533966f60a371fbcbe8cc3875f6537a30ac482387a33266c' },
+  { user: 'ויקי',   hash: '44af9c3ec1c20054fb35ae7d30f8c0b82c8989360d35e60d22d354d204f31ac5' }
+];
+
+(function authInit(){
+  const gate = document.getElementById('auth-gate');
+  const form = document.getElementById('auth-form');
+  const errEl = document.getElementById('auth-err');
+  const bioBtn = document.getElementById('auth-bio');
+  const store = (() => { try { return window.localStorage; } catch(e){ return null; } })();
+  const sess  = (() => { try { return window.sessionStorage; } catch(e){ return null; } })();
+
+  function unlock(){
+    document.body.classList.remove('locked');
+    gate.style.display = 'none';
+    if(sess) sess.setItem('og_auth', '1');
+  }
+  function showErr(msg){ errEl.textContent = msg; errEl.style.display = 'block'; }
+
+  // כבר מזוהה בטאב הזה (רענון עמוד)
+  if(sess && sess.getItem('og_auth') === '1'){ unlock(); return; }
+
+  // SHA-256 ב-JS טהור (עובד בכל סביבה, כולל קובץ מקומי ישן)
+  function sha256(ascii){
+    function rr(v,c){ return (v>>>c)|(v<<(32-c)); }
+    const mathPow=Math.pow, maxWord=mathPow(2,32); let result='';
+    const words=[], asciiBitLength=ascii.length*8;
+    let hash=sha256.h=sha256.h||[], k=sha256.k=sha256.k||[], primeCounter=k.length;
+    const isComposite={};
+    for(let candidate=2; primeCounter<64; candidate++){
+      if(!isComposite[candidate]){
+        for(let i=0;i<313;i+=candidate){ isComposite[i]=candidate; }
+        hash[primeCounter]=(mathPow(candidate,.5)*maxWord)|0;
+        k[primeCounter++]=(mathPow(candidate,1/3)*maxWord)|0;
+      }
+    }
+    ascii+='\x80';
+    while(ascii.length%64-56) ascii+='\x00';
+    for(let i=0;i<ascii.length;i++){
+      const j=ascii.charCodeAt(i); if(j>>8) return null;
+      words[i>>2]|=j<<((3-i)%4)*8;
+    }
+    words[words.length]=(asciiBitLength/maxWord)|0;
+    words[words.length]=asciiBitLength;
+    for(let j=0;j<words.length;){
+      const w=words.slice(j,j+=16), oldHash=hash;
+      hash=hash.slice(0,8);
+      for(let i=0;i<64;i++){
+        const w15=w[i-15], w2=w[i-2];
+        const a=hash[0], e=hash[4];
+        const temp1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]
+          +(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+        const temp2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+        hash=[(temp1+temp2)|0].concat(hash); hash[4]=(hash[4]+temp1)|0;
+      }
+      for(let i=0;i<8;i++){ hash[i]=(hash[i]+oldHash[i])|0; }
+    }
+    for(let i=0;i<8;i++){
+      for(let j=3;j+1;j--){
+        const b=(hash[i]>>(j*8))&255;
+        result+=((b>>4).toString(16))+((b&15).toString(16));
+      }
+    }
+    return result;
+  }
+
+  // המרת סיסמה עם תווים שאינם ASCII ל-UTF-8 לפני גיבוב
+  function hashPassword(p){
+    return sha256(unescape(encodeURIComponent(p)));
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const u = document.getElementById('auth-user').value.trim().toLowerCase();
+    const p = document.getElementById('auth-pass').value;
+    const match = AUTH_USERS.find(a => a.user === u && a.hash === hashPassword(p));
+    if(!match){ showErr('שם משתמש או סיסמה שגויים'); return; }
+    errEl.style.display = 'none';
+    unlock();
+    offerBiometric(u);
+  });
+
+  // ===== ביומטרי (WebAuthn) - זמין רק בכתובת https (לא בקובץ מקומי) =====
+  const bioCapable = location.protocol === 'https:' && window.PublicKeyCredential;
+
+  function b64ToBuf(b64){ const s=atob(b64); const a=new Uint8Array(s.length); for(let i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return a.buffer; }
+  function bufToB64(buf){ const a=new Uint8Array(buf); let s=''; for(let i=0;i<a.length;i++) s+=String.fromCharCode(a[i]); return btoa(s); }
+
+  async function offerBiometric(username){
+    if(!bioCapable || !store || store.getItem('og_bio_id')) return;
+    try {
+      const avail = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      if(!avail) return;
+      if(!confirm('להפעיל כניסה מהירה עם טביעת אצבע / זיהוי פנים במכשיר זה?')) return;
+      const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
+      const userId = new Uint8Array(16); crypto.getRandomValues(userId);
+      const cred = await navigator.credentials.create({ publicKey: {
+        challenge, rp: { name: 'מאורות - נוהל בדיקות Off Grid', id: location.hostname },
+        user: { id: userId, name: username, displayName: username },
+        pubKeyCredParams: [{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000
+      }});
+      if(cred){ store.setItem('og_bio_id', bufToB64(cred.rawId)); }
+    } catch(e){ /* המשתמש ביטל או שאין תמיכה - לא קריטי */ }
+  }
+
+  async function biometricLogin(){
+    const savedId = store && store.getItem('og_bio_id');
+    if(!savedId) return;
+    try {
+      const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
+      const assertion = await navigator.credentials.get({ publicKey: {
+        challenge, rpId: location.hostname,
+        allowCredentials: [{ id: b64ToBuf(savedId), type: 'public-key' }],
+        userVerification: 'required', timeout: 60000
+      }});
+      if(assertion) unlock();
+    } catch(e){ showErr('הזיהוי הביומטרי נכשל - היכנס עם סיסמה'); }
+  }
+
+  if(bioCapable && store && store.getItem('og_bio_id')){
+    bioBtn.style.display = 'block';
+    bioBtn.addEventListener('click', biometricLogin);
+    // ניסיון אוטומטי מיד עם פתיחת העמוד
+    biometricLogin();
+  }
+})();
+
+// ===== תוכן הטופס (מבוסס על טופס בדיקות PV - Off Grid, 7 עמודים) =====
+// כל פריט: crit = קריטריון הבדיקה (מה לבדוק), exp = תוצאה צפויה
+const PARTS = [
+  {
+    part: 'א. בדיקות מכאניות',
+    note: '',
+    sections: [
+      {
+        id:'a1-cables', title:'שילוט – כבלים ומובילים', items:[
+          {crit:'מובילים – יש לוודא התקנת שלטי חובה על המובילים בהתאם לייעוד ולתקנות.', exp:'השילוט על המובילים יציב, מחומר מתאים לחשיפה לקרינת UV ובמרחקים של 3 מ׳.'},
+          {crit:'כבלי DC – יש לבדוק סימון כתובת המערך ומספר הממיר אליו הוא מחובר בשני הקצוות.', exp:'הכבלים ניתנים לזיהוי לאורך התוואי.'},
+          {crit:'כבלי AC – יש לבדוק סימון כתובת הכבל בשני הקצוות.', exp:'הכבלים ניתנים לזיהוי לאורך התוואי.'},
+        ]
+      },
+      {
+        id:'a1-dc', title:'שילוט – מפסקים, לוחות DC וממירים', items:[
+          {crit:'לוחות DC – בדוק שילוט כתובת ומספר סטרינג. בדוק קיום וחוזק התקנת השילוט שהגיע מיצרן הלוחות.', exp:'קיים שילוט עמיד בתנאי חוץ, מתאפשר זיהוי ברור של שלטי אזהרה וזיהוי.'},
+          {crit:'מפסקים – בדוק סימון סטרינגים בהתאם לתכנית ההצבה.', exp:'השילוט ברור ועמיד לתנאי חוץ.'},
+          {crit:'ממירים – בדוק מספר מותאם על הממיר ועל המפסק השייך אליו. בצע זיהוי פיזי ע״י הפעלה וניתוק הממיר.', exp:'מספר המפסק נכון למספר הממיר אליו הוא שייך.'},
+        ]
+      },
+      {
+        id:'a1-ac', title:'שילוט – לוחות AC', items:[
+          {crit:'כללי – בדוק שלטי בטיחות ושלטי חובה.', exp:'שלטי בטיחות ואזהרה ברורים וקריאים.'},
+          {crit:'בדוק שילוט אזהרה, מספור מתאים על הממיר ועל המפסק השייך אליו. בצע זיהוי פיזי ע״י הפעלה וניתוק הממיר.', exp:'מספר המפסק נכון למספר הממיר אליו הוא שייך; שלטי האזהרה ברורים וקריאים; הפחיות ניתנות לקריאה והתקנתן יציבה.'},
+          {crit:'בדוק שלטי בטיחות ושלטי חובה.', exp:'שלטי בטיחות ואזהרה ברורים וקריאים.'},
+        ]
+      },
+      {
+        id:'a1-grnd', title:'שילוט – הארקה', items:[
+          {crit:'בדוק שילוט מזהה בקופסאות פסי החיווט.', exp:'הקופסא ניתנת לזיהוי ככתובת הארקה.'},
+          {crit:'בדוק סימון כתובת המוליכים בלוחות ובפסי ההשוואה.', exp:'ניתן לזהות את שייכות וייעוד המוליך.'},
+          {crit:'בדוק שלטי "הארקה לא לפרק" בנקודות החיבור הראשיות.', exp:'נקודות החיבור ניתנות לזיהוי.'},
+        ]
+      },
+      {
+        id:'a2-panels', title:'חיזוק מכאני – פנלים (כל המערכים)', items:[
+          {crit:'תעד נזקים כלשהם בתכנית ההצבה.', exp:'אין נזקים לתעד.'},
+          {crit:'בצע בדיקה ויזואלית ובסרט מדידה (היכן שנדרש) מפני עיוותים הנובעים מלחצים מכאניים על המסגרת.', exp:'לא קיימים עיוותים בכלל.'},
+          {crit:'בדוק בכלים מתאימים את הידוק בורגי הפנלים למסילות עד ליצירת מגע מלא בין המשטחים.', exp:'כל הברגים קיימים ומחוזקים וקיים מגע מלא בין המשטחים ללא חופש.'},
+          {crit:'הזז את הפנל לבדיקת חוזק ההתקנה.', exp:'לא ניתן להזיז את הפנל.'},
+        ]
+      },
+      {
+        id:'a2-inv', title:'חיזוק מכאני – ממירים', items:[
+          {crit:'בדוק יציבות גב העבודה ויזואלית ופיזית ע״י הפעלת כוח מתון.', exp:'הגב יציב ולא ניתן להזיזו.'},
+          {crit:'בדוק את גב העבודה מפני עיוותים, פגיעות מכאניות, גלוון והתקנה ישרה באמצעות פלס מכייל. בדוק שאין סכנת פציעה מנגדים ופינות חדות.', exp:'לא קיימים עיוותים; קיים גלוון תקין גם בנקודות ריתוך (אם בוצע); אין פגיעות מכאניות והגב ישר ומפולס; לא קיימים גרדים וסכנת פציעה.'},
+          {crit:'בדוק שגובה התקנת הממירים בתחום המותר ע״י היצרן.', exp:'הממירים מותקנים בתחום ההתקנה התקין של היצרן.'},
+          {crit:'בדוק שדרגת ההגנה של הממיר (IPxx) תואמת למקום התקנתו, בהתאם לת״י 981, ספר החוץ ותקנות החשמל.', exp:'מקום התקנת הממיר תואם לדרגת ההגנה שלו.'},
+          {crit:'בדוק את שלמות הממיר, העדר שריטות ופגיעות, שכל הברגים במקומם.', exp:'הממיר שלם וללא פגיעות וכל הברגים במקומם.'},
+          {crit:'בדוק את חוזק ההתקנה ע״י הפעלת כוח פיזי מתון.', exp:'הממיר יציב ולא ניתן להזיזו.'},
+          {crit:'בדוק מפני חסימת פתחי אוורור – בצע מדידת מרווחים והשווה לתכנית הצבת הממירים והוראות היצרן בספר ההתקנה.', exp:'פתחי האוורור פנויים והמרווחים תואמים למידות שבתכנית הצבת הממירים והוראות היצרן.'},
+          {crit:'בדוק שמדבקות הזיהוי גלויות לחלוטין.', exp:'מדבקות הזיהוי גלויות לחלוטין.'},
+        ]
+      },
+      {
+        id:'a2-boards', title:'חיזוק מכאני – לוחות חשמל AC-DC', items:[
+          {crit:'בדוק העדר מתח לפני תחילת הבדיקה במכשיר מדידה תקין.', exp:'אין מתח על הלוח לפני תחילת הבדיקה.'},
+          {crit:'בדוק שדרגת ההגנה של הלוח (IPxx) תואמת למקום התקנתו, בהתאם לת״י 981, ספר החוק ותקנות החשמל.', exp:'מיקום הלוח תואם לדרגת ההגנה המצוינת עליו.'},
+          {crit:'בדוק את שלמות הלוח, העדר שריטות ופגיעות, שכל הברגים במקומם.', exp:'הלוח שלם וללא פגיעות וכל הברגים במקומם.'},
+          {crit:'בדוק את חוזק ההתקנה ע״י הפעלת כוח פיזי מתון.', exp:'הלוח יציב ולא ניתן להזיזו.'},
+          {crit:'בדוק שגובה אמצעי הניתוק תואם לתחום המותר.', exp:'גובה אמצעי הניתוק הינו בתחום המותר: 0.5–2.0 מ׳.'},
+          {crit:'בדוק שכל הברגים בלוח מחוזקים היטב (בכלים מתאימים). נסה למשוך מעט את המוליך הראשי.', exp:'כל הברגים בלוח מחוזקים והמוליכים אינם ניתנים להזזה ומשיכה.'},
+          {crit:'בדוק שאין עיוותים ופגיעות בבורגי הקופסאות ושהמפסקים נפתחים ונסגרים בקלות וללא הפעלת כוח.', exp:'לא קיימים עיוותים וכל הלוחות נפתחים ונסגרים בהתאמה.'},
+          {crit:'בדוק אטמים ואביזרים מגנים מפני חדירת אבק ומים. בדוק את היחידה ותקינות כניסות הכבלים לאזור.', exp:'קיימים אטמים ואביזרים מגנים מפני חדירת אבק ומים בהתאם לדרגת ההתקנה, וכל כניסות הכבלים והקדחים מהודקות ואטומות.'},
+        ]
+      },
+      {
+        id:'a2-const', title:'חיזוק מכאני – שלמות ויושר הקונסטרוקציה, עוגנים ודיאגונלים', items:[
+          {crit:'בדוק את קיום והתאמת הקונסטרוקציה ע״י מדידה והתאמה לתכנית הביצוע.', exp:'הקונסטרוקציה מותקנת בהתאם לתכנית הביצוע.'},
+          {crit:'בדוק תעלון, העדר שריטות ושלמות עמידה.', exp:'התעלון שלם, לא קיימות שריטות עמוקות.'},
+          {crit:'בדוק העדר עיוותים, כיפופים, סימני קורוזיה והתקנה ישרה. מדוד בסרט מדידה ופלס.', exp:'לא קיימים עיוותים וכיפופים, ההתקנה ישרה ומפולסת בהתאם לאיכות הגג.'},
+          {crit:'בדוק קיום יריעות בידוד ואיטום נקודות חדירה בין הקונסטרוקציה לגג.', exp:'קיימות יריעות בידוד בכל נקודות המגע וכל נקודות החדירה אטומות היטב.'},
+          {crit:'בדוק שכל הברגים קיימים ומחוזקים עד ליצירת מגע מלא בין המשטחים; קיימות דיסקיות משוננות אנטי-נעילה למניעת שחרור. הפעל כוח פיזי מתון לבדיקת חוזק ההתקנה.', exp:'כל הברגים קיימים ומחוזקים, מגע מלא בין המשטחים ודיסקיות אנטי-נעילה במקומן.'},
+          {crit:'בדוק רציפות של מסילות ושרשור ההארקה שחוברה, בהתאם להוראות היצרן.', exp:'חיבור ההארקה ורציפות התעלות נעשו באופן תקין ובהתאם להוראות היצרן.'},
+          {crit:'בדוק חיתוך סופי של המסילות, השלמת פקקים, העדר גרדים וחלקים בולטים.', exp:'החיתוכים ישרים ותקינים, בכל סוף מסילה הותקן פקק בהתאם לסוג החומר, אין גרדים וחלקים בולטים.'},
+          {crit:'בדוק קיום דיאגונלים בהתאם לתכנית הביצוע ובדוק את אופן חיווקם לשלד.', exp:'קיימים דיאגונלים מחוזקים בהתאם לתכנית הביצוע.'},
+          {crit:'בדוק עוגנים בהתאם לתכנית הביצוע ואת חיווקם.', exp:'העוגנים מותקנים בהתאם לתכנית הביצוע של החיווקים.'},
+          {crit:'בדוק את חיווק העוגנים, הידוק בורגי המהדקים, פיגול ג׳ידים בכבל המתיחה ודרגת מתיחתם בהתאם להנחיות הקונסטרוקטור.', exp:'העוגנים מחוזקים למבנה וכל בורגי המהדקים, הג׳ידים ודרגת המתיחה בהתאם להנחיות הקונסטרוקטור.'},
+        ]
+      },
+      {
+        id:'a2-conduit', title:'חיזוק מכאני – שלמות וחיווק מובילים AC-DC', items:[
+          {crit:'בדוק שתוואי המובילים תואם לתכנית הביצוע.', exp:'תוואי המובילים תואם לתכנית הביצוע.'},
+          {crit:'בדוק את התאמת סוג המוביל וחיווקו למקום ההתקנה ולשכנות הצפויה.', exp:'המוביל מתאים למקום ההתקנה.'},
+          {crit:'בדוק את שלמות המובילים, גלוון, רציפות בין חלקים, העדר עיוותים ופגיעות ושלמות המכסים והצמדתם.', exp:'המובילים שלמים, רציפים לכל אורכם, אין עיוותים ופגיעות, קיים גלוון מלא וכל המכסים שלמים ומקובעים היטב לתעלה.'},
+          {crit:'בדוק רציפות חשמלית בין חלקים מתחברים והארקתם לאדמה. וודא שפירוק מכסה לא יפגע ברציפות ההארקה לחלקים אחרים.', exp:'כל חלקי המוביל מחוזקים היטב להארקה וקיימת רציפות חשמלית גם לאחר פירוק מכסים.'},
+        ]
+      },
+      {
+        id:'a2-wires', title:'חיזוק מכאני – תקינות והתקנת כבלים AC-DC', items:[
+          {crit:'בדוק שחתך הכבלים תואם לתכנית הביצוע (התכנית החד-קווית).', exp:'חתך הכבלים תואם לתכנית הביצוע.'},
+          {crit:'בדוק את שלמות הכבלים והעדר פגיעות בבידוד.', exp:'לא קיימות פגיעות בבידוד הכבלים.'},
+          {crit:'בדוק שהכבלים מתוחים ותפוסים לתעלה במרחקים שווים ובאופן מסודר וללא הצלבות.', exp:'כל הכבלים תפוסים לתעלה בקטעים שווים וללא הצלבות.'},
+          {crit:'בדוק שבתוך המוביל קיימת הפרדה מלאה בין כבלי תקשורת לכבלי AC ו-DC.', exp:'לא קיים כל ערוב בין כבלים ממתח שונה וסוג שונה: תקשורת וחשמל, AC ו-DC.'},
+          {crit:'בדוק את התקנת הכבלים בהתאם לתקנות: הגנה מפגיעה מכאנית, שימוש בספירלת חוט והתאמה לגודל המבטח בראשית קו ההזנה.', exp:'לא קיימת סכנה לפגיעה מכאנית בכבלים, בכל המוליכים השזורים בשימוש ספירלת חוט ושטח חתך תואם לגודל המבטח.'},
+        ]
+      },
+      {
+        id:'a2-boxes', title:'חיזוק מכאני – קופסאות חשמל', items:[
+          {crit:'בדוק שהקופסאות ממוקמות בהתאם לתכנית ההצבה לביצוע.', exp:'קיימת התאמה עם סטייה בטווח של עד 1 מ׳.'},
+          {crit:'בדוק שכל בורגי החיזוק במקומם ומחוזקים היטב.', exp:'כל קופסאות החשמל מחוברות ויציבות במקומן.'},
+          {crit:'בדוק עיוותים הנובעים מחיזוק יתר או התקנה על מישור שאינו אחיד.', exp:'אין כל עיוות בקופסא והקופסא אינה מתעגלת.'},
+          {crit:'בדוק העדר חורים וסדקים; אנטיגרונים מהודקים היטב ומותקנים בקדח מתאים למידתם.', exp:'אין חורים וסדקים; האנטיגרונים מותקנים היטב ומהודקים בקדח מתאים למידתם.'},
+        ]
+      },
+      {
+        id:'a2-string', title:'חיזוק מכאני – שרשור כבילה בין הפנלים', items:[
+          {crit:'בדוק התאמה לתכנית ההצבה לביצוע. השווה בין חיצי הסימון בתכנית לשרשור בפועל.', exp:'קיימת התאמה מלאה.'},
+          {crit:'בדוק את חיבורי השרשורים ע״י התאמת המחברים והצמדתם המלאה; נסה למשוך מעט את הכבלים וזהה חופש תנועה חריג.', exp:'כל המחברים חוברו כראוי והחיבור יציב וחזק; אין חופש תנועה במשיכת הכבל.'},
+        ]
+      },
+      {
+        id:'a2-earthconn', title:'חיזוק מכאני – חיבור הארקות', items:[
+          {crit:'בדוק חיבור וישור הארקה בין הפנלים לקונסטרוקציה. וודא שימוש בשייבה משוננת וחיבור מובדל. בדוק רציפות במכשיר בין מסגרות הפנלים אל נקודות החיבור הראשיות.', exp:'חיבור וישור הארקה בין הפנלים לקונסטרוקציה עם שייבה משוננת וחיבור מובדל; קיימת רציפות ממסגרת הפנל לחיבור ההארקה הראשי של הקונסטרוקציה.'},
+          {crit:'בדוק חיבור הארקות לכל חלקי תעלות המבטח כולל המכסים. בתעלות בעלות חיבורים גלווניים בין החלקים ניתן לחבר מוליך הארקה בנקודה אחת.', exp:'כל חלקי המתכת מחוברים להארקה וקיימת רציפות חשמלית בין החלקים.'},
+          {crit:'בדוק את חיבור מוליך ההארקה לממיר בשתי נקודות: 1) פנימי עם כבל התחנה 2) חיצוני לגוף הממיר במוליך 16 ממ״ר. בצע בדיקת רציפות לפס ההשוואה בלוח האיזון.', exp:'קיימת רציפות חשמלית בין גוף הממיר לפס ההשוואה.'},
+          {crit:'בדיקת הארקה בלוח מונה: בדוק את חיבור מוליך ההארקה למונה ווודא ששטח חתך המוליך מתאים לגודל המפסק הראשי.', exp:'מוליך ההארקה מחובר בצורה תקינה ומחוזק היטב לפס ההשוואה; שטח חתך המוליך תואם לגודל המפסק הראשי.'},
+          {crit:'בדוק את חיבור כבלי ההארקה לפס״ח הראשי. בדוק חיזוק ברגים ואומים ואת הצמדת נעלי הכבל לפס. נסה להזיז את המוליך כדי לוודא חופש.', exp:'נעלי הכבל מהודקות היטב לפס ולא מתאפשרת הזזתן.'},
+          {crit:'בדוק את חיבור מוליכי ההארקה לשלד הקונסטרוקציה ווודא רציפות בין חלקי השלד בבדיקת רציפות.', exp:'המוליך מהודק היטב בבורג, אום ושייבה משוננת וקיימת רציפות מלאה בין חלקי השלד.'},
+        ]
+      },
+      {
+        id:'a2-clean', title:'חיזוק מכאני – בדיקת ניקיון בסיום התקנה', items:[
+          {crit:'וודא פינוי משטחים, קרטונים, לכלוך ושאריות התקנה מהגג.', exp:'הגג פנוי לחלוטין מציוד ושאריות התקנה ובוצע ניקיון ע״י הקבלן המבצע.'},
+          {crit:'בדוק את שלמות הגג ובחן והשווה נזקים לתיעוד ותמונות טרום התקנה.', exp:'הגג אינו פגוע כתוצאה מהתקנה וכל הפגיעות טופלו ותוקנו לשביעות רצון הלקוח.'},
+          {crit:'בדוק את ניקיון הפנלים.', exp:'הפנל נקי וללא שכבת אבק ולכלוך.'},
+          {crit:'בדוק ויזואלית שכל תעלות הכבלים נקיות מלכלוך וחלקי התקנה.', exp:'כל התעלות בגג נקיות לחלוטין מלכלוך ושאריות התקנה.'},
+        ]
+      },
+      {
+        id:'a2-comm', title:'חיזוק מכאני – מערכת תקשורת והפעלת הנייטור', items:[
+          {crit:'בדוק חיבורי התקשורת בין הממירים ליחידת התקשורת על פי התכנון.', exp:'חיבורי התקשורת על פי התכנון.'},
+          {crit:'בדוק המצאות כרטיסי תקשורת בכל הממירים.', exp:'בכל הממירים קיימים כרטיסי תקשורת.'},
+          {crit:'בדוק המצאות יחידת התקשורת המרכזית ונקודת רשת/ראוטר באזור התקשורת.', exp:'יחידת התקשורת ונקודות הרשת/ראוטר קיימות באזור התקשורת.'},
+        ]
+      },
+    ]
+  },
+  {
+    part: 'ב. בדיקות חשמליות',
+    note: 'הבדיקות החשמליות יבוצעו במכשירי מדידה שעברו כיול במעבדה מוסמכת בשנה האחרונה. טווח הסטייה של מכשירי המדידה לא יעלה על 2%.',
+    sections: [
+      {
+        id:'b1-earth', title:'צד DC – בדיקות הארקה (רציפות)', items:[
+          {crit:'רציפות הארקה לפנלים: בצע בדיקת רציפות חשמלית במד רציפות בין נקודת החיבור הראשית של ההארקה לקונסטרוקציה לבין נקודת החיבור של גישור ההארקה למסגרת הפנל.', exp:'חיווי רציפות מלאה במכשיר המדידה.'},
+          {crit:'רציפות הארקת התעלות: בצע בדיקת רציפות חשמלית במד רציפות ובחוט מאריך בין נקודת החיבור הראשית של ההארקה לתעלה לבין קטעי התעלה ולמכסים.', exp:'חיווי רציפות מלאה במכשיר המדידה.'},
+          {crit:'רציפות הארקת הממירים: בצע בדיקת רציפות חשמלית במד רציפות ובחוט מאריך בין נקודת החיבור הראשית של ההארקה לגוף הממיר לבין פס ההשוואה בלוח הממירים.', exp:'חיווי רציפות מלאה במכשיר המדידה.'},
+          {crit:'רציפות הארקה בין פס ההשוואה הראשי לקונסטרוקציה: בצע בדיקת רציפות חשמלית במד רציפות ובחוט מאריך בין פס ההשוואה הראשי לבין נקודות החיבור בפרטי הקונסטרוקציה.', exp:'חיווי רציפות מלאה במכשיר המדידה.'},
+        ]
+      },
+      {
+        id:'b1-iso', title:'צד DC – בדיקת בידוד מוליכים', items:[
+          {crit:'בצע בדיקת בידוד מוליכי DC במכשיר בודק בידוד במתח 1000V. הבדיקה תתבצע בלוח הסטרינגים כאשר כל המפסקים מנותקים והקו הנמדד אינו מחושמל. יש לבצע מדידה בין: פלוס והארקה, מינוס והארקה, ובין הפלוס והמינוס. אין לקבל תוצאה נמוכה מ-100MΩ.', exp:'תוצאה גבוהה מ-100MΩ.'},
+        ]
+      },
+      {
+        id:'b1-voc', title:'צד DC – מדידת מתח סטרינג בריקם', items:[
+          {crit:'בצע מדידת מתח DC לכל סטרינג כאשר כל המפסקים מנותקים והממיר מנותק. המדידה מבוצעת בכניסה להדקי המפסק. התוצאה צריכה להיות מקורבת למספר הפנלים בטור כפול מתח הריקם של פנל בודד (תלוי בתנאי הסביבה בזמן המדידה).', exp:'עפ״י תחום המתחים שיוגדר בתכנון המתקן; יוגדר במסמך בדיקות ספציפי.'},
+        ]
+      },
+      {
+        id:'b1-pol', title:'צד DC – בדיקת קוטביות לסטרינג', items:[
+          {crit:'בדוק את קוטביות הסטרינגים (פלוס/מינוס) בכל סטרינג.', exp:'קוטביות תקינה בכל הסטרינגים.'},
+        ]
+      },
+      {
+        id:'b1-isc', title:'צד DC – מדידת זרם קצר לסטרינג', items:[
+          {crit:'בצע מדידת זרם קצר (Isc) לכל סטרינג.', exp:'זרם קצר תקין ותואם למפרט הפנלים ולתנאי הסביבה.'},
+        ]
+      },
+      {
+        id:'b2-earth', title:'צד AC – הארקות', items:[
+          {crit:'בדיקת הארקה בלוח מונה: בצע בדיקה ב-LOOP-TESTER בין המפסק הראשי ובין פס ההשוואה הראשי; וודא שערך ההתנגדות המתקבל מתאים לגודל החיבור.', exp:'ערך ההתנגדות שווה או נמוך מהערך הרצוי לפי גודל הזרם במפסק הראשי.'},
+        ]
+      },
+      {
+        id:'b2-iso', title:'צד AC – בדיקת בידוד', items:[
+          {crit:'בצע בדיקת בידוד מוליכי AC במכשיר בודק בידוד במתח 500V. הבדיקה תתבצע בכל קווי החשמל במתח נמוך בין הפאזות לאדמה ובין האפס לאדמה. אין לקבל תוצאה נמוכה מ-3MΩ.', exp:'תוצאה גבוהה מ-3MΩ.'},
+        ]
+      },
+      {
+        id:'b2-switch', title:'צד AC – בדיקות ניתוק-חיבור מתקני חשמל', items:[
+          {crit:'בצע בדיקת הפעלה למפסקים ובדוק הפעלה נכונה בכל מצבי המפסק.', exp:'פעולת חיבור וניתוק תקינה.'},
+          {crit:'הפעל את מצב הבדיקה של כל מפסק ע״י לחיצה על לחצן TRIP ובדוק ניתוק והחזרה לפעולה.', exp:'פעולת חיבור וניתוק תקינה.'},
+        ]
+      },
+      {
+        id:'b2-meteo', title:'צד AC – בדיקת חיישנים במערכת מטאורולוגית', items:[
+          {crit:'בדוק תקינות התקנת החיישנים על פי הגדרות היצרן.', exp:'החיישנים מותקנים על פי הגדרות היצרן.'},
+        ]
+      },
+    ]
+  }
+];
+
+const partsContainer = document.getElementById('parts-container');
+let totalItems = 0;
+const itemPhotos = {}; // itemId -> [dataURL, ...]
+
+// כיווץ תמונה לפני שמירה (מקטין נפח לשליחה: עד 1280px, JPEG)
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1280;
+        let w = img.width, h = img.height;
+        if(w > MAX || h > MAX){ const s = MAX / Math.max(w, h); w = Math.round(w*s); h = Math.round(h*s); }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = reject;
+      img.src = r.result;
+    };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function renderThumbs(itemId, el){
+  const arr = itemPhotos[itemId] || [];
+  el.innerHTML = arr.map((d,i) =>
+    `<div class="photo-thumb"><img src="${d}" alt="תמונה ${i+1}"><button type="button" data-i="${i}" title="הסר תמונה">✕</button></div>`
+  ).join('');
+  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    arr.splice(+b.dataset.i, 1);
+    renderThumbs(itemId, el);
+  }));
+}
+
+PARTS.forEach(part => {
+  const ph = document.createElement('div');
+  ph.className = 'part-header';
+  ph.textContent = part.part;
+  partsContainer.appendChild(ph);
+  if(part.note){
+    const pn = document.createElement('div');
+    pn.className = 'part-note';
+    pn.textContent = part.note;
+    partsContainer.appendChild(pn);
+  }
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  part.sections.forEach((section, sIdx) => {
+    totalItems += section.items.length;
+    const sectionEl = document.createElement('div');
+    sectionEl.className = 'section';
+    sectionEl.dataset.sectionId = section.id;
+
+    const head = document.createElement('div');
+    head.className = 'section-head';
+    head.innerHTML = `<div class="section-title"><span class="chevron"></span>${section.title}</div>
+      <div class="section-count" data-count="${section.id}">0/${section.items.length}</div>`;
+    head.addEventListener('click', () => sectionEl.classList.toggle('open'));
+
+    const body = document.createElement('div');
+    body.className = 'section-body';
+
+    section.items.forEach((it, iIdx) => {
+      const itemId = `${section.id}-${iIdx}`;
+      const item = document.createElement('div');
+      item.className = 'item';
+      item.dataset.itemId = itemId;
+      item.dataset.status = '';
+      const expHtml = it.exp ? `<div class="item-exp"><b>תוצאה צפויה:</b> ${it.exp}</div>` : '';
+      item.innerHTML = `
+        <div class="item-top">
+          <div class="item-text"><span class="item-num">${iIdx + 1}.</span>${it.crit}</div>
+          <div class="status-group">
+            <button class="status-btn ok" data-status="ok" title="עבר">עבר</button>
+            <button class="status-btn bad" data-status="bad" title="נכשל">נכשל</button>
+            <button class="status-btn na" data-status="na" title="לא רלוונטי">לא רלוונטי</button>
+          </div>
+        </div>
+        ${expHtml}
+        <div class="item-note"><label>תוצאה מדודה / הערה</label>
+          <div class="note-row">
+            <input type="text" placeholder="ערך שנמדד או הערה (אופציונלי)">
+            <button type="button" class="photo-btn" title="צלם / צרף תמונה">📷</button>
+            <input type="file" class="photo-input" accept="image/*" capture="environment" multiple style="display:none">
+          </div>
+          <div class="photo-thumbs"></div>
+        </div>
+      `;
+      item.querySelectorAll('.status-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const status = btn.dataset.status;
+          const current = item.dataset.status;
+          item.dataset.status = current === status ? '' : status;
+          item.querySelectorAll('.status-btn').forEach(b => b.classList.toggle('active', b.dataset.status === item.dataset.status));
+          updateProgress();
+        });
+      });
+      // צילום/צירוף תמונות לסעיף
+      const photoBtn = item.querySelector('.photo-btn');
+      const photoInput = item.querySelector('.photo-input');
+      const thumbsEl = item.querySelector('.photo-thumbs');
+      photoBtn.addEventListener('click', () => photoInput.click());
+      photoInput.addEventListener('change', async () => {
+        const files = [...photoInput.files];
+        photoInput.value = '';
+        for(const f of files){
+          try {
+            const dataUrl = await compressImage(f);
+            if(!itemPhotos[itemId]) itemPhotos[itemId] = [];
+            itemPhotos[itemId].push(dataUrl);
+          } catch(e){ showToast('שגיאה בטעינת התמונה'); }
+        }
+        renderThumbs(itemId, thumbsEl);
+      });
+      body.appendChild(item);
+    });
+
+    sectionEl.appendChild(head);
+    sectionEl.appendChild(body);
+    card.appendChild(sectionEl);
+  });
+
+  partsContainer.appendChild(card);
+});
+
+// ריכוז - טוגלים
+const toggleState = {};
+document.querySelectorAll('.toggle-row').forEach(row => {
+  const key = row.dataset.toggle;
+  row.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = btn.dataset.val;
+      if(toggleState[key] === val){
+        toggleState[key] = null;
+        btn.classList.remove('active');
+      } else {
+        toggleState[key] = val;
+        row.querySelectorAll('.toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+      }
+    });
+  });
+});
+
+// ===== מיקום Waze =====
+let savedLocation = null; // {lat, lon, wazeUrl}
+const locResult = document.getElementById('loc-result');
+
+function showSavedLocation(lat, lon, sourceLabel){
+  const wazeUrl = `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`;
+  savedLocation = { lat, lon, wazeUrl };
+  locResult.innerHTML =
+    `<div class="coords">מיקום נשמר${sourceLabel ? ' (' + sourceLabel + ')' : ''}: ${(+lat).toFixed(6)}, ${(+lon).toFixed(6)}</div>` +
+    `<a href="${wazeUrl}" target="_blank" rel="noopener">🧭 פתח ניווט ב-Waze</a>` +
+    `<div class="loc-url-row">` +
+      `<input type="text" id="waze-url-box" readonly value="${wazeUrl}">` +
+      `<button type="button" id="waze-url-copy" title="העתק קישור">📋</button>` +
+    `</div>`;
+  document.getElementById('waze-url-copy').addEventListener('click', () => copyText(wazeUrl, 'הקישור הועתק'));
+  document.getElementById('waze-url-box').addEventListener('click', function(){ this.select(); });
+}
+
+document.getElementById('btn-location-manual-toggle').addEventListener('click', () => {
+  const box = document.getElementById('loc-manual-box');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+});
+
+function requestAutoLocation(btn, resetLabel){
+  if(!navigator.geolocation){
+    locResult.innerHTML = '<div class="err">הדפדפן אינו תומך באיתור מיקום. השתמש בהדבקת קישור ידנית למטה.</div>';
+    return;
+  }
+  const orig = btn.textContent;
+  btn.textContent = '⌛ מאתר מיקום...';
+  navigator.geolocation.getCurrentPosition(pos => {
+    btn.textContent = resetLabel || orig;
+    btn.classList.add('captured');
+    showSavedLocation(pos.coords.latitude.toFixed(6), pos.coords.longitude.toFixed(6), 'GPS');
+    showToast('מיקום נשמר');
+  }, err => {
+    btn.textContent = resetLabel || orig;
+    let msg = 'לא ניתן היה לאתר מיקום אוטומטית - נא לאשר הרשאת מיקום לדפדפן, ולנסות שוב. לחלופין השתמש בהדבקת קישור ידנית למטה.';
+    if(err.code === 1) msg = 'הגישה למיקום נדחתה. יש לאשר הרשאת מיקום לדפדפן בהגדרות הטלפון ולנסות שוב, או להשתמש בהדבקת קישור ידנית למטה.';
+    if(err.code === 3) msg = 'איתור המיקום ארך זמן רב מדי - נסה שוב, רצוי בשטח פתוח.';
+    locResult.innerHTML = `<div class="err">${msg}</div>`;
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+const secureLocBtn = document.getElementById('btn-location-secure');
+secureLocBtn.addEventListener('click', () => requestAutoLocation(secureLocBtn, '📍 תפוס מיקום נוכחי (חובה)'));
+
+// שמירת מיקום ידנית - הדבקת קישור/קואורדינטות שהועתקו מהאפליקציה (גיבוי אם ה-GPS האוטומטי לא זמין)
+document.getElementById('loc-manual-save').addEventListener('click', () => {
+  const raw = document.getElementById('loc-manual-input').value.trim();
+  if(!raw){ showToast('הדבק קודם קישור או קואורדינטות'); return; }
+  const coordMatch = raw.match(/(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+  let lat, lon;
+  if(coordMatch){
+    lat = coordMatch[1]; lon = coordMatch[2];
+  } else {
+    lat = ''; lon = '';
+  }
+  const wazeUrl = (coordMatch && !/waze\.com|google\.com|maps/i.test(raw))
+    ? `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`
+    : raw;
+  if(coordMatch){
+    showSavedLocation(lat, lon, 'ידני');
+  } else {
+    savedLocation = { lat: '', lon: '', wazeUrl };
+    locResult.innerHTML =
+      `<div class="coords">מיקום נשמר (ידני)</div>` +
+      `<a href="${wazeUrl}" target="_blank" rel="noopener">🧭 פתח ניווט ב-Waze</a>` +
+      `<div class="loc-url-row">` +
+        `<input type="text" id="waze-url-box" readonly value="${wazeUrl}">` +
+        `<button type="button" id="waze-url-copy" title="העתק קישור">📋</button>` +
+      `</div>`;
+    document.getElementById('waze-url-copy').addEventListener('click', () => copyText(wazeUrl, 'הקישור הועתק'));
+    document.getElementById('waze-url-box').addEventListener('click', function(){ this.select(); });
+  }
+  secureLocBtn.classList.add('captured');
+  document.getElementById('loc-manual-input').value = '';
+  showToast('המיקום נשמר');
+});
+
+function updateProgress(){
+  let ok=0, bad=0, na=0;
+  PARTS.forEach(part => part.sections.forEach(section => {
+    let sectionDone = 0;
+    section.items.forEach((_, iIdx) => {
+      const item = document.querySelector(`.item[data-item-id="${section.id}-${iIdx}"]`);
+      const st = item.dataset.status;
+      if(st === 'ok') ok++;
+      if(st === 'bad') bad++;
+      if(st === 'na') na++;
+      if(st) sectionDone++;
+    });
+    const countEl = document.querySelector(`.section-count[data-count="${section.id}"]`);
+    countEl.textContent = `${sectionDone}/${section.items.length}`;
+    countEl.classList.toggle('complete', sectionDone === section.items.length);
+  }));
+  const done = ok+bad+na;
+  document.getElementById('progress-label').textContent = `${done} מתוך ${totalItems} סעיפים נבדקו`;
+  document.getElementById('fill-ok').style.width = (((ok+na)/totalItems)*100) + '%';
+  document.getElementById('fill-bad').style.width = ((bad/totalItems)*100) + '%';
+  const badgeEl = document.getElementById('badge-issues');
+  document.getElementById('issues-count').textContent = bad;
+  badgeEl.classList.toggle('show', bad > 0);
+}
+updateProgress();
+
+document.querySelectorAll('.verdict-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.verdict-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if(!confirm('לאפס את כל הבדיקה? כל הנתונים שהוזנו יימחקו.')) return;
+  document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+  document.querySelectorAll('.item').forEach(item => {
+    item.dataset.status = '';
+    item.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+  });
+  Object.keys(itemPhotos).forEach(k => delete itemPhotos[k]);
+  document.querySelectorAll('.photo-thumbs').forEach(e => e.innerHTML = '');
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  Object.keys(toggleState).forEach(k => toggleState[k] = null);
+  document.querySelectorAll('.verdict-btn').forEach(b => b.classList.remove('active'));
+  savedLocation = null;
+  locResult.innerHTML = '';
+  locBtn.textContent = '📍 שמירת מיקום ל-Waze';
+  locBtn.classList.remove('captured');
+  updateProgress();
+  showToast('הטופס אופס');
+});
+
+function buildSummaryText(){
+  const statusLabel = {ok:'עבר ✔', bad:'נכשל ✖', na:'לא רלוונטי –', '':'לא נבדק'};
+  let lines = [];
+  lines.push('נוהל בדיקות Off Grid - טופס בדיקות למערכת PV | מאורות - כל האנרגיה בשבילך');
+  lines.push('==============================================');
+  lines.push(`שם ומספר הפרוייקט: ${document.getElementById('gen-project').value || '-'}`);
+  lines.push(`תאריך הבדיקה: ${document.getElementById('gen-date').value || '-'}`);
+  lines.push(`מנהל הבדיקה: ${document.getElementById('gen-manager').value || '-'}`);
+  lines.push(`הקבלן המבצע: ${document.getElementById('gen-contractor').value || '-'}`);
+  lines.push(`מיקום (Waze): ${savedLocation ? savedLocation.wazeUrl : '-'}`);
+  lines.push('');
+  lines.push('ריכוז בדיקות (OFF-GRID):');
+  lines.push(`  תוכניות סטרינגים: ${toggleState['strings'] || '-'}`);
+  lines.push(`  צילום רחפן גובה 30 מטר: ${toggleState['drone'] || '-'}`);
+  lines.push(`  תקשורת אינטרנט: ${toggleState['internet'] || '-'}`);
+  lines.push(`  סוג התקשורת: ${toggleState['commtype'] || '-'}`);
+  lines.push('');
+
+  PARTS.forEach(part => {
+    lines.push('### ' + part.part);
+    part.sections.forEach(section => {
+      lines.push('— ' + section.title);
+      section.items.forEach((it, iIdx) => {
+        const item = document.querySelector(`.item[data-item-id="${section.id}-${iIdx}"]`);
+        const note = item.querySelector('.item-note input').value;
+        let line = `  [${statusLabel[item.dataset.status]}] ${it.crit}`;
+        if(note) line += ` | תוצאה מדודה: ${note}`;
+        const nPhotos = (itemPhotos[`${section.id}-${iIdx}`] || []).length;
+        if(nPhotos) line += ` | תמונות מצורפות: ${nPhotos}`;
+        lines.push(line);
+      });
+    });
+    lines.push('');
+  });
+
+  lines.push('סיכום ומסקנות');
+  lines.push(`הערות כלליות: ${document.getElementById('summary-notes').value || '-'}`);
+  const verdictBtn = document.querySelector('.verdict-btn.active');
+  lines.push(`מסקנה: ${verdictBtn ? verdictBtn.textContent.trim() : 'לא נקבע'}`);
+  lines.push(`נבדק ע"י: ${document.getElementById('signoff-name').value || '-'}   תאריך: ${document.getElementById('signoff-date').value || '-'}`);
+  return lines.join('\n');
+}
+
+function copyText(text, okMsg){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(() => { if(okMsg) showToast(okMsg); }).catch(() => fallbackCopy(text, okMsg));
+  } else { fallbackCopy(text, okMsg); }
+}
+
+document.getElementById('btn-copy').addEventListener('click', () => {
+  copyText(buildSummaryText(), 'הסיכום הועתק ללוח');
+});
+
+// שליחת הדוח למיילים הקבועים
+// כתובות הנמענים - לתצוגה ולגיבוי הידני. השליחה האוטומטית נשלטת ע"י הזרימה ב-Power Automate.
+const REPORT_RECIPIENTS = ['dror@menergy.co.il', 'eng@menergy.co.il', 'Tiful@menergy.co.il'];
+const LOGO_SVG = '<svg width="54" height="54" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+  '<path d="M96 30 A46 46 0 1 0 104 66" stroke="#f5a623" stroke-width="5" stroke-linecap="round"/>' +
+  '<path d="M86 34 A36 36 0 1 0 94 58" stroke="#f7a81e" stroke-width="10" stroke-linecap="round"/>' +
+  '<path d="M70 54 L104 22" stroke="#2f6fb0" stroke-width="10" stroke-linecap="round"/>' +
+  '<path d="M88 20 L106 20 L106 38" stroke="#2f6fb0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+  '<path d="M42 74 L54 60 L64 68 L82 44" stroke="#1f9ed6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+  '<path d="M42 82 L74 82" stroke="#f7a81e" stroke-width="7" stroke-linecap="round"/></svg>';
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// בונה מסמך דוח מעוצב (HTML) להמרה ל-PDF
+function buildReportElement(){
+  const statusLabel = {ok:'עבר', bad:'נכשל', na:'לא רלוונטי', '':'—'};
+  const statusColor = {ok:'#1f8a4c', bad:'#c23b3b', na:'#8a8f98', '':'#b3bcc4'};
+  const g = id => esc(document.getElementById(id).value) || '—';
+  const verdictBtn = document.querySelector('.verdict-btn.active');
+  const verdict = verdictBtn ? verdictBtn.textContent.trim() : 'לא נקבע';
+
+  const el = document.createElement('div');
+  el.style.cssText = 'direction:rtl;font-family:Rubik,Arial,sans-serif;color:#1c2a33;background:#fff;width:770px;padding:26px 26px 30px;box-sizing:border-box;';
+
+  let h = '';
+  h += '<div style="display:flex;align-items:center;gap:12px;border-bottom:3px solid #f7a81e;padding-bottom:12px;margin-bottom:16px;">' +
+       LOGO_SVG +
+       '<div style="line-height:1.1;"><div style="font-size:28px;font-weight:900;color:#1f9ed6;">מאורות</div>' +
+       '<div style="font-size:12px;font-weight:500;color:#45bfe8;">כל האנרגיה בשבילך</div></div>' +
+       '<div style="margin-right:auto;text-align:left;font-size:13px;font-weight:700;color:#157fb8;line-height:1.4;">נוהל בדיקות Off Grid<br>טופס בדיקות למערכת PV</div></div>';
+
+  // פרטי פרויקט
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px;">' +
+       '<tr><td style="padding:4px 6px;background:#e7f4fb;font-weight:700;width:130px;">שם ומספר הפרוייקט</td><td style="padding:4px 6px;">'+g('gen-project')+'</td>' +
+       '<td style="padding:4px 6px;background:#e7f4fb;font-weight:700;width:110px;">תאריך הבדיקה</td><td style="padding:4px 6px;">'+g('gen-date')+'</td></tr>' +
+       '<tr><td style="padding:4px 6px;background:#e7f4fb;font-weight:700;">מנהל הבדיקה</td><td style="padding:4px 6px;">'+g('gen-manager')+'</td>' +
+       '<td style="padding:4px 6px;background:#e7f4fb;font-weight:700;">הקבלן המבצע</td><td style="padding:4px 6px;">'+g('gen-contractor')+'</td></tr>' +
+       '<tr><td style="padding:4px 6px;background:#e7f4fb;font-weight:700;">מיקום (Waze)</td><td style="padding:4px 6px;" colspan="3">'+(savedLocation?esc(savedLocation.wazeUrl):'—')+'</td></tr>' +
+       '</table>';
+
+  // ריכוז
+  h += '<div style="font-size:12.5px;margin-bottom:14px;background:#f2f7fb;border-radius:6px;padding:8px 10px;">' +
+       '<b style="color:#157fb8;">ריכוז בדיקות:</b> ' +
+       'תוכניות סטרינגים: '+(toggleState['strings']||'—')+' &nbsp;|&nbsp; ' +
+       'צילום רחפן 30מ׳: '+(toggleState['drone']||'—')+' &nbsp;|&nbsp; ' +
+       'תקשורת אינטרנט: '+(toggleState['internet']||'—')+' &nbsp;|&nbsp; ' +
+       'סוג תקשורת: '+(toggleState['commtype']||'—')+'</div>';
+
+  // סעיפים
+  PARTS.forEach(part => {
+    h += '<div style="font-size:15px;font-weight:700;color:#157fb8;border-right:4px solid #f7a81e;padding:4px 8px;margin:14px 0 6px;">'+esc(part.part)+'</div>';
+    part.sections.forEach(section => {
+      h += '<div style="font-size:13px;font-weight:700;background:#eaf5fc;padding:4px 8px;margin-top:8px;">'+esc(section.title)+'</div>';
+      h += '<table style="width:100%;border-collapse:collapse;font-size:11.5px;">';
+      section.items.forEach((it,iIdx) => {
+        const item = document.querySelector('.item[data-item-id="'+section.id+'-'+iIdx+'"]');
+        const st = item.dataset.status;
+        const note = esc(item.querySelector('.item-note input').value);
+        const photos = itemPhotos[section.id+'-'+iIdx] || [];
+        const photosHtml = photos.length
+          ? '<div style="margin-top:5px;">' + photos.map(d =>
+              '<img src="'+d+'" style="width:175px;max-width:100%;border-radius:6px;border:1px solid #dfe8ef;margin:3px 0 3px 6px;vertical-align:top;">'
+            ).join('') + '</div>'
+          : '';
+        h += '<tr style="border-bottom:1px solid #eee;">' +
+             '<td style="padding:4px 6px;vertical-align:top;">'+esc(it.crit)+
+             (note?'<div style="color:#557;font-size:10.5px;margin-top:2px;">תוצאה מדודה: '+note+'</div>':'')+
+             photosHtml+'</td>' +
+             '<td style="padding:4px 6px;text-align:center;width:74px;vertical-align:top;font-weight:700;color:'+statusColor[st]+';white-space:nowrap;">'+statusLabel[st]+'</td></tr>';
+      });
+      h += '</table>';
+    });
+  });
+
+  // סיכום
+  h += '<div style="margin-top:16px;border-top:2px solid #dfe8ef;padding-top:10px;font-size:12.5px;">' +
+       '<div style="font-size:14px;font-weight:700;color:#157fb8;margin-bottom:6px;">סיכום ומסקנות</div>' +
+       '<div style="margin-bottom:6px;"><b>הערות כלליות:</b> '+g('summary-notes')+'</div>' +
+       '<div style="margin-bottom:6px;"><b>מסקנה:</b> '+esc(verdict)+'</div>' +
+       '<div style="display:flex;gap:30px;margin-top:8px;"><div><b>שם וחתימת הבודק:</b> '+g('signoff-name')+'</div>' +
+       '<div><b>תאריך:</b> '+g('signoff-date')+'</div></div></div>';
+
+  el.innerHTML = h;
+  return el;
+}
+
+// ====== הגדרת שליחה אוטומטית ======
+// הדבק כאן את כתובת ה-Webhook מ-Power Automate (טריגר "When a HTTP request is received").
+// כל עוד הערך ריק - הטופס יחזור לשליחה ידנית (העתקת דוח + פתיחת מייל).
+const WEBHOOK_URL = 'https://default9ba4263adca04fee98142848345ecd.30.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/e4c4f37ea7eb4e6d9a63c2ffb49b56ce/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=OGhLpvnqff-MqA-ll488mhHe9cqCOCLJHRjh1GRCitY';
+
+// בונה מסמך HTML עצמאי מלא של הדוח (לשליחה לשרת שיהפוך אותו ל-PDF)
+function buildReportHTML(){
+  const el = buildReportElement();
+  return '<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">' +
+    '<style>body{margin:0;} *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style>' +
+    '</head><body>' + el.outerHTML + '</body></html>';
+}
+
+// שליחה ידנית (גיבוי): העתקת הדוח + פתיחת מייל קצר לשלושת הנמענים
+function manualSendFallback(subject, project){
+  copyText(buildSummaryText(), null);
+  const body =
+    'שלום,\n\nמצורף דוח בדיקות Off Grid (' + project + ').\n\n' +
+    '======================================\n' +
+    'הדוח המלא הועתק ללוח.\n' +
+    'יש להדביק אותו כאן בגוף ההודעה (הדבקה / Ctrl+V) לפני השליחה.\n' +
+    '======================================';
+  const mailto = 'mailto:' + REPORT_RECIPIENTS.join(',') +
+    '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  const m = document.createElement('a'); m.href = mailto;
+  document.body.appendChild(m); m.click(); setTimeout(()=>m.remove(),100);
+  showToast('הדוח הועתק ללוח ונפתח מייל — הדבק אותו בגוף ההודעה');
+}
+
+document.getElementById('btn-send-email').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-send-email');
+
+  // חובה: לא ניתן לשלוח דוח ללא תפיסת מיקום הפרויקט
+  if(!savedLocation){
+    showToast('יש ללכוד את מיקום הפרויקט לפני שליחת הדוח');
+    const locBlock = document.querySelector('.loc-block');
+    if(locBlock) locBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    secureLocBtn.classList.add('needs-attention');
+    setTimeout(() => secureLocBtn.classList.remove('needs-attention'), 1600);
+    return;
+  }
+
+  const project = document.getElementById('gen-project').value || 'ללא שם';
+  const date = document.getElementById('gen-date').value || '';
+  const subject = 'דוח בדיקות Off Grid - ' + project + (date ? ' - ' + date : '');
+  const filename = 'דוח בדיקות Off Grid - ' + project + '.pdf';
+
+  // ללא Webhook מוגדר: שליחה ידנית
+  if(!WEBHOOK_URL){
+    manualSendFallback(subject, project);
+    return;
+  }
+
+  // עם Webhook: שליחה אוטומטית מלאה דרך Power Automate
+  const orig = btn.textContent;
+  btn.textContent = '⌛ שולח דוח...'; btn.disabled = true;
+  try {
+    const verdictBtnEl = document.querySelector('.verdict-btn.active');
+    const payload = {
+      subject: subject,
+      filename: filename,
+      recipients: REPORT_RECIPIENTS.join(';'),
+      project: project,
+      date: date,
+      inspector: document.getElementById('signoff-name').value || '',
+      verdict: verdictBtnEl ? verdictBtnEl.textContent.trim() : 'לא נקבע',
+      html: buildReportHTML()
+    };
+    // mode:no-cors + text/plain: מונע preflight ו-CORS מול Power Automate.
+    // התגובה "אטומה" ולא ניתנת לקריאה - לכן אם אין שגיאת רשת מניחים שהשליחה הצליחה.
+    await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload)
+    });
+    showToast('✔ הדוח נשלח לשלושת הנמענים');
+  } catch(e){
+    // שגיאת רשת אמיתית (אין אינטרנט / כתובת שגויה) - גיבוי ידני
+    showToast('שליחה אוטומטית נכשלה — עוברים לשליחה ידנית');
+    manualSendFallback(subject, project);
+  } finally {
+    btn.textContent = orig; btn.disabled = false;
+  }
+});
+
+function fallbackCopy(text, okMsg){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); if(okMsg) showToast(okMsg); }
+  catch(e){ showToast('שגיאה בהעתקה'); }
+  document.body.removeChild(ta);
+}
+
+// ===== רישום Service Worker - נדרש כדי שהתקנה למסך הבית תראה את האייקון האמיתי =====
+// ותפתח במסך מלא (בלי תג דפדפן). עובד רק בכתובת https אמיתית.
+if('serviceWorker' in navigator && location.protocol === 'https:'){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
