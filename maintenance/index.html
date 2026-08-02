@@ -252,8 +252,6 @@
 <div class="bar">
   <button class="btn send" onclick="sendReport()">📤 שליחת דו"ח</button>
   <button class="btn primary" onclick="makePDF()">יצירת דוח PDF</button>
-  <button class="btn" onclick="exportJSON()">ייצוא נתונים (JSON)</button>
-  <button class="btn ghost" onclick="importJSON()">טעינת נתונים</button>
   <button class="btn ghost" onclick="clearForm()">ניקוי הטופס</button>
 </div>
 
@@ -634,66 +632,6 @@ function makePDF(){
 }
 
 /* ---------- JSON ---------- */
-function exportJSON(){
-  const out={form:'דו"ח תחזוקה שנתית למערכת סולארית - 2026',exportedAt:new Date().toISOString(),answers:{},photos:{}};
-  SCHEMA.forEach(f=>{
-    if(f.t==='file') out.photos[f.id]={label:f.q,images:files[f.id]||[]};
-    else if(f.t==='grid') out.answers[f.id]={label:f.q,rows:f.rows.map((r,i)=>({item:r,status:(data[f.id]||[])[i]||null}))};
-    else out.answers[f.id]={label:f.q,value:data[f.id]??null};
-    if(f.t==='geo') out.answers[f.id].coords=data.wazeCoords||null;
-  });
-  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='solar-maintenance-'+(data.date||'draft')+'.json';
-  a.click(); URL.revokeObjectURL(a.href);
-  toast('הנתונים יוצאו לקובץ JSON');
-}
-function importJSON(){document.getElementById('jsonPick').click();}
-document.getElementById('jsonPick').onchange=e=>{
-  const f=e.target.files[0]; if(!f)return;
-  const fr=new FileReader();
-  fr.onload=()=>{
-    try{ apply(JSON.parse(fr.result)); toast('הנתונים נטענו'); }
-    catch(err){ toast('קובץ לא תקין'); }
-  };
-  fr.readAsText(f); e.target.value='';
-};
-function apply(j){
-  SCHEMA.forEach(f=>{
-    const c=document.getElementById('card-'+f.id);
-    if(f.t==='file'){
-      const p=j.photos&&j.photos[f.id];
-      files[f.id]=p&&p.images?p.images:[];
-      c._render&&c._render();
-    } else if(f.t==='grid'){
-      const a=j.answers&&j.answers[f.id];
-      if(!a)return;
-      data[f.id]=a.rows.map(r=>r.status|| (f.mode==='radio'?'':[]));
-      a.rows.forEach((r,i)=>{
-        const vals=Array.isArray(r.status)?r.status:(r.status?[r.status]:[]);
-        c.querySelectorAll(`input[name="${f.id}_${i}"]`).forEach(inp=>{
-          inp.checked=vals.includes(inp.dataset.v);
-          if(inp.checked)inp.dispatchEvent(new Event('change'));
-        });
-      });
-    } else {
-      const a=j.answers&&j.answers[f.id];
-      if(!a)return;
-      data[f.id]=a.value;
-      if(f.t==='text'||f.t==='geo'){const i=c.querySelector('input');i.value=a.value||'';if(a.coords){data.wazeCoords=a.coords;const cd=c.querySelector('.geo-coord');if(cd)cd.textContent='קואורדינטות: '+a.coords;}}
-      else{
-        (a.value||[]).forEach(v=>{
-          const b=[...c.querySelectorAll('input[type=checkbox]')].find(x=>x.dataset.v===v);
-          if(b)b.checked=true;
-          else{const ob=c.querySelector('input[data-other]');const ot=c.querySelector('.other-in');
-               if(ob){ob.checked=true;if(ot){ot.disabled=false;ot.value=v;}}}
-        });
-      }
-    }
-  });
-  tick();
-}
 function clearForm(){
   if(!confirm('לנקות את כל התשובות בטופס?'))return;
   location.reload();
@@ -816,8 +754,6 @@ async function saveToCloud(){
 /* ---------- send report by e-mail ---------- */
 const REPORT_EMAIL = 'office@menergy.co.il';
 
-/* שליחה אוטומטית מלאה — למילוי אחרי פתיחת חשבון EmailJS (ראה הסבר בתשובה) */
-const EMAILJS = { enabled:false, serviceId:'', templateId:'', publicKey:'' };
 
 function reportFileName(){
   return 'דוח-תחזוקה-' + (data.client||'אתר').replace(/[\\/:*?"<>|]/g,'-') + '-' + (data.date||'') ;
@@ -867,57 +803,39 @@ function dl(blob,name){
 async function sendReport(){
   if(!validate())return;
   buildReport();
-  const blob=reportFileBlob(), name=reportFileName()+'.html';
 
-  /* 0 — שמירה בענן (מאגר Supabase) */
-  const btn=document.querySelector('.btn.send');
-  if(btn){btn.disabled=true;btn.textContent='שולח…';}
+  const btn = document.querySelector('.btn.send');
+  const setBtn = (txt, dis) => { if(btn){ btn.textContent = txt; btn.disabled = !!dis; } };
+  setBtn('שולח…', true);
+
+  let id = null;
   try{
-    const id=await saveToCloud();
-    toast('הדוח נשמר בענן ✓');
-    console.log('report saved',id);
+    id = await saveToCloud();
   }catch(e){
     console.error(e);
-    alert('שמירה בענן נכשלה.\n\n' + (e.message||e) + '\n\nהדוח יישלח בדרך הרגילה. צלם הודעה זו ושלח למפתח.');
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent='📤 שליחת דו"ח';}
+    setBtn('📤 שליחת דו"ח', false);
+    alert('שמירת הדוח נכשלה.\n\n' + (e.message || e) + '\n\nבדוק חיבור לאינטרנט ונסה שוב.');
+    return;
   }
 
-  /* 1 — שליחה אוטומטית דרך EmailJS, אם הוגדר */
-  if(EMAILJS.enabled){
-    try{
-      toast('שולח את הדוח…');
-      if(!window.emailjs){
-        await new Promise((ok,no)=>{const sc=document.createElement('script');
-          sc.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-          sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});
-        emailjs.init({publicKey:EMAILJS.publicKey});
-      }
-      await emailjs.send(EMAILJS.serviceId,EMAILJS.templateId,{
-        to_email:REPORT_EMAIL, subject:reportSubject(),
-        message:reportBodyText(), report_html:await blob.text()
-      });
-      toast('הדוח נשלח ל-'+REPORT_EMAIL);
-      return;
-    }catch(e){ toast('השליחה האוטומטית נכשלה — עובר לשליחה דרך תוכנת הדואר'); }
-  }
-
-  /* 2 — נייד: תפריט שיתוף מערכתי עם הקובץ מצורף */
   try{
-    const file=new File([blob],name,{type:'text/html'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:reportSubject(),text:reportBodyText()});
-      toast('בחר ביישום הדואר ושלח אל '+REPORT_EMAIL);
-      return;
-    }
-  }catch(e){ if(e&&e.name==='AbortError') return; }
-
-  /* 3 — מחשב: הורדת הקובץ + פתיחת הודעת דואר מוכנה */
-  dl(blob,name);
-  const mailto='mailto:'+REPORT_EMAIL+'?subject='+encodeURIComponent(reportSubject())
-              +'&body='+encodeURIComponent(reportBodyText()+'\n\n(יש לצרף את הקובץ "'+name+'" שהורד זה עתה)');
-  window.location.href=mailto;
-  toast('הקובץ ירד — צרף אותו להודעה שנפתחה');
+    toast('שולח את הדוח למשרד…');
+    const r = await fetch(SUPABASE.url + '/functions/v1/send-report', {
+      method: 'POST',
+      headers: sbHeaders({'Content-Type': 'application/json'}),
+      body: JSON.stringify({id: id})
+    });
+    const txt = await r.text();
+    if(!r.ok) throw new Error('(' + r.status + ') ' + txt.slice(0,200));
+    setBtn('✓ נשלח', true);
+    toast('הדוח נשלח אל ' + REPORT_EMAIL);
+    setTimeout(()=>setBtn('📤 שליחת דו"ח', false), 4000);
+  }catch(e){
+    console.error(e);
+    setBtn('📤 שליחת דו"ח', false);
+    alert('הדוח נשמר בהצלחה במאגר, אך שליחת המייל נכשלה.\n\n' + (e.message || e) +
+          '\n\nהדוח לא אבד — הוא שמור ואפשר לשלוח אותו מהמשרד.');
+  }
 }
 
 /* ---------- biometric lock (WebAuthn) ---------- */
