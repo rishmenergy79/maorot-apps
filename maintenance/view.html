@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>צפייה בדוח תחזוקה — מאורות</title>
+<style>
+  :root{
+    --brand:#1a7fb0; --brand-2:#2ba2da; --brand-dp:#0e5c82;
+    --accent:#f7941e; --accent-2:#fbb812;
+    --ink:#1f2733; --muted:#68738a; --line:#dde3ea; --bg:#eef1f5; --bad:#c0392b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Segoe UI',Arial,'Noto Sans Hebrew',sans-serif;
+    display:flex; flex-direction:column;
+  }
+  .bar{
+    background:#fff; border-bottom:1px solid var(--line); flex:none;
+    box-shadow:0 1px 3px rgba(16,32,60,.06);
+  }
+  .band{height:6px;background:linear-gradient(90deg,var(--brand-2) 45%,var(--accent) 75%,var(--accent-2))}
+  .bar .in{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:10px 16px; max-width:1000px; margin:0 auto; width:100%;
+  }
+  .bar h1{margin:0;font-size:16px;color:var(--brand-dp);flex:1;min-width:180px}
+  .bar button{
+    padding:8px 15px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    color:var(--brand-2);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;
+  }
+  .bar button.primary{background:var(--brand-dp);border-color:var(--brand-dp);color:#fff}
+  .bar button:active{transform:translateY(1px)}
+
+  #stage{flex:1;display:flex;flex-direction:column;padding:14px;max-width:1000px;margin:0 auto;width:100%}
+  iframe{
+    flex:1;width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:70vh;
+  }
+  .msg{
+    background:#fff;border-radius:12px;padding:26px;text-align:center;margin:auto;max-width:460px;
+    box-shadow:0 1px 3px rgba(16,32,60,.08),0 6px 18px rgba(16,32,60,.06);
+  }
+  .msg h2{margin:0 0 8px;font-size:17px;color:var(--brand-dp)}
+  .msg p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+  .msg.err h2{color:var(--bad)}
+  .spin{
+    width:34px;height:34px;margin:0 auto 14px;border-radius:50%;
+    border:3px solid var(--line);border-top-color:var(--brand-2);
+    animation:sp .8s linear infinite;
+  }
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media print{ .bar{display:none} #stage{padding:0;max-width:none} iframe{border:none;border-radius:0} }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="band"></div>
+  <div class="in">
+    <h1>דו"ח תחזוקה שנתית למערכת סולארית</h1>
+    <button class="primary" onclick="printReport()">הדפסה / שמירה כ-PDF</button>
+    <button onclick="openRaw()">פתיחה בחלון חדש</button>
+  </div>
+</div>
+
+<div id="stage">
+  <div class="msg" id="msg">
+    <div class="spin"></div>
+    <h2>טוען את הדוח…</h2>
+    <p>מוריד את הקובץ מהמאגר. בדוחות עם תמונות רבות זה עשוי לקחת כמה שניות.</p>
+  </div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const src   = decodeURIComponent(location.hash.slice(1));
+let frame   = null;
+
+function fail(title, detail){
+  stage.innerHTML =
+    '<div class="msg err"><h2>' + title + '</h2><p>' + detail + '</p></div>';
+}
+function printReport(){
+  if(frame && frame.contentWindow){ frame.contentWindow.focus(); frame.contentWindow.print(); }
+  else window.print();
+}
+function openRaw(){
+  if(src) window.open(src, '_blank');
+}
+
+(async () => {
+  if(!src || !/^https?:\/\//.test(src)){
+    fail('הקישור אינו תקין', 'נראה שהקישור נחתך בהעתקה. פתח אותו ישירות מתוך הודעת הדואר.');
+    return;
+  }
+  try{
+    const r = await fetch(src);
+    if(!r.ok) throw new Error('שגיאה ' + r.status);
+    const html = await r.text();
+    if(!html || html.length < 200) throw new Error('הקובץ ריק');
+
+    stage.innerHTML = '';
+    frame = document.createElement('iframe');
+    frame.setAttribute('title', 'דוח תחזוקה');
+    frame.setAttribute('sandbox', 'allow-same-origin allow-modals allow-popups');
+    frame.srcdoc = html;
+    stage.appendChild(frame);
+  }catch(e){
+    fail('לא ניתן להציג את הדוח',
+      (String(e.message||e)) +
+      '<br><br>ייתכן שתוקף הקישור פג, או שאין חיבור לאינטרנט. ' +
+      'אפשר לנסות "פתיחה בחלון חדש" למעלה.');
+  }
+})();
+</script>
+</body>
+</html>
