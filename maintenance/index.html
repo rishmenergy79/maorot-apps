@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>דו"ח תחזוקה שנתית למערכת סולארית - 2026</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e5c82">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="תחזוקה סולארית">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
 <style>
   :root{
     --bg:#eef1f5;
@@ -692,6 +699,120 @@ function clearForm(){
   location.reload();
 }
 
+/* ---------- Supabase: שמירת הדוח בענן ---------- */
+const APP_VERSION = '2026.08.02';
+const SUPABASE = {
+  url:    'https://yajugfebxmehsiegoutp.supabase.co',
+  key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
+  bucket: 'maintenance-reports',
+  table:  'maintenance_reports'
+};
+
+function sbHeaders(extra){
+  return Object.assign({
+    'apikey': SUPABASE.key,
+    'Authorization': 'Bearer ' + SUPABASE.key
+  }, extra || {});
+}
+function dataUrlToBlob(u){
+  const [head, b64] = u.split(',');
+  const mime = (head.match(/:(.*?);/) || [,'application/octet-stream'])[1];
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: mime});
+}
+async function sbUpload(path, blob){
+  const r = await fetch(SUPABASE.url + '/storage/v1/object/' + SUPABASE.bucket + '/' + path, {
+    method: 'POST',
+    headers: sbHeaders({'Content-Type': blob.type || 'application/octet-stream'}),
+    body: blob
+  });
+  if(!r.ok) throw new Error('העלאת קובץ נכשלה (' + r.status + '): ' + (await r.text()).slice(0,180));
+  return path;
+}
+function collectFaults(){
+  const out = [];
+  SCHEMA.filter(f => f.t === 'grid').forEach(f => {
+    f.rows.forEach((r, i) => {
+      const v  = (data[f.id] || [])[i];
+      const st = Array.isArray(v) ? v.join(' + ') : v;
+      if (st && st.indexOf('לא תקין') > -1) out.push({section: f.q, item: r, status: st});
+    });
+  });
+  return out;
+}
+function collectSections(){
+  const out = {};
+  SCHEMA.filter(f => f.t === 'grid').forEach(f => {
+    out[f.id] = {title: f.q, rows: f.rows.map((r, i) => ({item: r, status: (data[f.id] || [])[i] || null}))};
+  });
+  out.fanClean = {title: 'ניקוי מאווררים', value: data.fanClean || []};
+  return out;
+}
+function joinVal(v){ return Array.isArray(v) ? v.join(', ') : (v || null); }
+
+async function saveToCloud(){
+  const id = (crypto.randomUUID ? crypto.randomUUID()
+              : Date.now() + '-' + Math.floor(performance.now()));
+  const base = 'reports/' + (data.date || 'no-date') + '/' + id;
+
+  // 1 — תמונות
+  const photos = {}; let n = 0, total = 0;
+  SCHEMA.filter(f => f.t === 'file').forEach(f => total += (files[f.id] || []).length);
+  for (const f of SCHEMA.filter(f => f.t === 'file')) {
+    const list = files[f.id] || [];
+    photos[f.id] = [];
+    for (let i = 0; i < list.length; i++) {
+      const blob = dataUrlToBlob(list[i].dataUrl);
+      const path = base + '/' + f.id + '-' + (i + 1) + '.jpg';
+      await sbUpload(path, blob);
+      photos[f.id].push({label: f.q, path: path});
+      n++; toast('מעלה תמונות… ' + n + ' מתוך ' + total);
+    }
+  }
+
+  // 2 — קובץ הדוח המלא
+  toast('שומר את הדוח…');
+  const reportPath = base + '/report.html';
+  await sbUpload(reportPath, reportFileBlob());
+
+  // 3 — שורת הנתונים
+  const faults = collectFaults();
+  const row = {
+    id: id,
+    inspection_date: data.date || null,
+    inspector:       data.inspector || null,
+    portal_site:     data.portalSite || null,
+    client_name:     data.client || null,
+    site_location:   data.siteLocation || null,
+    waze_link:       data.wazeLink || null,
+    waze_coords:     data.wazeCoords || null,
+    roof_access:     data.roofAccess || null,
+    inverter_type:   joinVal(data.inverterType),
+    inverter_qty:    data.inverterQty || null,
+    inverter_model:  data.inverterModel || null,
+    panel_type:      joinVal(data.panelType),
+    panel_power:     data.panelPower || null,
+    panel_count:     data.panelCount || null,
+    fan_clean:       joinVal(data.fanClean),
+    sections:        collectSections(),
+    faults:          faults,
+    faults_count:    faults.length,
+    photos:          photos,
+    photos_count:    total,
+    report_path:     reportPath,
+    app_version:     APP_VERSION
+  };
+  const r = await fetch(SUPABASE.url + '/rest/v1/' + SUPABASE.table, {
+    method: 'POST',
+    headers: sbHeaders({'Content-Type': 'application/json', 'Prefer': 'return=minimal'}),
+    body: JSON.stringify(row)
+  });
+  if(!r.ok) throw new Error('שמירת הדוח נכשלה (' + r.status + '): ' + (await r.text()).slice(0,180));
+  return id;
+}
+
 /* ---------- send report by e-mail ---------- */
 const REPORT_EMAIL = 'office@menergy.co.il';
 
@@ -747,6 +868,20 @@ async function sendReport(){
   if(!validate())return;
   buildReport();
   const blob=reportFileBlob(), name=reportFileName()+'.html';
+
+  /* 0 — שמירה בענן (מאגר Supabase) */
+  const btn=document.querySelector('.btn.send');
+  if(btn){btn.disabled=true;btn.textContent='שולח…';}
+  try{
+    const id=await saveToCloud();
+    toast('הדוח נשמר בענן ✓');
+    console.log('report saved',id);
+  }catch(e){
+    console.error(e);
+    alert('שמירה בענן נכשלה.\n\n' + (e.message||e) + '\n\nהדוח יישלח בדרך הרגילה. צלם הודעה זו ושלח למפתח.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='📤 שליחת דו"ח';}
+  }
 
   /* 1 — שליחה אוטומטית דרך EmailJS, אם הוגדר */
   if(EMAILJS.enabled){
@@ -858,6 +993,11 @@ window.onbeforeunload=e=>{
   const any=Object.values(data).some(v=>Array.isArray(v)?v.flat().filter(Boolean).length:v);
   if(any){e.preventDefault();e.returnValue='';}
 };
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
