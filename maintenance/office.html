@@ -105,7 +105,8 @@
     <input id="q" placeholder="חיפוש לפי לקוח, אתר בפורטל, בודק או כתובת…">
     <button onclick="load()">חיפוש</button>
     <button id="fBtn" onclick="toggleFaults()">רק עם ממצאים</button>
-    <button onclick="load(true)">רענון</button>
+    <button id="aBtn" onclick="toggleArchive()">ארכיון</button>
+    <button onclick="load()">רענון</button>
   </div>
 
   <div class="card">
@@ -127,7 +128,7 @@ const FN     = 'https://yajugfebxmehsiegoutp.supabase.co/functions/v1/list-repor
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
 
-let pass = '', onlyFaults = false, all = [];
+let pass = '', onlyFaults = false, showArchived = false, all = [];
 
 async function call(payload){
   const r = await fetch(FN, {
@@ -162,17 +163,34 @@ function toggleFaults(){
   document.getElementById('fBtn').classList.toggle('on', onlyFaults);
   render();
 }
+function toggleArchive(){
+  showArchived = !showArchived;
+  document.getElementById('aBtn').classList.toggle('on', showArchived);
+  document.getElementById('aBtn').textContent = showArchived ? 'חזרה לפעילים' : 'ארכיון';
+  load();
+}
+async function setArchived(id, name, arch){
+  const msg = arch
+    ? 'להעביר לארכיון את הדוח של "' + name + '"?\n\nהדוח לא נמחק — הוא רק יוסתר מהרשימה, וניתן לשחזר אותו מלשונית הארכיון.'
+    : 'לשחזר את הדוח של "' + name + '" לרשימה הפעילה?';
+  if(!confirm(msg)) return;
+  try{
+    await call({action: arch ? 'archive' : 'unarchive', id: id});
+    load();
+  }catch(e){ alert('הפעולה נכשלה: ' + e.message); }
+}
 
 async function load(){
   const rows = document.getElementById('rows');
   rows.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#68738a">טוען…</td></tr>';
   try{
-    const j = await call({search: document.getElementById('q').value});
+    const j = await call({search: document.getElementById('q').value, showArchived: showArchived});
     all = j.reports || [];
-    document.getElementById('sum').innerHTML =
-      'סה"כ <b>' + j.stats.total + '</b> דוחות · החודש <b>' + j.stats.thisMonth + '</b> · ' +
-      'עם ממצאים <span class="warn"><b>' + j.stats.withFaults + '</b></span> ' +
-      '(' + j.stats.faultsSum + ' סעיפים)';
+    document.getElementById('sum').innerHTML = showArchived
+      ? '<b>' + j.stats.total + '</b> דוחות בארכיון'
+      : 'סה"כ <b>' + j.stats.total + '</b> דוחות · החודש <b>' + j.stats.thisMonth + '</b> · ' +
+        'עם ממצאים <span class="warn"><b>' + j.stats.withFaults + '</b></span> ' +
+        '(' + j.stats.faultsSum + ' סעיפים)';
     render();
   }catch(e){
     rows.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b">' +
@@ -186,6 +204,8 @@ function fmt(d){ return d ? d.split('-').reverse().join('/') : '—'; }
 function render(){
   const list = onlyFaults ? all.filter(r => (r.faults_count||0) > 0) : all;
   const tb   = document.getElementById('rows');
+  document.getElementById('empty').textContent =
+    showArchived ? 'הארכיון ריק.' : 'לא נמצאו דוחות.';
   document.getElementById('empty').classList.toggle('hide', list.length > 0);
   tb.innerHTML = list.map(r => {
     const faults = r.faults_count || 0;
@@ -209,6 +229,9 @@ function render(){
         (r.waze_link
           ? '<a class="act" target="_blank" href="' + esc(r.waze_link) + '">ניווט</a>'
           : '') +
+        '<button class="act" onclick="setArchived(\'' + r.id + '\',\'' +
+          esc(r.client_name).replace(/'/g,"\\'") + '\',' + (showArchived ? 'false' : 'true') +
+          ')">' + (showArchived ? 'שחזור' : 'ארכוב') + '</button>' +
       '</td>' +
     '</tr>';
   }).join('');
