@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דוחות תחזוקה — מאורות</title>
+<style>
+  :root{
+    --brand:#1a7fb0; --brand-2:#2ba2da; --brand-dp:#0e5c82;
+    --accent:#f7941e; --accent-2:#fbb812;
+    --ink:#1f2733; --muted:#68738a; --line:#dde3ea; --bg:#eef1f5;
+    --ok:#0f8a5f; --bad:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Segoe UI',Arial,'Noto Sans Hebrew',sans-serif;font-size:15px;line-height:1.55;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 12px 60px}
+
+  /* ---------- header ---------- */
+  header{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:16px;
+         box-shadow:0 1px 3px rgba(16,32,60,.08),0 6px 18px rgba(16,32,60,.06)}
+  .band{height:7px;background:linear-gradient(90deg,var(--brand-2) 45%,var(--accent) 75%,var(--accent-2))}
+  header .in{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 20px}
+  header h1{margin:0;font-size:20px;color:var(--brand-dp);flex:1;min-width:200px}
+  .sum{font-size:13.5px;color:var(--muted)}
+  .sum b{color:var(--brand-dp)}
+  .sum .warn{color:var(--bad)}
+
+  /* ---------- login ---------- */
+  #login{max-width:390px;margin:9vh auto;background:#fff;border-radius:16px;padding:30px 26px;
+         text-align:center;box-shadow:0 20px 50px rgba(6,25,48,.14)}
+  #login h2{margin:0 0 6px;font-size:19px;color:var(--brand-dp)}
+  #login p{margin:0 0 20px;font-size:13.5px;color:var(--muted)}
+  #login input{width:100%;padding:12px;font-size:16px;font-family:inherit;text-align:center;
+               border:1px solid var(--line);border-radius:9px;background:#fbfcfe}
+  #login button{width:100%;margin-top:12px;padding:12px;border:none;border-radius:9px;
+                background:var(--brand-dp);color:#fff;font-size:16px;font-weight:600;
+                font-family:inherit;cursor:pointer}
+  #login .err{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
+
+  /* ---------- toolbar ---------- */
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .tools input{flex:1;min-width:200px;padding:10px 13px;font-size:15px;font-family:inherit;
+               border:1px solid var(--line);border-radius:9px;background:#fff}
+  .tools button{padding:10px 16px;border:1px solid var(--line);border-radius:9px;background:#fff;
+                color:var(--brand-2);font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer}
+  .tools button.on{background:var(--brand-dp);border-color:var(--brand-dp);color:#fff}
+
+  /* ---------- table ---------- */
+  .card{background:#fff;border-radius:12px;overflow:hidden;
+        box-shadow:0 1px 3px rgba(16,32,60,.08),0 6px 18px rgba(16,32,60,.06)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{background:#eef3f9;color:var(--brand-dp);text-align:right;font-weight:700;
+     padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 12px;border-bottom:1px solid #eef1f5;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#f8fafc}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12.5px;font-weight:700}
+  .pill.ok{background:#e8f7f0;color:var(--ok)}
+  .pill.bad{background:#fdeeec;color:var(--bad)}
+  .pill.mute{background:#eef1f5;color:var(--muted)}
+  .act{padding:6px 12px;border:1px solid var(--line);border-radius:7px;background:#fff;
+       color:var(--brand-2);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+       white-space:nowrap;text-decoration:none;display:inline-block}
+  .act.primary{background:var(--brand-dp);border-color:var(--brand-dp);color:#fff}
+  .empty{padding:40px 20px;text-align:center;color:var(--muted)}
+  .site{font-weight:600}
+  .sub{font-size:12.5px;color:var(--muted)}
+  .hide{display:none}
+
+  @media(max-width:760px){
+    thead{display:none}
+    tbody tr{display:block;border-bottom:1px solid var(--line);padding:12px}
+    tbody td{display:flex;justify-content:space-between;gap:10px;border:none;padding:4px 0}
+    tbody td::before{content:attr(data-l);color:var(--muted);font-size:12.5px}
+    tbody td.acts{justify-content:flex-start;gap:8px;padding-top:10px}
+    tbody td.acts::before{content:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ מסך כניסה ============ -->
+<div id="login">
+  <h2>דוחות תחזוקה שנתית</h2>
+  <p>מאורות — כל האנרגיה בשבילך</p>
+  <input type="password" id="pass" placeholder="סיסמת משרד" autocomplete="current-password">
+  <button onclick="login()">כניסה</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<!-- ============ המסך הראשי ============ -->
+<div class="wrap hide" id="app">
+  <header>
+    <div class="band"></div>
+    <div class="in">
+      <h1>דוחות תחזוקה שנתית</h1>
+      <div class="sum" id="sum"></div>
+    </div>
+  </header>
+
+  <div class="tools">
+    <input id="q" placeholder="חיפוש לפי לקוח, אתר בפורטל, בודק או כתובת…">
+    <button onclick="load()">חיפוש</button>
+    <button id="fBtn" onclick="toggleFaults()">רק עם ממצאים</button>
+    <button onclick="load(true)">רענון</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>תאריך</th><th>לקוח / אתר</th><th>בודק</th>
+          <th>ממצאים</th><th>תמונות</th><th>מייל</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty hide" id="empty">לא נמצאו דוחות.</div>
+  </div>
+</div>
+
+<script>
+const FN     = 'https://yajugfebxmehsiegoutp.supabase.co/functions/v1/list-reports';
+const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
+const VIEWER = 'view.html';
+
+let pass = '', onlyFaults = false, all = [];
+
+async function call(payload){
+  const r = await fetch(FN, {
+    method:'POST',
+    headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({password: pass}, payload))
+  });
+  const j = await r.json().catch(()=>({ok:false,error:'תשובה לא תקינה מהשרת'}));
+  if(!r.ok || !j.ok) throw new Error(j.error || ('שגיאה '+r.status));
+  return j;
+}
+
+async function login(){
+  const err = document.getElementById('loginErr');
+  pass = document.getElementById('pass').value;
+  if(!pass){ err.textContent = 'יש להזין סיסמה'; return; }
+  err.textContent = 'בודק…';
+  try{
+    await call({});
+    document.getElementById('login').classList.add('hide');
+    document.getElementById('app').classList.remove('hide');
+    load();
+  }catch(e){
+    err.textContent = (String(e.message).indexOf('unauthorized') > -1)
+      ? 'סיסמה שגויה' : ('שגיאה: ' + e.message);
+  }
+}
+document.getElementById('pass').addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+
+function toggleFaults(){
+  onlyFaults = !onlyFaults;
+  document.getElementById('fBtn').classList.toggle('on', onlyFaults);
+  render();
+}
+
+async function load(){
+  const rows = document.getElementById('rows');
+  rows.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#68738a">טוען…</td></tr>';
+  try{
+    const j = await call({search: document.getElementById('q').value});
+    all = j.reports || [];
+    document.getElementById('sum').innerHTML =
+      'סה"כ <b>' + j.stats.total + '</b> דוחות · החודש <b>' + j.stats.thisMonth + '</b> · ' +
+      'עם ממצאים <span class="warn"><b>' + j.stats.withFaults + '</b></span> ' +
+      '(' + j.stats.faultsSum + ' סעיפים)';
+    render();
+  }catch(e){
+    rows.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b">' +
+                     'שגיאה בטעינה: ' + e.message + '</td></tr>';
+  }
+}
+
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmt(d){ return d ? d.split('-').reverse().join('/') : '—'; }
+
+function render(){
+  const list = onlyFaults ? all.filter(r => (r.faults_count||0) > 0) : all;
+  const tb   = document.getElementById('rows');
+  document.getElementById('empty').classList.toggle('hide', list.length > 0);
+  tb.innerHTML = list.map(r => {
+    const faults = r.faults_count || 0;
+    return '<tr>' +
+      '<td data-l="תאריך">' + fmt(r.inspection_date) + '</td>' +
+      '<td data-l="לקוח"><span class="site">' + esc(r.client_name) + '</span>' +
+        (r.portal_site ? '<div class="sub">' + esc(r.portal_site) + '</div>' : '') + '</td>' +
+      '<td data-l="בודק">' + esc(r.inspector) + '</td>' +
+      '<td data-l="ממצאים">' + (faults
+          ? '<span class="pill bad">' + faults + '</span>'
+          : '<span class="pill ok">תקין</span>') + '</td>' +
+      '<td data-l="תמונות">' + (r.photos_count || 0) + '</td>' +
+      '<td data-l="מייל">' + (r.email_sent
+          ? '<span class="pill ok">נשלח</span>'
+          : '<span class="pill mute">לא נשלח</span>') + '</td>' +
+      '<td class="acts">' +
+        (r.report_url
+          ? '<a class="act primary" target="_blank" href="' + VIEWER + '#' +
+            encodeURIComponent(r.report_url) + '">דוח מלא</a>'
+          : '') +
+        (r.waze_link
+          ? '<a class="act" target="_blank" href="' + esc(r.waze_link) + '">ניווט</a>'
+          : '') +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+</script>
+</body>
+</html>
