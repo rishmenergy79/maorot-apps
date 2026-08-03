@@ -85,12 +85,23 @@
     border-bottom:4px solid var(--accent);
     box-shadow:0 28px 64px rgba(0,0,0,.5), 0 6px 16px rgba(0,0,0,.34), inset 0 1px 0 #fff;}
   .logo{width:min(300px,70vw); height:auto; display:block; margin:0 auto;}
-  .eyebrow{margin:24px auto 0; display:inline-block; font-size:12.5px; font-weight:700;
-    color:#ffd489; padding:7px 20px; border-radius:100px;
-    border:1px solid rgba(243,161,26,.4); background:rgba(243,161,26,.09);
-    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
-    box-shadow:0 4px 18px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);
-    animation:fadeIn .8s .12s ease both;}
+  /* כותרת "מרכז האפליקציות" — ממורכזת בדיוק מתחת ללוגו, בסגנון wordmark */
+  .eyebrow{margin:30px auto 0; display:flex; align-items:center; justify-content:center;
+    gap:16px; width:min(430px,86vw); animation:fadeIn .8s .12s ease both;}
+  .eyebrow .txt{
+    font-size:clamp(19px,4.4vw,25px); font-weight:800; white-space:nowrap;
+    letter-spacing:.055em; line-height:1.15;
+    background:linear-gradient(105deg,#ffffff 0%,#dff1fb 26%,#8fd7f4 50%,#ffd489 82%,#F3A11A 100%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+    filter:drop-shadow(0 2px 10px rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(28,159,211,.28));}
+  .eyebrow .rule{flex:1; height:1px; position:relative;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.42));}
+  .eyebrow .rule:last-child{background:linear-gradient(90deg, rgba(255,255,255,.42), rgba(255,255,255,0));}
+  .eyebrow .rule::after{content:""; position:absolute; top:-2.5px; width:5px; height:5px;
+    border-radius:50%; background:var(--accent); box-shadow:0 0 10px rgba(243,161,26,.85);}
+  .eyebrow .rule:first-child::after{right:0;}
+  .eyebrow .rule:last-child::after{left:0;}
   .hero-sub{max-width:540px;margin:20px auto 4px;font-size:16.5px;color:rgba(233,240,248,.92);
     padding:0 10px;text-shadow:0 1px 12px rgba(0,0,0,.6);animation:fadeIn .8s .2s ease both;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -117,7 +128,7 @@
   .card:hover{transform:translateY(-7px);
     box-shadow:0 34px 70px rgba(0,0,0,.52), 0 0 0 1px rgba(69,191,232,.28), inset 0 1px 0 rgba(255,255,255,.18);
     border-color:rgba(69,191,232,.55);}
-  .card .top{display:flex;align-items:center;gap:14px;padding:20px 20px 12px;}
+  .card .top{display:flex;align-items:center;gap:14px;padding:44px 20px 12px;}
   .card .ic{width:62px;height:62px;flex:none;border-radius:16px;object-fit:cover;background:#fff;
     box-shadow:0 6px 16px rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.5);}
   .card .titles{display:flex;flex-direction:column;gap:3px;min-width:0;}
@@ -141,7 +152,7 @@
   .badge{position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;
     padding:4px 10px;border-radius:20px;background:rgba(69,191,232,.22);color:#bfe8fa;
     border:1px solid rgba(127,208,245,.35);}
-  .card.ext .badge{background:rgba(247,168,30,.2);color:#ffd587;border-color:rgba(247,168,30,.4);}
+  .card.ext .badge, .badge.gold{background:rgba(247,168,30,.2);color:#ffd587;border-color:rgba(247,168,30,.4);}
 
   /* ===== Install section ===== */
   .install{max-width:960px;margin:6px auto 40px;padding:0 18px;}
@@ -179,7 +190,7 @@
 <body>
 
 <div id="splash" aria-hidden="true">
-  <video id="splashVideo" muted playsinline autoplay preload="auto">
+  <video id="splashVideo" muted playsinline autoplay preload="auto" poster="intro-poster.jpg">
     <source src="intro.mp4" type="video/mp4">
   </video>
   <div class="skip">לחצו לדילוג</div>
@@ -234,7 +245,7 @@
       <img class="logo" src="maorot-logo.png" alt="מאורות — כל האנרגיה בשבילך">
     </div>
   </div>
-  <div class="eyebrow">מרכז האפליקציות</div>
+  <h1 class="eyebrow"><span class="rule"></span><span class="txt">מרכז האפליקציות</span><span class="rule"></span></h1>
   <p class="hero-sub">כל הכלים של מאורות במקום אחד. בחרו אפליקציה כדי להיכנס — או התקינו אותה על הנייד/מחשב לגישה מהירה.</p>
 </header>
 
@@ -331,13 +342,13 @@ const APPS = [
     external: false
   },
   {
-    name: "דוחות תחזוקה — משרד",
+    name: "דוחות תחזוקה",
     sub: "לשימוש משרדי בלבד",
     desc: "ריכוז וניהול דוחות התחזוקה השנתית. כלי פנימי לשימוש הצוות המשרדי בלבד.",
     url: "maintenance/office.html",
     icon: "icons/icon-512.png",
     external: false,
-    badge: "לשימוש משרדי בלבד"
+    badge: "משרדי בלבד"
   }
 ];
 
@@ -349,7 +360,7 @@ grid.innerHTML = APPS.map(a => {
   const cta = a.external ? 'פתיחה' : 'כניסה לאפליקציה';
   return `
     <a class="${cls}" href="${a.url}"${target}>
-      <span class="badge">${badge}</span>
+      <span class="badge${a.badge ? ' gold' : ''}">${badge}</span>
       <div class="top">
         <img class="ic" src="${a.icon}" alt="${a.name}" onerror="this.style.visibility='hidden'">
         <div class="titles">
