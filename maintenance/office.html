@@ -33,12 +33,14 @@
          text-align:center;box-shadow:0 20px 50px rgba(6,25,48,.14)}
   #login h2{margin:0 0 6px;font-size:19px;color:var(--brand-dp)}
   #login p{margin:0 0 20px;font-size:13.5px;color:var(--muted)}
-  #login input{width:100%;padding:12px;font-size:16px;font-family:inherit;text-align:center;
-               border:1px solid var(--line);border-radius:9px;background:#fbfcfe}
+  #login input{width:100%;margin-bottom:10px;padding:12px;font-size:16px;font-family:inherit;
+               text-align:center;border:1px solid var(--line);border-radius:9px;background:#fbfcfe}
   #login button{width:100%;margin-top:12px;padding:12px;border:none;border-radius:9px;
                 background:var(--brand-dp);color:#fff;font-size:16px;font-weight:600;
                 font-family:inherit;cursor:pointer}
   #login .err{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
+  #who button{border:none;background:none;color:var(--brand-2);font-family:inherit;
+              font-size:13px;text-decoration:underline;cursor:pointer}
 
   /* ---------- toolbar ---------- */
   .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
@@ -86,7 +88,8 @@
 <div id="login">
   <h2>דוחות תחזוקה שנתית</h2>
   <p>מאורות — כל האנרגיה בשבילך</p>
-  <input type="password" id="pass" placeholder="סיסמת משרד" autocomplete="current-password">
+  <input type="text" id="user" placeholder="שם משתמש" autocomplete="username">
+  <input type="password" id="pass" placeholder="סיסמה" autocomplete="current-password" inputmode="numeric">
   <button onclick="login()">כניסה</button>
   <div class="err" id="loginErr"></div>
 </div>
@@ -98,6 +101,7 @@
     <div class="in">
       <h1>דוחות תחזוקה שנתית</h1>
       <div class="sum" id="sum"></div>
+      <div class="sum" id="who"></div>
     </div>
   </header>
 
@@ -124,17 +128,19 @@
 </div>
 
 <script>
-const FN     = 'https://yajugfebxmehsiegoutp.supabase.co/functions/v1/list-reports';
+const BASE   = 'https://yajugfebxmehsiegoutp.supabase.co/functions/v1';
+const FN     = BASE + '/list-reports';
+const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
 
-let pass = '', onlyFaults = false, showArchived = false, all = [];
+let token = '', me = null, onlyFaults = false, showArchived = false, all = [];
 
 async function call(payload){
   const r = await fetch(FN, {
     method:'POST',
     headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
-    body: JSON.stringify(Object.assign({password: pass}, payload))
+    body: JSON.stringify(Object.assign({token: token}, payload))
   });
   const j = await r.json().catch(()=>({ok:false,error:'תשובה לא תקינה מהשרת'}));
   if(!r.ok || !j.ok) throw new Error(j.error || ('שגיאה '+r.status));
@@ -142,21 +148,33 @@ async function call(payload){
 }
 
 async function login(){
-  const err = document.getElementById('loginErr');
-  pass = document.getElementById('pass').value;
-  if(!pass){ err.textContent = 'יש להזין סיסמה'; return; }
+  const err  = document.getElementById('loginErr');
+  const user = document.getElementById('user').value.trim();
+  const pass = document.getElementById('pass').value;
+  if(!user || !pass){ err.textContent = 'יש למלא שם משתמש וסיסמה'; return; }
   err.textContent = 'בודק…';
   try{
-    await call({});
+    const r = await fetch(AUTHFN, {
+      method:'POST',
+      headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({username:user, password:pass})
+    });
+    const j = await r.json();
+    if(!r.ok || !j.ok) throw new Error(j.error || ('שגיאה '+r.status));
+    if(j.user.role !== 'office'){ err.textContent = 'למשתמש זה אין הרשאה לדף המשרד'; return; }
+    token = j.token; me = j.user;
     document.getElementById('login').classList.add('hide');
     document.getElementById('app').classList.remove('hide');
+    document.getElementById('who').innerHTML =
+      'מחובר: <b>' + me.name + '</b> · <button onclick="location.reload()">התנתקות</button>';
     load();
   }catch(e){
-    err.textContent = (String(e.message).indexOf('unauthorized') > -1)
-      ? 'סיסמה שגויה' : ('שגיאה: ' + e.message);
+    err.textContent = (String(e.message).indexOf('bad credentials') > -1)
+      ? 'שם משתמש או סיסמה שגויים' : ('שגיאה: ' + e.message);
   }
 }
 document.getElementById('pass').addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+document.getElementById('user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('pass').focus(); });
 
 function toggleFaults(){
   onlyFaults = !onlyFaults;
