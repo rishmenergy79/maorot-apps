@@ -203,10 +203,11 @@
     if (!s) return;
     var v = document.getElementById('splashVideo');
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    /* ?intro=1 או #intro מאלצים הצגה חוזרת של הסרטון — נוח לבדיקה */
+    var force = /[?&]intro=1/.test(location.search) || location.hash === '#intro';
     var seen = false;
     try { seen = sessionStorage.getItem('maorot_splash') === '1'; } catch (e) {}
-    if (reduce || seen) { s.parentNode && s.parentNode.removeChild(s); return; }
-    try { sessionStorage.setItem('maorot_splash', '1'); } catch (e) {}
+    if (!force && (reduce || seen)) { s.parentNode && s.parentNode.removeChild(s); return; }
     document.documentElement.classList.add('splash-on');
     var closed = false, startGuard, endGuard, started = false;
     function done() {
@@ -222,14 +223,25 @@
       v.addEventListener('playing', function () {
         if (started) return; started = true;
         clearTimeout(startGuard); /* it started, cancel the no-start fallback */
-        var remain = ((isFinite(v.duration) && v.duration ? v.duration - v.currentTime : 8) * 1000) + 1200;
+        /* רק אחרי שהסרטון באמת התחיל לרוץ מסמנים שהוצג — כך טעינה שנכשלה לא "שורפת" את ההצגה */
+        try { sessionStorage.setItem('maorot_splash', '1'); } catch (e) {}
+        var remain = ((isFinite(v.duration) && v.duration ? v.duration - v.currentTime : 10) * 1000) + 1500;
         endGuard = setTimeout(done, remain); /* backup to the 'ended' event */
+      });
+      /* ברגע שיש מספיק דאטה — מאריכים את חלון ההמתנה, כי הקובץ פשוט עדיין נטען ברשת איטית */
+      var stretch = function () { if (!started) { clearTimeout(startGuard); startGuard = setTimeout(done, 8000); } };
+      v.addEventListener('loadedmetadata', stretch);
+      v.addEventListener('loadeddata', stretch);
+      v.addEventListener('canplay', function () {
+        stretch();
+        var p2 = v.play && v.play();           /* ניסיון ניגון נוסף — חלק מהדפדפנים בנייד מתעלמים מהראשון */
+        if (p2 && p2.catch) p2.catch(function () {});
       });
       var pr = v.play && v.play();
       if (pr && pr.catch) pr.catch(function () {}); /* muted autoplay should pass */
     }
     /* if playback never starts (blocked / can't load), reveal the site rather than hang on black */
-    startGuard = setTimeout(done, 5000);
+    startGuard = setTimeout(done, 12000);
     s.addEventListener('click', done);
   })();
 </script>
@@ -354,7 +366,8 @@ const APPS = [
 
 const grid = document.getElementById('grid');
 grid.innerHTML = APPS.map(a => {
-  const target = a.external ? ' target="_blank" rel="noopener"' : '';
+  /* כל אפליקציה נפתחת בלשונית חדשה — דף האפליקציות נשאר פתוח מאחור */
+  const target = ' target="_blank" rel="noopener"';
   const cls = a.external ? 'card ext' : 'card';
   const badge = a.badge || (a.external ? 'קישור' : 'ניתן להתקנה');
   const cta = a.external ? 'פתיחה' : 'כניסה לאפליקציה';
