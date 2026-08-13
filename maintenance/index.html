@@ -839,7 +839,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.02';
+const APP_VERSION = '2026.08.13.1';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -1333,7 +1333,67 @@ const bioBtn = document.getElementById('bioBtn');
   document.getElementById('uName').value = saved.user.username;
 })();
 
-/* ---------- keep the sticky bar from covering content ---------- */
+/* ---------- רענון אוטומטי לגרסה חדשה ---------- */
+const VERSION_URL   = 'version.json';
+const VERSION_EVERY = 10 * 60 * 1000;
+
+function formHasData(){
+  if(Object.keys(na).length) return true;
+  for(const k in naRows) if(Object.keys(naRows[k]).length) return true;
+  for(const k in files)  if((files[k]||[]).length) return true;
+  const ignore = {inspector: 1, wazeCoords: 1};
+  for(const k in data){
+    if(ignore[k]) continue;
+    const v = data[k];
+    if(Array.isArray(v)){ if(v.flat().filter(Boolean).length) return true; }
+    else if(v) return true;
+  }
+  return false;
+}
+
+function reloadFresh(v){
+  location.replace(location.pathname + '?v=' + encodeURIComponent(v) + location.hash);
+}
+
+function showUpdateBar(v){
+  if(document.getElementById('updBar')) return;
+  const d = document.createElement('div');
+  d.id = 'updBar';
+  d.style.cssText =
+    'position:fixed;top:0;right:0;left:0;z-index:200;background:#0e5c82;color:#fff;' +
+    'padding:10px 14px;display:flex;align-items:center;gap:10px;justify-content:center;' +
+    'flex-wrap:wrap;font-size:14px;box-shadow:0 2px 10px rgba(0,0,0,.2)';
+  d.innerHTML = '<span>קיימת גרסה חדשה של האפליקציה.</span>';
+  const b = document.createElement('button');
+  b.textContent = 'רענון עכשיו';
+  b.style.cssText = 'padding:6px 14px;border:none;border-radius:7px;background:#f7941e;' +
+                    'color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer';
+  b.onclick = () => reloadFresh(v);
+  const x = document.createElement('button');
+  x.textContent = 'אחר כך';
+  x.style.cssText = 'padding:6px 12px;border:none;border-radius:7px;background:transparent;' +
+                    'color:#cfe6f5;font-family:inherit;font-size:13.5px;cursor:pointer;text-decoration:underline';
+  x.onclick = () => d.remove();
+  d.appendChild(b); d.appendChild(x);
+  document.body.appendChild(d);
+}
+
+async function checkVersion(){
+  try{
+    const r = await fetch(VERSION_URL + '?t=' + Date.now(), {cache: 'no-store'});
+    if(!r.ok) return;
+    const j = await r.json();
+    if(!j.version || j.version === APP_VERSION) return;
+    if(formHasData()) showUpdateBar(j.version);
+    else reloadFresh(j.version);
+  }catch(e){}
+}
+
+window.addEventListener('load', () => setTimeout(checkVersion, 1500));
+document.addEventListener('visibilitychange', () => { if(!document.hidden) checkVersion(); });
+setInterval(checkVersion, VERSION_EVERY);
+  
+    /* ---------- keep the sticky bar from covering content ---------- */
 function fitBar(){
   const bar=document.querySelector('.bar');
   if(bar) document.body.style.paddingBottom=(bar.offsetHeight+24)+'px';
