@@ -912,7 +912,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.13.3';
+const APP_VERSION = '2026.08.13.4';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -1449,6 +1449,12 @@ const VERSION_URL   = 'version.json';
 const VERSION_EVERY = 10 * 60 * 1000;   // בדיקה כל 10 דקות
 
 function formHasData(){
+  /* מסך הכניסה פתוח והוקלד בו משהו — לא נוגעים */
+  const lk = document.getElementById('lock');
+  if(lk && !lk.classList.contains('hidden')){
+    const u = document.getElementById('uName'), pw = document.getElementById('uPass');
+    if((u && u.value) || (pw && pw.value)) return true;
+  }
   if(Object.keys(na).length) return true;
   for(const k in naRows) if(Object.keys(naRows[k]).length) return true;
   for(const k in files)  if((files[k]||[]).length) return true;
@@ -1501,7 +1507,7 @@ async function checkVersion(){
   }catch(e){ /* אין רשת — לא נורא */ }
 }
 
-window.addEventListener('load', () => setTimeout(checkVersion, 1500));
+window.addEventListener('load', () => setTimeout(checkVersion, 4000));
 document.addEventListener('visibilitychange', () => { if(!document.hidden) checkVersion(); });
 setInterval(checkVersion, VERSION_EVERY);
 
