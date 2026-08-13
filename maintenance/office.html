@@ -133,6 +133,21 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
+  const APP_VERSION = '2026.08.13.1';
+
+async function checkVersion(){
+  try{
+    const r = await fetch('version.json?t=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) return;
+    const j = await r.json();
+    if(j.version && j.version !== APP_VERSION){
+      location.replace(location.pathname + '?v=' + encodeURIComponent(j.version));
+    }
+  }catch(e){}
+}
+window.addEventListener('load', () => setTimeout(checkVersion, 1500));
+document.addEventListener('visibilitychange', () => { if(!document.hidden) checkVersion(); });
+setInterval(checkVersion, 10 * 60 * 1000);
 
 let token = '', me = null, onlyFaults = false, showArchived = false, all = [];
 
