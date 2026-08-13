@@ -70,7 +70,9 @@
   }
   input:focus{outline:none;border-color:var(--brand-2);background:#fff;box-shadow:0 0 0 3px rgba(26,111,181,.12)}
 
-  .opt{display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer}
+  .opts-row{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:6px}
+  .opt{display:flex;align-items:center;gap:8px;padding:6px 2px;cursor:pointer}
+  .opt.wide{flex:1 1 100%}
   .opt input{width:19px;height:19px;accent-color:var(--brand-2);margin:0;flex:none}
   .opt span{font-size:15.5px}
   .opt .other-in{flex:1;margin-inline-start:6px;padding:6px 8px;font-size:15px}
@@ -110,6 +112,14 @@
   }
   .row.ans-na{background:#fffaf0}
   .row .na-cell{display:flex;align-items:center;justify-content:center}
+  .grid-add{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .grid-add button{
+    padding:8px 15px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    color:var(--brand-2);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;
+  }
+  .grid-add button.rm{color:var(--muted)}
+  .grid-add button:disabled{opacity:.4;cursor:not-allowed}
+  .row.hide-row{display:none}
   .row-val{grid-column:1 / -1;padding:2px 8px 6px}
   .row-val input{
     width:100%;padding:7px 10px;font-size:14.5px;font-family:inherit;
@@ -389,8 +399,8 @@ const SCHEMA = [
    showIf:{field:'brokenPanels', value:'כן'}},
 
   {t:'grid', id:'strings', mode:'radio', q:'בדיקת ייצור סטרינגים', req:0, soft:1, vals:1,
-   valLabel:'ערך שנמדד',
-   hint:'סמן רק את הסטרינגים הקיימים באתר. לכל סטרינג שסומן חובה להקליד את הערך שנמדד.',
+   valLabel:'ערך שנמדד', dynamic:1, startRows:1,
+   hint:'לכל סטרינג שסומן חובה להקליד את הערך שנמדד. הוסף סטרינגים לפי הצורך.',
    rows:['סטרינג 1','סטרינג 2','סטרינג 3','סטרינג 4','סטרינג 5',
          'סטרינג 6','סטרינג 7','סטרינג 8','סטרינג 9','סטרינג 10']},
 
@@ -452,6 +462,7 @@ const NA = 'לא רלוונטי';
 const na     = {};   // fieldId -> reason            (שדות רגילים)
 const naRows = {};   // fieldId -> {rowIndex: reason} (שורות בפרקים)
 const gridVals = {}; // fieldId -> {rowIndex: value}  (ערך שנמדד)
+const gridShown = {}; // fieldId -> כמה שורות מוצגות (לשדות דינמיים)
 
 /* ---- חלון הסיבה ---- */
 let naPending = null;
@@ -547,11 +558,12 @@ function build(f){
   }
 
   else if(f.t==='check'){
-    let h=`<div class="q-label">${esc(f.q)}${star(f)}</div>`;
+    let h=`<div class="q-label">${esc(f.q)}${star(f)}</div><div class="opts-row">`;
     f.opts.forEach((o,i)=>{
       h+=`<label class="opt"><input type="checkbox" data-v="${esc(o)}"><span>${esc(o)}</span></label>`;
     });
-    if(f.other) h+=`<label class="opt"><input type="checkbox" data-other="1"><span>אחר:</span><input type="text" class="other-in" disabled></label>`;
+    if(f.other) h+=`<label class="opt wide"><input type="checkbox" data-other="1"><span>אחר:</span><input type="text" class="other-in" disabled></label>`;
+    h+=`</div>`;
     c.innerHTML=h;
     const boxes=[...c.querySelectorAll('input[type=checkbox]')];
     const otherTxt=c.querySelector('.other-in');
@@ -587,6 +599,12 @@ function build(f){
                  <input type="text" data-vin="${i}" placeholder="${esc(f.valLabel||'ערך')}"></div>`:''}
           </div>`;
     });
+    if(f.dynamic){
+      h+=`<div class="grid-add">
+            <button type="button" data-add="1">＋ הוספת סטרינג</button>
+            <button type="button" class="rm" data-rm="1">− הסרת האחרון</button>
+          </div>`;
+    }
     c.innerHTML=h;
     data[f.id]=f.rows.map(()=>type==='radio'?'':[]);
     const rowEls=[...c.querySelectorAll('.row')];
@@ -623,6 +641,37 @@ function build(f){
     c._paintRow = paintRow;
 
     gridVals[f.id] = gridVals[f.id] || {};
+
+    if(f.dynamic){
+      gridShown[f.id] = gridShown[f.id] || (f.startRows || 1);
+      const addB = c.querySelector('[data-add]'), rmB = c.querySelector('[data-rm]');
+      const paintRows = () => {
+        rowEls.forEach((el,i)=> el.classList.toggle('hide-row', i >= gridShown[f.id]));
+        addB.disabled = gridShown[f.id] >= f.rows.length;
+        rmB.disabled  = gridShown[f.id] <= 1;
+      };
+      c._paintRows = paintRows;
+      addB.onclick = () => {
+        if(gridShown[f.id] < f.rows.length){ gridShown[f.id]++; paintRows(); tick(); }
+      };
+      rmB.onclick = () => {
+        const last = gridShown[f.id] - 1;
+        if(last < 1) return;
+        const v  = data[f.id][last];
+        const has = (Array.isArray(v) ? v.length : !!v) ||
+                    (naRows[f.id]||{})[last] != null || (gridVals[f.id]||{})[last] != null;
+        if(has && !confirm('הסטרינג האחרון מסומן. להסיר אותו ולמחוק את מה שנרשם בו?')) return;
+        c.querySelectorAll(`input[name="${f.id}_${last}"]`).forEach(x => x.checked = false);
+        data[f.id][last] = (f.mode==='radio') ? '' : [];
+        if(naRows[f.id])  delete naRows[f.id][last];
+        if(gridVals[f.id]) delete gridVals[f.id][last];
+        const vin = c.querySelector(`[data-vin="${last}"]`); if(vin) vin.value = '';
+        gridShown[f.id]--;
+        paintRow(last); paintRows(); tick();
+      };
+      paintRows();
+    }
+
     if(f.vals){
       c.querySelectorAll('[data-vin]').forEach(inp => {
         inp.oninput = () => {
@@ -869,7 +918,7 @@ function buildReport(){
     }
     else if(f.t==='grid'){
       h+=`<h2>${esc(f.q)}</h2><table><tr><th>סעיף הבדיקה</th><th style="width:70px;text-align:center">ממצא</th></tr>`;
-      f.rows.forEach((r,i)=>{
+      f.rows.slice(0, shownCount(f)).forEach((r,i)=>{
         const nr=(naRows[f.id]||{})[i];
         const gv=(gridVals[f.id]||{})[i];
         let txt=esc(r);
@@ -912,7 +961,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.13.4';
+const APP_VERSION = '2026.08.13.5';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -962,7 +1011,7 @@ function collectSections(){
   SCHEMA.filter(f => f.t === 'grid').forEach(f => {
     const nr = naRows[f.id] || {};
     const gv = gridVals[f.id] || {};
-    out[f.id] = {title: f.q, rows: f.rows.map((r, i) => ({
+    out[f.id] = {title: f.q, rows: f.rows.slice(0, shownCount(f)).map((r, i) => ({
       item: r,
       status: nr[i] != null ? 'לא רלוונטי' : ((data[f.id] || [])[i] || null),
       na_reason: nr[i] != null ? nr[i] : null,
@@ -1110,12 +1159,17 @@ function dl(blob,name){
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
 
+function shownCount(f){
+  return f.dynamic ? (gridShown[f.id] || f.startRows || 1) : f.rows.length;
+}
+
 function checkGridValues(){
   let first = null;
   SCHEMA.filter(f => f.vals).forEach(f => {
     const a = data[f.id] || [], nr = naRows[f.id] || {}, gv = gridVals[f.id] || {};
     const card = document.getElementById('card-' + f.id);
-    f.rows.forEach((_, i) => {
+    const lim = shownCount(f);
+    f.rows.slice(0, lim).forEach((_, i) => {
       const box = card.querySelector('[data-val="' + i + '"]');
       if(box) box.classList.remove('miss');
       if(nr[i] != null) return;
@@ -1138,14 +1192,15 @@ function checkGridValues(){
 function softCheck(){
   for(const f of SCHEMA.filter(x => x.soft)){
     const a = data[f.id] || [], nr = naRows[f.id] || {};
-    const empty = f.rows.filter((_, i) => {
+    const lim = shownCount(f);
+    const empty = f.rows.slice(0, lim).filter((_, i) => {
       if(nr[i] != null) return false;
       const v = a[i];
       return Array.isArray(v) ? !v.length : !v;
     }).length;
     if(empty > 0){
-      const done = f.rows.length - empty;
-      if(!confirm('ב"' + f.q + '" סומנו ' + done + ' מתוך ' + f.rows.length + '.\n\n' +
+      const done = lim - empty;
+      if(!confirm('ב"' + f.q + '" סומנו ' + done + ' מתוך ' + lim + '.\n\n' +
                   'האם כל הסטרינגים הנדרשים סומנו?')) return false;
     }
   }
@@ -1264,6 +1319,10 @@ async function loadForEdit(){
     const card = document.getElementById('card-' + f.id);
     naRows[f.id] = naRows[f.id] || {};
     gridVals[f.id] = gridVals[f.id] || {};
+    if(f.dynamic){
+      gridShown[f.id] = Math.max(1, Math.min(f.rows.length, block.rows.length));
+      if(card._paintRows) card._paintRows();
+    }
     block.rows.forEach((r2, i) => {
       if(r2.value != null){
         gridVals[f.id][i] = r2.value;
