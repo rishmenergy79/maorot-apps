@@ -110,6 +110,13 @@
   }
   .row.ans-na{background:#fffaf0}
   .row .na-cell{display:flex;align-items:center;justify-content:center}
+  .row-val{grid-column:1 / -1;padding:2px 8px 6px}
+  .row-val input{
+    width:100%;padding:7px 10px;font-size:14.5px;font-family:inherit;
+    border:1px solid var(--line);border-radius:7px;background:#fbfcfe;
+  }
+  .row-val input:focus{outline:none;border-color:var(--brand-2);background:#fff}
+  .row-val.miss input{border-color:#f0b6b0;background:#fff6f5}
   .row-na-note{
     grid-column:1 / -1;font-size:12px;color:#a35f06;padding:2px 8px 4px;
   }
@@ -374,8 +381,16 @@ const SCHEMA = [
     'ו. בדיקות מתח (בדיקות מתח וזרם על כל הסטרינגים לפי תכנון)'
   ]},
 
-  {t:'grid', id:'strings', mode:'radio', q:'בדיקת ייצור סטרינגים', req:0, soft:1,
-   hint:'סמן רק את הסטרינגים הקיימים באתר. סטרינגים שאינם קיימים — אין צורך לסמן.',
+  {t:'check', id:'panelClean',   q:'ממצא פאנלים', req:1, single:1, opts:['נקי','לא נקי']},
+
+  {t:'check', id:'brokenPanels', q:'נמצאו פאנלים שבורים', req:1, single:1, opts:['כן','לא']},
+
+  {t:'file',  id:'imgBroken', q:'תמונות פאנלים שבורים', req:0, audio:0, max:0,
+   showIf:{field:'brokenPanels', value:'כן'}},
+
+  {t:'grid', id:'strings', mode:'radio', q:'בדיקת ייצור סטרינגים', req:0, soft:1, vals:1,
+   valLabel:'ערך שנמדד',
+   hint:'סמן רק את הסטרינגים הקיימים באתר. לכל סטרינג שסומן חובה להקליד את הערך שנמדד.',
    rows:['סטרינג 1','סטרינג 2','סטרינג 3','סטרינג 4','סטרינג 5',
          'סטרינג 6','סטרינג 7','סטרינג 8','סטרינג 9','סטרינג 10']},
 
@@ -428,6 +443,7 @@ const SCHEMA = [
 
 const NOTE_IMG   = 'אפשר להעלות עד 5 קבצים נתמכים: image. גודל מקסימלי לקובץ: 10 MB.';
 const NOTE_AUDIO = 'אפשר להעלות עד 5 קבצים נתמכים: audio או image. גודל מקסימלי לקובץ: 10 MB.';
+const NOTE_MANY  = 'אפשר להעלות כמה תמונות שנדרש. גודל מקסימלי לקובץ: 10 MB.';
 const MAX_FILES = 5;
 const MAX_MB = 10;
 
@@ -435,6 +451,7 @@ const MAX_MB = 10;
 const NA = 'לא רלוונטי';
 const na     = {};   // fieldId -> reason            (שדות רגילים)
 const naRows = {};   // fieldId -> {rowIndex: reason} (שורות בפרקים)
+const gridVals = {}; // fieldId -> {rowIndex: value}  (ערך שנמדד)
 
 /* ---- חלון הסיבה ---- */
 let naPending = null;
@@ -546,7 +563,10 @@ function build(f){
       else if(ob&&ob.checked) vals.push('אחר');
       data[f.id]=vals; tick();
     };
-    boxes.forEach(b=>b.onchange=sync);
+    boxes.forEach(b=>b.onchange=()=>{
+      if(f.single && b.checked) boxes.forEach(o=>{ if(o!==b) o.checked=false; });
+      sync();
+    });
     if(otherTxt) otherTxt.oninput=sync;
   }
 
@@ -563,6 +583,8 @@ function build(f){
             <div class="cell"><input type="${type}" name="${nm}" data-i="${i}" data-v="לא תקין"></div>
             <div class="na-cell"><button type="button" class="na-btn" data-na="${i}">⊘</button></div>
             <div class="row-na-note" data-note="${i}" style="display:none"></div>
+            ${f.vals?`<div class="row-val" data-val="${i}" style="display:none">
+                 <input type="text" data-vin="${i}" placeholder="${esc(f.valLabel||'ערך')}"></div>`:''}
           </div>`;
     });
     c.innerHTML=h;
@@ -585,8 +607,33 @@ function build(f){
       if(isNa) el.classList.add('ans-na');
       else if(st==='תקין') el.classList.add('ans-ok');
       else if(st==='לא תקין') el.classList.add('ans-bad');
+
+      if(f.vals){
+        const box = el.querySelector('[data-val]');
+        if(box){
+          const show = !isNa && !!st;
+          box.style.display = show ? '' : 'none';
+          if(!show){
+            if(gridVals[f.id]) delete gridVals[f.id][i];
+            const inp = box.querySelector('input'); if(inp) inp.value = '';
+          }
+        }
+      }
     };
     c._paintRow = paintRow;
+
+    gridVals[f.id] = gridVals[f.id] || {};
+    if(f.vals){
+      c.querySelectorAll('[data-vin]').forEach(inp => {
+        inp.oninput = () => {
+          const i = +inp.dataset.vin;
+          const v = inp.value.trim();
+          if(v) gridVals[f.id][i] = v; else delete gridVals[f.id][i];
+          inp.parentElement.classList.remove('miss');
+          tick();
+        };
+      });
+    }
 
     rowEls.forEach((el,i)=>{
       el.querySelector('[data-na]').onclick = () => {
@@ -600,7 +647,7 @@ function build(f){
         });
       };
     });
-    c.querySelectorAll('input').forEach(inp=>{
+    c.querySelectorAll('.cell input').forEach(inp=>{
       inp.onchange=()=>{
         const i=+inp.dataset.i;
         if(type==='radio') data[f.id][i]=inp.dataset.v;
@@ -617,7 +664,7 @@ function build(f){
 
   else if(f.t==='file'){
     c.innerHTML=`<div class="q-label">${esc(f.q)}${star(f)}</div>`
-      + `<div class="up-note">${esc(f.audio?NOTE_AUDIO:NOTE_IMG)}</div>`
+      + `<div class="up-note">${esc(f.max===0 ? NOTE_MANY : (f.audio?NOTE_AUDIO:NOTE_IMG))}</div>`
       + `<button type="button" class="up-btn">⬆ הוספת קובץ</button>`
       + `<input type="file" accept="image/*" multiple hidden>`
       + `<div class="thumbs"></div><div class="count"></div>`;
@@ -628,7 +675,8 @@ function build(f){
     pick.onchange=e=>{
       const list=[...e.target.files];
       list.forEach(file=>{
-        if(files[f.id].length>=MAX_FILES){toast('ניתן להעלות עד '+MAX_FILES+' קבצים');return;}
+        const lim = (f.max===0) ? Infinity : (f.max || MAX_FILES);
+        if(files[f.id].length>=lim){toast('ניתן להעלות עד '+lim+' קבצים');return;}
         if(file.size>MAX_MB*1024*1024){toast('הקובץ '+file.name+' גדול מ-'+MAX_MB+'MB');return;}
         shrink(file,url=>{files[f.id].push({name:file.name,dataUrl:url});render();});
       });
@@ -642,7 +690,9 @@ function build(f){
         d.querySelector('button').onclick=()=>{files[f.id].splice(i,1);render();};
         thumbs.appendChild(d);
       });
-      cnt.textContent=files[f.id].length?files[f.id].length+' מתוך '+MAX_FILES+' קבצים':'';
+      cnt.textContent = files[f.id].length
+        ? (f.max===0 ? (files[f.id].length + ' תמונות') : (files[f.id].length+' מתוך '+MAX_FILES+' קבצים'))
+        : '';
       tick();
     }
     c._render=render;
@@ -711,6 +761,12 @@ function shrink(file,cb){
 
 /* ---------- validation / progress ---------- */
 function filled(f){
+  if(f.showIf){
+    const src = data[f.showIf.field];
+    const on  = Array.isArray(src) ? src.indexOf(f.showIf.value) > -1 : src === f.showIf.value;
+    if(!on) return true;
+    if(f.t === 'file') return (files[f.id]||[]).length > 0;   // נדרשת לפחות תמונה אחת
+  }
   if(na[f.id] != null) return true;
   if(f.t==='text'||f.t==='geo')  return !!(data[f.id]||'').trim();
   if(f.t==='check') return (data[f.id]||[]).length>0;
@@ -724,7 +780,19 @@ function filled(f){
   }
   return true;
 }
+function applyConditions(){
+  SCHEMA.filter(f => f.showIf).forEach(f => {
+    const card = document.getElementById('card-' + f.id);
+    if(!card) return;
+    const src  = data[f.showIf.field];
+    const on   = Array.isArray(src) ? src.indexOf(f.showIf.value) > -1 : src === f.showIf.value;
+    card.style.display = on ? '' : 'none';
+    if(!on && (files[f.id]||[]).length){ files[f.id] = []; if(card._render) card._render(); }
+  });
+}
+
 function tick(){
+  applyConditions();
   const req=SCHEMA.filter(f=>f.req);
   const done=req.filter(filled).length;
   document.getElementById('bar').style.width=(done/req.length*100)+'%';
@@ -735,9 +803,11 @@ function validate(){
   let first=null;
   SCHEMA.forEach(f=>{
     const c=document.getElementById('card-'+f.id);
+    if(f.showIf && c.style.display === 'none') return;
     c.classList.remove('invalid');
     c.querySelectorAll('.row').forEach(r=>r.classList.remove('miss'));
-    if(f.req&&!filled(f)){
+    const mustFill = f.req || (f.showIf && c.style.display !== 'none');
+    if(mustFill && !filled(f)){
       c.classList.add('invalid');
       if(f.t==='grid'){
         const a=data[f.id]||[], nr=naRows[f.id]||{};
@@ -801,7 +871,10 @@ function buildReport(){
       h+=`<h2>${esc(f.q)}</h2><table><tr><th>סעיף הבדיקה</th><th style="width:70px;text-align:center">ממצא</th></tr>`;
       f.rows.forEach((r,i)=>{
         const nr=(naRows[f.id]||{})[i];
-        const txt=esc(r)+(nr!=null?`<div style="color:#a35f06;font-size:9.5px;margin-top:2px">לא רלוונטי — ${esc(nr)}</div>`:'');
+        const gv=(gridVals[f.id]||{})[i];
+        let txt=esc(r);
+        if(gv!=null) txt+=` <b style="color:#0e5c82">· ${esc(f.valLabel||'ערך')}: ${esc(gv)}</b>`;
+        if(nr!=null) txt+=`<div style="color:#a35f06;font-size:9.5px;margin-top:2px">לא רלוונטי — ${esc(nr)}</div>`;
         h+=`<tr><td>${txt}</td>${statusCell((data[f.id]||[])[i], nr)}</tr>`;
       });
       h+='</table>';
@@ -839,7 +912,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.13.1';
+const APP_VERSION = '2026.08.13.3';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -888,10 +961,12 @@ function collectSections(){
   const out = {};
   SCHEMA.filter(f => f.t === 'grid').forEach(f => {
     const nr = naRows[f.id] || {};
+    const gv = gridVals[f.id] || {};
     out[f.id] = {title: f.q, rows: f.rows.map((r, i) => ({
       item: r,
       status: nr[i] != null ? 'לא רלוונטי' : ((data[f.id] || [])[i] || null),
-      na_reason: nr[i] != null ? nr[i] : null
+      na_reason: nr[i] != null ? nr[i] : null,
+      value: gv[i] != null ? gv[i] : null
     }))};
   });
   out.fanClean = {title: 'ניקוי מאווררים', value: data.fanClean || []};
@@ -951,6 +1026,8 @@ async function saveToCloud(){
     panel_power:     data.panelPower || null,
     panel_count:     data.panelCount || null,
     fan_clean:       joinVal(data.fanClean),
+    panel_clean:     joinVal(data.panelClean),
+    broken_panels:   joinVal(data.brokenPanels),
     sections:        collectSections(),
     faults:          faults,
     faults_count:    faults.length,
@@ -1033,6 +1110,31 @@ function dl(blob,name){
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
 
+function checkGridValues(){
+  let first = null;
+  SCHEMA.filter(f => f.vals).forEach(f => {
+    const a = data[f.id] || [], nr = naRows[f.id] || {}, gv = gridVals[f.id] || {};
+    const card = document.getElementById('card-' + f.id);
+    f.rows.forEach((_, i) => {
+      const box = card.querySelector('[data-val="' + i + '"]');
+      if(box) box.classList.remove('miss');
+      if(nr[i] != null) return;
+      const v  = a[i];
+      const st = Array.isArray(v) ? (v.length ? v[0] : '') : v;
+      if(st && !gv[i]){
+        if(box){ box.classList.add('miss'); if(!first) first = box; }
+      }
+    });
+  });
+  if(first){
+    first.scrollIntoView({behavior:'smooth', block:'center'});
+    const inp = first.querySelector('input'); if(inp) inp.focus();
+    toast('יש להקליד את הערך שנמדד בכל סטרינג שסומן');
+    return false;
+  }
+  return true;
+}
+
 function softCheck(){
   for(const f of SCHEMA.filter(x => x.soft)){
     const a = data[f.id] || [], nr = naRows[f.id] || {};
@@ -1052,6 +1154,7 @@ function softCheck(){
 
 async function sendReport(){
   if(!validate())return;
+  if(!checkGridValues())return;
   if(!softCheck())return;
   buildReport();
 
@@ -1151,6 +1254,8 @@ async function loadForEdit(){
   setChecks('inverterType', rep.inverter_type);
   setChecks('panelType',    rep.panel_type);
   setChecks('fanClean',     rep.fan_clean);
+  setChecks('panelClean',   rep.panel_clean);
+  setChecks('brokenPanels', rep.broken_panels);
 
   const sec = rep.sections || {};
   SCHEMA.filter(f => f.t === 'grid').forEach(f => {
@@ -1158,7 +1263,13 @@ async function loadForEdit(){
     if(!block || !block.rows) return;
     const card = document.getElementById('card-' + f.id);
     naRows[f.id] = naRows[f.id] || {};
+    gridVals[f.id] = gridVals[f.id] || {};
     block.rows.forEach((r2, i) => {
+      if(r2.value != null){
+        gridVals[f.id][i] = r2.value;
+        const vin = card.querySelector('[data-vin="' + i + '"]');
+        if(vin) vin.value = r2.value;
+      }
       if(r2.na_reason){
         naRows[f.id][i] = r2.na_reason;
         if(card._paintRow) card._paintRow(i);
@@ -1335,13 +1446,13 @@ const bioBtn = document.getElementById('bioBtn');
 
 /* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 const VERSION_URL   = 'version.json';
-const VERSION_EVERY = 10 * 60 * 1000;
+const VERSION_EVERY = 10 * 60 * 1000;   // בדיקה כל 10 דקות
 
 function formHasData(){
   if(Object.keys(na).length) return true;
   for(const k in naRows) if(Object.keys(naRows[k]).length) return true;
   for(const k in files)  if((files[k]||[]).length) return true;
-  const ignore = {inspector: 1, wazeCoords: 1};
+  const ignore = {inspector: 1, wazeCoords: 1};   // ממולאים אוטומטית — לא נחשבים עבודה
   for(const k in data){
     if(ignore[k]) continue;
     const v = data[k];
@@ -1352,7 +1463,8 @@ function formHasData(){
 }
 
 function reloadFresh(v){
-  location.replace(location.pathname + '?v=' + encodeURIComponent(v) + location.hash);
+  const base = location.pathname;
+  location.replace(base + '?v=' + encodeURIComponent(v) + location.hash);
 }
 
 function showUpdateBar(v){
@@ -1384,16 +1496,16 @@ async function checkVersion(){
     if(!r.ok) return;
     const j = await r.json();
     if(!j.version || j.version === APP_VERSION) return;
-    if(formHasData()) showUpdateBar(j.version);
-    else reloadFresh(j.version);
-  }catch(e){}
+    if(formHasData()) showUpdateBar(j.version);   // יש נתונים — לא נוגעים, רק מודיעים
+    else reloadFresh(j.version);                  // הטופס ריק — מרעננים מיד
+  }catch(e){ /* אין רשת — לא נורא */ }
 }
 
 window.addEventListener('load', () => setTimeout(checkVersion, 1500));
 document.addEventListener('visibilitychange', () => { if(!document.hidden) checkVersion(); });
 setInterval(checkVersion, VERSION_EVERY);
-  
-    /* ---------- keep the sticky bar from covering content ---------- */
+
+/* ---------- keep the sticky bar from covering content ---------- */
 function fitBar(){
   const bar=document.querySelector('.bar');
   if(bar) document.body.style.paddingBottom=(bar.offsetHeight+24)+'px';
