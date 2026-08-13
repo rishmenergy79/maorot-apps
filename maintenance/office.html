@@ -231,7 +231,11 @@ function render(){
       '<td data-l="תאריך">' + fmt(r.inspection_date) + '</td>' +
       '<td data-l="לקוח"><span class="site">' + esc(r.client_name) + '</span>' +
         (r.portal_site ? '<div class="sub">' + esc(r.portal_site) + '</div>' : '') + '</td>' +
-      '<td data-l="בודק">' + esc(r.inspector) + '</td>' +
+      '<td data-l="בודק">' + esc(r.user_name || r.inspector) +
+        ((r.version && r.version > 1)
+          ? '<div class="sub">נערך ע"י ' + esc(r.edited_by_name || '') +
+            ' · גרסה ' + r.version + '</div>'
+          : '') + '</td>' +
       '<td data-l="ממצאים">' + (faults
           ? '<span class="pill bad">' + faults + '</span>'
           : '<span class="pill ok">תקין</span>') + '</td>' +
@@ -246,6 +250,9 @@ function render(){
           : '') +
         (r.waze_link
           ? '<a class="act" target="_blank" href="' + esc(r.waze_link) + '">ניווט</a>'
+          : '') +
+        (!showArchived
+          ? '<a class="act" target="_blank" href="index.html#edit=' + r.id + '">עריכה</a>'
           : '') +
         '<button class="act" onclick="setArchived(\'' + r.id + '\',\'' +
           esc(r.client_name).replace(/'/g,"\\'") + '\',' + (showArchived ? 'false' : 'true') +

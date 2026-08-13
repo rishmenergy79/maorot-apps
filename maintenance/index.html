@@ -77,13 +77,13 @@
 
   /* ---------- grid question ---------- */
   .grid-head{
-    display:grid;grid-template-columns:1fr 74px 74px;gap:6px;
+    display:grid;grid-template-columns:1fr 66px 66px 42px;gap:6px;
     padding:6px 8px;font-size:13px;color:var(--muted);font-weight:600;
     border-bottom:1px solid var(--line);margin-bottom:4px;
   }
   .grid-head b{text-align:center;font-weight:600}
   .row{
-    display:grid;grid-template-columns:1fr 74px 74px;gap:6px;align-items:center;
+    display:grid;grid-template-columns:1fr 66px 66px 42px;gap:6px;align-items:center;
     padding:11px 8px;border-radius:8px;
   }
   .row:nth-child(odd){background:#f7f9fc}
@@ -94,6 +94,48 @@
   .row.ans-ok{background:#f2fbf7}
   .row.ans-bad{background:#fef4f3}
   .row.miss{background:#fff6f5;box-shadow:inset 0 0 0 1px #f0b6b0}
+
+  /* ---------- לא רלוונטי ---------- */
+  .na-btn{
+    border:1px solid var(--line);border-radius:20px;background:#fff;color:var(--muted);
+    font-size:12px;font-family:inherit;padding:3px 10px;cursor:pointer;white-space:nowrap;
+  }
+  .na-btn:active{background:#f4f6f9}
+  .na-btn.on{background:#fff6e8;border-color:var(--accent);color:#a35f06;font-weight:600}
+  .card-na{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .na-note{
+    font-size:12.5px;color:#a35f06;background:#fff6e8;border-inline-start:3px solid var(--accent);
+    border-radius:5px;padding:5px 9px;flex:1;min-width:140px;
+  }
+  .row.ans-na{background:#fffaf0}
+  .row .na-cell{display:flex;align-items:center;justify-content:center}
+  .row-na-note{
+    grid-column:1 / -1;font-size:12px;color:#a35f06;padding:2px 8px 4px;
+  }
+
+  /* ---------- modal ---------- */
+  #naModal{
+    position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+    background:rgba(12,28,48,.55);padding:20px;
+  }
+  #naModal.show{display:flex}
+  #naModal .box{
+    background:#fff;border-radius:14px;padding:22px;max-width:400px;width:100%;
+    box-shadow:0 20px 50px rgba(6,25,48,.3);
+  }
+  #naModal h3{margin:0 0 4px;font-size:17px;color:var(--brand-dp)}
+  #naModal .sub{margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.5}
+  #naModal textarea{
+    width:100%;min-height:82px;padding:11px;font-size:15px;font-family:inherit;
+    border:1px solid var(--line);border-radius:9px;background:#fbfcfe;resize:vertical;
+  }
+  #naModal .btns{display:flex;gap:8px;margin-top:14px}
+  #naModal button{
+    flex:1;padding:11px;border-radius:9px;border:1px solid var(--line);background:#fff;
+    color:var(--ink);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;
+  }
+  #naModal button.primary{background:var(--brand-dp);border-color:var(--brand-dp);color:#fff}
+  #naModal .err{color:var(--bad);font-size:12.5px;min-height:16px;margin-top:6px}
 
   /* ---------- geo / waze ---------- */
   .geo-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -151,7 +193,7 @@
     .wrap{padding:12px 8px}
     .card{padding:15px 14px}
     .hero h1{font-size:21px}
-    .grid-head,.row{grid-template-columns:1fr 56px 56px}
+    .grid-head,.row{grid-template-columns:1fr 48px 48px 38px}
     .row .txt{font-size:13.3px}
   }
 
@@ -222,6 +264,7 @@
   #report .st-ok{color:var(--ok);font-weight:700;white-space:nowrap;text-align:center}
   #report .st-bad{color:var(--bad);font-weight:700;white-space:nowrap;text-align:center}
   #report .st-non{color:#98a2b3;text-align:center}
+  #report .st-na{color:#a35f06;font-weight:700;text-align:center;background:#fffaf0}
   #report .imgs{display:flex;flex-wrap:wrap;gap:5px;page-break-inside:avoid}
   #report .imgs figure{margin:0;width:31.5%}
   #report .imgs img{width:100%;height:auto;border:1px solid #c2ccd8;border-radius:3px}
@@ -272,6 +315,19 @@
 
 <input type="file" id="jsonPick" accept="application/json" hidden>
 <div class="toast" id="toast"></div>
+
+<div id="naModal">
+  <div class="box">
+    <h3 id="naTitle">סימון כלא רלוונטי</h3>
+    <p class="sub" id="naSub"></p>
+    <textarea id="naReason" placeholder="מדוע הסעיף אינו רלוונטי באתר זה?"></textarea>
+    <div class="err" id="naErr"></div>
+    <div class="btns">
+      <button onclick="naCancel()">ביטול</button>
+      <button class="primary" onclick="naConfirm()">אישור</button>
+    </div>
+  </div>
+</div>
 <div id="report"></div>
 
 <script>
@@ -316,6 +372,11 @@ const SCHEMA = [
     'ה. בדיקת הארקות לפאנלים (אופן הבדיקה: חיבור ע"י גידים במערכות ישנות וקליפ הארקה לכל פאנל במערכות חדשות)',
     'ו. בדיקות מתח (בדיקות מתח וזרם על כל הסטרינגים לפי תכנון)'
   ]},
+
+  {t:'grid', id:'strings', mode:'radio', q:'בדיקת ייצור סטרינגים', req:0, soft:1,
+   hint:'סמן רק את הסטרינגים הקיימים באתר. סטרינגים שאינם קיימים — אין צורך לסמן.',
+   rows:['סטרינג 1','סטרינג 2','סטרינג 3','סטרינג 4','סטרינג 5',
+         'סטרינג 6','סטרינג 7','סטרינג 8','סטרינג 9','סטרינג 10']},
 
   {t:'grid', id:'s3', mode:'check', q:'3. מפסקים, מפצלים, קופסאות חיבורים', req:1, rows:[
     'א. חיזוק ברגים (אופן הבדיקה: חיזוק ברגי חיבור מפסקים, מנתקים, לוחות)',
@@ -370,6 +431,37 @@ const MAX_FILES = 5;
 const MAX_MB = 10;
 
 /* ---------- state ---------- */
+const NA = 'לא רלוונטי';
+const na     = {};   // fieldId -> reason            (שדות רגילים)
+const naRows = {};   // fieldId -> {rowIndex: reason} (שורות בפרקים)
+
+/* ---- חלון הסיבה ---- */
+let naPending = null;
+function naAsk(title, sub, current, onOk){
+  naPending = onOk;
+  document.getElementById('naTitle').textContent = title;
+  document.getElementById('naSub').textContent   = sub;
+  document.getElementById('naReason').value      = current || '';
+  document.getElementById('naErr').textContent   = '';
+  document.getElementById('naModal').classList.add('show');
+  setTimeout(() => document.getElementById('naReason').focus(), 60);
+}
+function naCancel(){
+  document.getElementById('naModal').classList.remove('show');
+  naPending = null;
+}
+function naConfirm(){
+  const v = document.getElementById('naReason').value.trim();
+  if(v.length < 2){
+    document.getElementById('naErr').textContent = 'יש לרשום סיבה לפני האישור';
+    return;
+  }
+  const cb = naPending;
+  document.getElementById('naModal').classList.remove('show');
+  naPending = null;
+  if(cb) cb(v);
+}
+
 const data = {};   // id -> value
 const files = {};  // id -> [{name,dataUrl}]
 
@@ -460,18 +552,53 @@ function build(f){
   else if(f.t==='grid'){
     const type = f.mode==='radio'?'radio':'checkbox';
     let h=`<div class="q-label">${esc(f.q)}${star(f)}</div>`
-        + `<div class="grid-head"><span></span><b>תקין</b><b>לא תקין</b></div>`;
+        + (f.hint?`<div class="q-hint">${esc(f.hint)}</div>`:'')
+        + `<div class="grid-head"><span></span><b>תקין</b><b>לא תקין</b><b></b></div>`;
     f.rows.forEach((r,i)=>{
       const nm=f.id+'_'+i;
       h+=`<div class="row" data-r="${i}">
             <div class="txt">${esc(r)}</div>
             <div class="cell"><input type="${type}" name="${nm}" data-i="${i}" data-v="תקין"></div>
             <div class="cell"><input type="${type}" name="${nm}" data-i="${i}" data-v="לא תקין"></div>
+            <div class="na-cell"><button type="button" class="na-btn" data-na="${i}">⊘</button></div>
+            <div class="row-na-note" data-note="${i}" style="display:none"></div>
           </div>`;
     });
     c.innerHTML=h;
     data[f.id]=f.rows.map(()=>type==='radio'?'':[]);
     const rowEls=[...c.querySelectorAll('.row')];
+    naRows[f.id] = naRows[f.id] || {};
+
+    const paintRow = (i) => {
+      const el   = rowEls[i];
+      const btn  = el.querySelector('[data-na]');
+      const note = el.querySelector('[data-note]');
+      const isNa = naRows[f.id][i] != null;
+      const v    = data[f.id][i];
+      const st   = Array.isArray(v) ? (v.length===1 ? v[0] : '') : v;
+      el.classList.remove('ans-ok','ans-bad','ans-na','miss');
+      btn.classList.toggle('on', isNa);
+      note.style.display = isNa ? '' : 'none';
+      note.textContent   = isNa ? ('לא רלוונטי — ' + naRows[f.id][i]) : '';
+      el.querySelectorAll('.cell input').forEach(inp => { inp.disabled = isNa; });
+      if(isNa) el.classList.add('ans-na');
+      else if(st==='תקין') el.classList.add('ans-ok');
+      else if(st==='לא תקין') el.classList.add('ans-bad');
+    };
+    c._paintRow = paintRow;
+
+    rowEls.forEach((el,i)=>{
+      el.querySelector('[data-na]').onclick = () => {
+        if(naRows[f.id][i] != null){ delete naRows[f.id][i]; paintRow(i); tick(); return; }
+        naAsk('סימון שורה כלא רלוונטי', f.rows[i].split('(')[0].trim(), '', (reason) => {
+          naRows[f.id][i] = reason;
+          c.querySelectorAll(`input[name="${f.id}_${i}"]`).forEach(inp => inp.checked = false);
+          data[f.id][i] = (f.mode==='radio') ? '' : [];
+          paintRow(i);
+          tick();
+        });
+      };
+    });
     c.querySelectorAll('input').forEach(inp=>{
       inp.onchange=()=>{
         const i=+inp.dataset.i;
@@ -480,11 +607,8 @@ function build(f){
           const sel=[...c.querySelectorAll(`input[name="${f.id}_${i}"]`)].filter(x=>x.checked).map(x=>x.dataset.v);
           data[f.id][i]=sel;
         }
-        const v=data[f.id][i];
-        const s=Array.isArray(v)?(v.length===1?v[0]:''):v;
-        rowEls[i].classList.remove('ans-ok','ans-bad','miss');
-        if(s==='תקין')rowEls[i].classList.add('ans-ok');
-        else if(s==='לא תקין')rowEls[i].classList.add('ans-bad');
+        if(naRows[f.id] && naRows[f.id][i] != null){ delete naRows[f.id][i]; }
+        paintRow(i);
         tick();
       };
     });
@@ -522,7 +646,47 @@ function build(f){
     }
     c._render=render;
   }
+
+  if(f.req && f.id !== 'inspector') addNaChip(c, f);
   return c;
+}
+
+/* ---- שבב "לא רלוונטי" לשדות רגילים ---- */
+function addNaChip(card, f){
+  const wrap = document.createElement('div');
+  wrap.className = 'card-na';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'na-btn';
+  btn.textContent = '⊘ לא רלוונטי';
+  const note = document.createElement('span');
+  note.className = 'na-note';
+  note.style.display = 'none';
+  wrap.appendChild(btn); wrap.appendChild(note);
+  card.appendChild(wrap);
+
+  const paint = () => {
+    const on = na[f.id] != null;
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '⊘ מסומן כלא רלוונטי — בטל' : '⊘ לא רלוונטי';
+    note.style.display = on ? '' : 'none';
+    note.textContent = on ? na[f.id] : '';
+    card.querySelectorAll('input,textarea').forEach(el => {
+      if(el === btn) return;
+      el.disabled = on;
+    });
+    card.querySelectorAll('.up-btn,.geo-b').forEach(el => el.disabled = on);
+    card.style.opacity = on ? '.75' : '';
+    tick();
+  };
+  card._naPaint = paint;
+  btn.onclick = () => {
+    if(na[f.id] != null){ delete na[f.id]; paint(); return; }
+    naAsk('סימון כלא רלוונטי',
+          f.q.replace(/\s*\*$/, ''),
+          '',
+          (reason) => { na[f.id] = reason; paint(); });
+  };
 }
 
 /* ---------- image downscale (keeps PDF/JSON light) ---------- */
@@ -546,12 +710,16 @@ function shrink(file,cb){
 
 /* ---------- validation / progress ---------- */
 function filled(f){
+  if(na[f.id] != null) return true;
   if(f.t==='text'||f.t==='geo')  return !!(data[f.id]||'').trim();
   if(f.t==='check') return (data[f.id]||[]).length>0;
   if(f.t==='file')  return (files[f.id]||[]).length>0;
   if(f.t==='grid'){
-    const a=data[f.id]||[];
-    return f.rows.every((_,i)=>Array.isArray(a[i])?a[i].length>0:!!a[i]);
+    const a=data[f.id]||[], nr=naRows[f.id]||{};
+    return f.rows.every((_,i)=>{
+      if(nr[i] != null) return true;
+      return Array.isArray(a[i]) ? a[i].length>0 : !!a[i];
+    });
   }
   return true;
 }
@@ -571,8 +739,9 @@ function validate(){
     if(f.req&&!filled(f)){
       c.classList.add('invalid');
       if(f.t==='grid'){
-        const a=data[f.id]||[];
+        const a=data[f.id]||[], nr=naRows[f.id]||{};
         f.rows.forEach((_,i)=>{
+          if(nr[i] != null) return;
           const v=a[i]; const empty=Array.isArray(v)?!v.length:!v;
           if(empty) c.querySelectorAll('.row')[i].classList.add('miss');
         });
@@ -589,7 +758,8 @@ function validate(){
 }
 
 /* ---------- report / PDF ---------- */
-function statusCell(v){
+function statusCell(v, naReason){
+  if(naReason != null) return '<td class="st-na">לא רלוונטי</td>';
   const s=Array.isArray(v)?(v.length===1?v[0]:v.join(' + ')):v;
   if(s==='תקין') return '<td class="st-ok">תקין</td>';
   if(s==='לא תקין') return '<td class="st-bad">לא תקין</td>';
@@ -607,6 +777,10 @@ function buildReport(){
 
   h+='<h2>פרטי הבדיקה והמערכת</h2><table>';
   SCHEMA.filter(f=>f.t==='text'||f.t==='geo'||(f.t==='check'&&f.id!=='fanClean')).forEach(f=>{
+    if(na[f.id] != null){
+      h+=`<tr><td class="k">${esc(f.q)}</td><td class="st-na">לא רלוונטי — ${esc(na[f.id])}</td></tr>`;
+      return;
+    }
     let v=data[f.id]; if(Array.isArray(v))v=v.join(', ');
     if(f.input==='date'&&v)v=d;
     if(f.t==='geo'&&v){
@@ -619,15 +793,26 @@ function buildReport(){
   h+='</table>';
 
   SCHEMA.forEach(f=>{
-    if(f.t==='grid'){
+    if(f.t==='grid' && na[f.id]!=null){
+      h+=`<h2>${esc(f.q)}</h2><table><tr><td class="st-na">הפרק כולו סומן כלא רלוונטי — ${esc(na[f.id])}</td></tr></table>`;
+    }
+    else if(f.t==='grid'){
       h+=`<h2>${esc(f.q)}</h2><table><tr><th>סעיף הבדיקה</th><th style="width:70px;text-align:center">ממצא</th></tr>`;
-      f.rows.forEach((r,i)=>{h+=`<tr><td>${esc(r)}</td>${statusCell((data[f.id]||[])[i])}</tr>`;});
+      f.rows.forEach((r,i)=>{
+        const nr=(naRows[f.id]||{})[i];
+        const txt=esc(r)+(nr!=null?`<div style="color:#a35f06;font-size:9.5px;margin-top:2px">לא רלוונטי — ${esc(nr)}</div>`:'');
+        h+=`<tr><td>${txt}</td>${statusCell((data[f.id]||[])[i], nr)}</tr>`;
+      });
       h+='</table>';
     }
     if(f.id==='fanClean'){
-      h+=`<h2>ניקוי מאווררים</h2><table><tr><td class="k">ניקוי מאווררים</td><td>${esc((data.fanClean||[]).join(', '))}</td></tr></table>`;
+      const val = na.fanClean != null ? ('לא רלוונטי — ' + na.fanClean) : (data.fanClean||[]).join(', ');
+      h+=`<h2>ניקוי מאווררים</h2><table><tr><td class="k">ניקוי מאווררים</td><td>${esc(val)}</td></tr></table>`;
     }
-    if(f.t==='file'&&(files[f.id]||[]).length){
+    if(f.t==='file'&&na[f.id]!=null){
+      h+=`<h2>${esc(f.q)}</h2><table><tr><td class="st-na">לא רלוונטי — ${esc(na[f.id])}</td></tr></table>`;
+    }
+    else if(f.t==='file'&&(files[f.id]||[]).length){
       h+=`<h2>${esc(f.q)}</h2><div class="imgs">`;
       files[f.id].forEach(im=>{h+=`<figure><img src="${im.dataUrl}"></figure>`;});
       h+='</div>';
@@ -687,7 +872,10 @@ async function sbUpload(path, blob){
 function collectFaults(){
   const out = [];
   SCHEMA.filter(f => f.t === 'grid').forEach(f => {
+    if(na[f.id] != null) return;
+    const nr = naRows[f.id] || {};
     f.rows.forEach((r, i) => {
+      if(nr[i] != null) return;
       const v  = (data[f.id] || [])[i];
       const st = Array.isArray(v) ? v.join(' + ') : v;
       if (st && st.indexOf('לא תקין') > -1) out.push({section: f.q, item: r, status: st});
@@ -698,17 +886,30 @@ function collectFaults(){
 function collectSections(){
   const out = {};
   SCHEMA.filter(f => f.t === 'grid').forEach(f => {
-    out[f.id] = {title: f.q, rows: f.rows.map((r, i) => ({item: r, status: (data[f.id] || [])[i] || null}))};
+    const nr = naRows[f.id] || {};
+    out[f.id] = {title: f.q, rows: f.rows.map((r, i) => ({
+      item: r,
+      status: nr[i] != null ? 'לא רלוונטי' : ((data[f.id] || [])[i] || null),
+      na_reason: nr[i] != null ? nr[i] : null
+    }))};
   });
   out.fanClean = {title: 'ניקוי מאווררים', value: data.fanClean || []};
+  return out;
+}
+function collectNa(){
+  const out = {};
+  Object.keys(na).forEach(k => { out[k] = na[k]; });
   return out;
 }
 function joinVal(v){ return Array.isArray(v) ? v.join(', ') : (v || null); }
 
 async function saveToCloud(){
-  const id = (crypto.randomUUID ? crypto.randomUUID()
-              : Date.now() + '-' + Math.floor(performance.now()));
-  const base = 'reports/' + (data.date || 'no-date') + '/' + id;
+  const isEdit = !!EDIT.id;
+  const id = isEdit ? EDIT.id
+                    : (crypto.randomUUID ? crypto.randomUUID()
+                       : Date.now() + '-' + Math.floor(performance.now()));
+  const base = 'reports/' + (data.date || 'no-date') + '/' + id +
+               (isEdit ? '/v' + (EDIT.version + 1) : '');
 
   // 1 — תמונות
   const photos = {}; let n = 0, total = 0;
@@ -755,10 +956,24 @@ async function saveToCloud(){
     photos:          photos,
     photos_count:    total,
     report_path:     reportPath,
+    na_notes:        collectNa(),
     user_id:         AUTH && AUTH.user ? AUTH.user.id : null,
     user_name:       AUTH && AUTH.user ? AUTH.user.name : (data.inspector || null),
     app_version:     APP_VERSION
   };
+  if(isEdit){
+    delete row.id;
+    const r = await fetch(SUPABASE.url + '/functions/v1/update-report', {
+      method: 'POST',
+      headers: sbHeaders({'Content-Type': 'application/json'}),
+      body: JSON.stringify({token: AUTH.token, id: id, changes: row})
+    });
+    const j = await r.json().catch(() => ({}));
+    if(!r.ok || !j.ok) throw new Error('עדכון הדוח נכשל: ' + (j.error || r.status));
+    EDIT.version = j.version;
+    return id;
+  }
+
   const r = await fetch(SUPABASE.url + '/rest/v1/' + SUPABASE.table, {
     method: 'POST',
     headers: sbHeaders({'Content-Type': 'application/json', 'Prefer': 'return=minimal'}),
@@ -817,8 +1032,26 @@ function dl(blob,name){
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
 
+function softCheck(){
+  for(const f of SCHEMA.filter(x => x.soft)){
+    const a = data[f.id] || [], nr = naRows[f.id] || {};
+    const empty = f.rows.filter((_, i) => {
+      if(nr[i] != null) return false;
+      const v = a[i];
+      return Array.isArray(v) ? !v.length : !v;
+    }).length;
+    if(empty > 0){
+      const done = f.rows.length - empty;
+      if(!confirm('ב"' + f.q + '" סומנו ' + done + ' מתוך ' + f.rows.length + '.\n\n' +
+                  'האם כל הסטרינגים הנדרשים סומנו?')) return false;
+    }
+  }
+  return true;
+}
+
 async function sendReport(){
   if(!validate())return;
+  if(!softCheck())return;
   buildReport();
 
   const btn = document.querySelector('.btn.send');
@@ -835,6 +1068,13 @@ async function sendReport(){
     return;
   }
 
+  if(EDIT.id){
+    setBtn('✓ נשמר', true);
+    toast('העריכה נשמרה — גרסה ' + EDIT.version);
+    setTimeout(() => setBtn('💾 שמירת עריכה', false), 4000);
+    return;
+  }
+
   try{
     toast('שולח את הדוח למשרד…');
     const r = await fetch(SUPABASE.url + '/functions/v1/send-report', {
@@ -844,8 +1084,8 @@ async function sendReport(){
     });
     const txt = await r.text();
     if(!r.ok) throw new Error('(' + r.status + ') ' + txt.slice(0,200));
-    setBtn('✓ נשלח', true);
-    toast('הדוח נשלח אל ' + REPORT_EMAIL);
+    setBtn(EDIT.id ? '✓ נשמר' : '✓ נשלח', true);
+    toast(EDIT.id ? ('העריכה נשמרה — גרסה ' + EDIT.version) : ('הדוח נשלח אל ' + REPORT_EMAIL));
     setTimeout(()=>setBtn('📤 שליחת דו"ח', false), 4000);
   }catch(e){
     console.error(e);
@@ -853,6 +1093,129 @@ async function sendReport(){
     alert('הדוח נשמר בהצלחה במאגר, אך שליחת המייל נכשלה.\n\n' + (e.message || e) +
           '\n\nהדוח לא אבד — הוא שמור ואפשר לשלוח אותו מהמשרד.');
   }
+}
+
+/* ---------- מצב עריכה ---------- */
+const EDIT = { id: null, version: 1 };
+(function readEditHash(){
+  const m = (location.hash || '').match(/edit=([0-9a-fA-F-]{10,})/);
+  if(m) EDIT.id = m[1];
+})();
+
+async function loadForEdit(){
+  toast('טוען את הדוח לעריכה…');
+  const r = await fetch(SUPABASE.url + '/functions/v1/list-reports', {
+    method: 'POST',
+    headers: sbHeaders({'Content-Type': 'application/json'}),
+    body: JSON.stringify({token: AUTH.token, action: 'one', id: EDIT.id})
+  });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok || !j.ok) throw new Error(j.error || ('שגיאה ' + r.status));
+  const rep = j.report;
+  EDIT.version = rep.version || 1;
+
+  const setText = (cardId, val) => {
+    const inp = document.querySelector('#card-' + cardId + ' input');
+    if(inp && val != null){ inp.value = val; inp.dispatchEvent(new Event('input')); }
+  };
+  setText('date',           rep.inspection_date);
+  setText('portalSite',     rep.portal_site);
+  setText('client',         rep.client_name);
+  setText('siteLocation',   rep.site_location);
+  setText('roofAccess',     rep.roof_access);
+  setText('inverterQty',    rep.inverter_qty);
+  setText('inverterModel',  rep.inverter_model);
+  setText('panelPower',     rep.panel_power);
+  setText('panelCount',     rep.panel_count);
+  const wz = document.querySelector('#card-wazeLink .geo-in');
+  if(wz && rep.waze_link){ wz.value = rep.waze_link; wz.dispatchEvent(new Event('input')); }
+  if(rep.waze_coords) data.wazeCoords = rep.waze_coords;
+
+  const setChecks = (cardId, csv) => {
+    if(!csv) return;
+    const vals = String(csv).split(',').map(x => x.trim());
+    const card = document.getElementById('card-' + cardId);
+    vals.forEach(v => {
+      const box = [...card.querySelectorAll('input[type=checkbox]')]
+                   .find(b => b.dataset.v === v);
+      if(box){ box.checked = true; box.dispatchEvent(new Event('change')); }
+      else {
+        const ob = card.querySelector('input[data-other]');
+        const ot = card.querySelector('.other-in');
+        if(ob){ ob.checked = true; ob.dispatchEvent(new Event('change'));
+                if(ot){ ot.value = v; ot.dispatchEvent(new Event('input')); } }
+      }
+    });
+  };
+  setChecks('inverterType', rep.inverter_type);
+  setChecks('panelType',    rep.panel_type);
+  setChecks('fanClean',     rep.fan_clean);
+
+  const sec = rep.sections || {};
+  SCHEMA.filter(f => f.t === 'grid').forEach(f => {
+    const block = sec[f.id];
+    if(!block || !block.rows) return;
+    const card = document.getElementById('card-' + f.id);
+    naRows[f.id] = naRows[f.id] || {};
+    block.rows.forEach((r2, i) => {
+      if(r2.na_reason){
+        naRows[f.id][i] = r2.na_reason;
+        if(card._paintRow) card._paintRow(i);
+        return;
+      }
+      const vals = Array.isArray(r2.status) ? r2.status : (r2.status ? [r2.status] : []);
+      card.querySelectorAll('input[name="' + f.id + '_' + i + '"]').forEach(inp => {
+        if(vals.indexOf(inp.dataset.v) > -1){ inp.checked = true; inp.dispatchEvent(new Event('change')); }
+      });
+    });
+  });
+
+  const notes = rep.na_notes || {};
+  Object.keys(notes).forEach(k => {
+    na[k] = notes[k];
+    const card = document.getElementById('card-' + k);
+    if(card && card._naPaint) card._naPaint();
+  });
+
+  const urls = rep.photo_urls || [];
+  const byField = {};
+  Object.keys(rep.photos || {}).forEach(k => {
+    (rep.photos[k] || []).forEach(p => { byField[p.path] = k; });
+  });
+  let n = 0;
+  for(const key of Object.keys(rep.photos || {})){
+    files[key] = [];
+    for(const p of (rep.photos[key] || [])){
+      const u = urls.find(x => x.url && x.url.indexOf(p.path.split('/').pop()) > -1);
+      if(!u) continue;
+      try{
+        const resp = await fetch(u.url);
+        const blob = await resp.blob();
+        const dataUrl = await new Promise(res => {
+          const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob);
+        });
+        files[key].push({name: p.path.split('/').pop(), dataUrl: dataUrl});
+        n++;
+      }catch(e){ console.warn('photo load failed', p.path); }
+    }
+    const card = document.getElementById('card-' + key);
+    if(card && card._render) card._render();
+  }
+
+  document.querySelector('.btn.send').textContent = '💾 שמירת עריכה';
+  const hero = document.querySelector('.hero-body');
+  if(hero && !document.getElementById('editBanner')){
+    const d = document.createElement('div');
+    d.id = 'editBanner';
+    d.style.cssText = 'margin-top:14px;padding:11px 14px;border-radius:8px;background:#fffaf0;' +
+                      'border-inline-start:4px solid var(--accent);font-size:14px';
+    d.innerHTML = '<b>מצב עריכה</b> — גרסה ' + EDIT.version +
+                  ' של דוח קיים. שמירה תיצור גרסה ' + (EDIT.version + 1) +
+                  ', והגרסה הנוכחית תישמר בהיסטוריה.';
+    hero.appendChild(d);
+  }
+  tick();
+  toast('הדוח נטען · ' + n + ' תמונות');
 }
 
 /* ---------- התחברות משתמשים ---------- */
@@ -908,6 +1271,15 @@ function enterApp(a){
     card.appendChild(chip);
   }
   tick();
+
+  if(EDIT.id){
+    if(a.user.role !== 'office'){
+      alert('רק משתמשי משרד יכולים לערוך דוחות.');
+      EDIT.id = null;
+    } else {
+      loadForEdit().catch(e => alert('טעינת הדוח נכשלה: ' + (e.message || e)));
+    }
+  }
 }
 
 async function doLogin(){
