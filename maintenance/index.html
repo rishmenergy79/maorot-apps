@@ -77,13 +77,14 @@
 
   /* ---------- grid question ---------- */
   .grid-head{
-    display:grid;grid-template-columns:1fr 66px 66px 42px;gap:6px;
+    display:grid;grid-template-columns:1fr 62px 62px 52px;gap:6px;
     padding:6px 8px;font-size:13px;color:var(--muted);font-weight:600;
     border-bottom:1px solid var(--line);margin-bottom:4px;
   }
   .grid-head b{text-align:center;font-weight:600}
+  .grid-head b.na-h{font-size:10.5px;line-height:1.1;color:#a35f06}
   .row{
-    display:grid;grid-template-columns:1fr 66px 66px 42px;gap:6px;align-items:center;
+    display:grid;grid-template-columns:1fr 62px 62px 52px;gap:6px;align-items:center;
     padding:11px 8px;border-radius:8px;
   }
   .row:nth-child(odd){background:#f7f9fc}
@@ -193,7 +194,7 @@
     .wrap{padding:12px 8px}
     .card{padding:15px 14px}
     .hero h1{font-size:21px}
-    .grid-head,.row{grid-template-columns:1fr 48px 48px 38px}
+    .grid-head,.row{grid-template-columns:1fr 46px 46px 46px}
     .row .txt{font-size:13.3px}
   }
 
@@ -553,7 +554,7 @@ function build(f){
     const type = f.mode==='radio'?'radio':'checkbox';
     let h=`<div class="q-label">${esc(f.q)}${star(f)}</div>`
         + (f.hint?`<div class="q-hint">${esc(f.hint)}</div>`:'')
-        + `<div class="grid-head"><span></span><b>תקין</b><b>לא תקין</b><b></b></div>`;
+        + `<div class="grid-head"><span></span><b>תקין</b><b>לא תקין</b><b class="na-h">לא<br>רלוונטי</b></div>`;
     f.rows.forEach((r,i)=>{
       const nm=f.id+'_'+i;
       h+=`<div class="row" data-r="${i}">
