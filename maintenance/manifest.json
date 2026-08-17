@@ -1,0 +1,41 @@
+{
+  "name": "דו\"ח תחזוקה שנתית - מאורות",
+  "short_name": "תחזוקה סולארית",
+  "description": "דו\"ח תחזוקה שנתית למערכת סולארית — מאורות, כל האנרגיה בשבילך",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0e5c82",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "דוחות משרד",
+      "short_name": "משרד",
+      "url": "office.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
