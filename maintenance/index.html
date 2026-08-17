@@ -1013,7 +1013,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.17.5';
+const APP_VERSION = '2026.08.17.6';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -1291,7 +1291,7 @@ async function sendReport(){
     const r = await fetch(SUPABASE.url + '/functions/v1/send-report', {
       method: 'POST',
       headers: sbHeaders({'Content-Type': 'application/json'}),
-      body: JSON.stringify({id: id})
+      body: JSON.stringify({id: id, sentBy: (AUTH && AUTH.user ? AUTH.user.name : '')})
     });
     const txt = await r.text();
     if(!r.ok) throw new Error('(' + r.status + ') ' + txt.slice(0,200));
