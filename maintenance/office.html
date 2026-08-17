@@ -63,6 +63,7 @@
   .pill.ok{background:#e8f7f0;color:var(--ok)}
   .pill.bad{background:#fdeeec;color:var(--bad)}
   .pill.mute{background:#eef1f5;color:var(--muted)}
+  .pill.warn{background:#fff4e3;color:#b06a05}
   .act{padding:6px 12px;border:1px solid var(--line);border-radius:7px;background:#fff;
        color:var(--brand-2);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
        white-space:nowrap;text-decoration:none;display:inline-block}
@@ -136,7 +137,7 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
-const APP_VERSION = '2026.08.17.4';
+const APP_VERSION = '2026.08.17.5';
 
 /* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 async function checkVersion(){
@@ -223,6 +224,45 @@ async function setArchived(id, name, arch){
   }catch(e){ alert('הפעולה נכשלה: ' + e.message); }
 }
 
+function fmtDT(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  if(isNaN(d)) return '';
+  const p = n => String(n).padStart(2,'0');
+  return p(d.getDate()) + '/' + p(d.getMonth()+1) + '/' + d.getFullYear() +
+         ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+/* מצב המייל: נשלח / נשלח לפני עריכה / לא נשלח */
+function mailState(r){
+  if(!r.email_sent) return 'never';
+  const ver = r.version || 1;
+  const sentVer = r.email_sent_version;
+  if(sentVer != null) return (sentVer < ver) ? 'stale' : 'sent';
+  if(r.email_sent_at && r.edited_at)
+    return (new Date(r.email_sent_at) < new Date(r.edited_at)) ? 'stale' : 'sent';
+  return (ver > 1) ? 'stale' : 'sent';
+}
+
+function mailCell(r){
+  const st  = mailState(r);
+  const btn = (id, name, label) =>
+    '<div><button class="act send" onclick="sendMail(\'' + id + '\',\'' +
+    esc(name).replace(/'/g,"\\'") + '\')">' + label + '</button></div>';
+  const when = fmtDT(r.email_sent_at);
+  const stamp = when ? '<div class="sub">' + when + '</div>' : '';
+
+  if(st === 'never')
+    return '<span class="pill mute">לא נשלח</span>' +
+           btn(r.id, r.client_name, '📤 שלח דוח');
+
+  if(st === 'stale')
+    return '<span class="pill warn">נשלח לפני העריכה</span>' + stamp +
+           btn(r.id, r.client_name, '📤 שלח דוח מתוקן');
+
+  return '<span class="pill ok">נשלח</span>' + stamp;
+}
+
 async function sendMail(id, name){
   const msg = 'לשלוח את הדוח של "' + name + '" למייל המשרד?';
   if(!confirm(msg)) return;
@@ -286,15 +326,7 @@ function render(){
           ? '<span class="pill bad">' + faults + '</span>'
           : '<span class="pill ok">תקין</span>') + '</td>' +
       '<td data-l="תמונות">' + (r.photos_count || 0) + '</td>' +
-      '<td data-l="מייל">' + (r.email_sent
-          ? '<span class="pill ok">נשלח</span>'
-          : '<span class="pill mute">לא נשלח</span>') +
-        ((r.version && r.version > 1) || !r.email_sent
-          ? '<div><button class="act send" onclick="sendMail(\'' + r.id + '\',\'' +
-            esc(r.client_name).replace(/'/g,"\\'") + '\')">' +
-            ((r.version && r.version > 1) ? '📤 שלח דוח מתוקן' : '📤 שלח דוח') +
-            '</button></div>'
-          : '') + '</td>' +
+      '<td data-l="מייל">' + mailCell(r) + '</td>' +
       '<td class="acts">' +
         (r.report_url
           ? '<a class="act primary" target="_blank" href="' + VIEWER + '#' +
