@@ -98,8 +98,37 @@ function openRaw(){
   try{
     const r = await fetch(src);
     if(!r.ok) throw new Error('שגיאה ' + r.status);
-    const html = await r.text();
+    let html = await r.text();
     if(!html || html.length < 200) throw new Error('הקובץ ריק');
+
+    /* שם קובץ לשמירה — לקוח, מספר הזמנה ותאריך מתוך הדוח עצמו */
+    let fileName = '';
+    try{
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const pick = label => {
+        const td = [...doc.querySelectorAll('td')]
+          .find(x => x.textContent.replace(/\s+/g,' ').trim().indexOf(label) === 0);
+        return td && td.nextElementSibling
+          ? td.nextElementSibling.textContent.trim() : '';
+      };
+      const clean = v => String(v||'').replace(/[\\/:*?"<>|]/g,'-').trim();
+      const client = pick('שם הלקוח');
+      const pv     = pick('מספר הזמנת PV');
+      const dt     = pick('תאריך בדיקה');
+      const parts  = ['דוח תחזוקה שנתית'];
+      if(client) parts.push(clean(client));
+      if(pv)     parts.push('הזמנה ' + clean(pv));
+      if(dt)     parts.push(clean(String(dt).replace(/\//g, '.')));
+      if(parts.length > 1) fileName = parts.join(' - ');
+    }catch(e){}
+
+    if(fileName){
+      document.title = fileName;
+      if(/<title>[\s\S]*?<\/title>/i.test(html))
+        html = html.replace(/<title>[\s\S]*?<\/title>/i, '<title>' + fileName + '</title>');
+      else
+        html = html.replace(/<head[^>]*>/i, m => m + '<title>' + fileName + '</title>');
+    }
 
     stage.innerHTML = '';
     frame = document.createElement('iframe');
