@@ -360,6 +360,7 @@ const SCHEMA = [
   {t:'text',  id:'date',        q:'תאריך בדיקה:',            req:1, sub:'תאריך', input:'date'},
   {t:'text',  id:'inspector',   q:'שם הבודק:',               req:1},
   {t:'text',  id:'portalSite',  q:'שם האתר בפורטל',          req:1},
+  {t:'text',  id:'pvOrder',     q:'מספר הזמנת PV:',          req:1},
   {t:'text',  id:'client',      q:'שם הלקוח/ אתר:',          req:1},
   {t:'text',  id:'siteLocation',q:'מיקום האתר (כתובת מלאה):', req:1},
   {t:'geo',   id:'wazeLink',    q:'לינק וואיז:',             req:1},
@@ -1013,7 +1014,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.17.8';
+const APP_VERSION = '2026.08.17.9';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -1115,6 +1116,7 @@ async function saveToCloud(){
     inspection_date: data.date || null,
     inspector:       data.inspector || null,
     portal_site:     data.portalSite || null,
+    pv_order:        data.pvOrder || null,
     client_name:     data.client || null,
     site_location:   data.siteLocation || null,
     waze_link:       data.wazeLink || null,
@@ -1185,6 +1187,7 @@ function reportBodyText(){
     'דו"ח תחזוקה שנתית למערכת סולארית - 2026','',
     'לקוח/אתר: '+(data.client||''),
     'אתר בפורטל: '+(data.portalSite||''),
+    'מספר הזמנת PV: '+(data.pvOrder||''),
     'מיקום: '+(data.siteLocation||''),
     'לינק וואיז: '+(data.wazeLink||''),
     'תאריך בדיקה: '+(data.date? data.date.split('-').reverse().join('/'):''),
@@ -1331,6 +1334,7 @@ async function loadForEdit(){
   };
   setText('date',           rep.inspection_date);
   setText('portalSite',     rep.portal_site);
+  setText('pvOrder',        rep.pv_order);
   setText('client',         rep.client_name);
   setText('siteLocation',   rep.site_location);
   setText('roofAccess',     rep.roof_access);
