@@ -35,7 +35,13 @@
       "name": "דוחות משרד",
       "short_name": "משרד",
       "url": "office.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
-  ]
+  ],
+  "id": "/maorot-apps/maintenance/app"
 }
