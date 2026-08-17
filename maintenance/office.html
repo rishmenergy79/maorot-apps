@@ -72,6 +72,9 @@
   .pill.bad{background:#fdeeec;color:var(--bad)}
   .pill.mute{background:#eef1f5;color:var(--muted)}
   .pill.warn{background:#fff4e3;color:#b06a05}
+  .pill.draft{background:#e8f1fb;color:#0e5c82}
+  tbody tr.pinned{background:#f6fafe;box-shadow:inset 3px 0 0 var(--brand-2)}
+  tbody tr.pinned:hover{background:#eef6fd}
   .act{padding:6px 12px;border:1px solid var(--line);border-radius:7px;background:#fff;
        color:var(--brand-2);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
        white-space:nowrap;text-decoration:none;display:inline-block}
@@ -145,7 +148,7 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
-const APP_VERSION = '2026.08.17.9';
+const APP_VERSION = '2026.08.17.11';
 
 /* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 async function checkVersion(){
@@ -302,12 +305,20 @@ async function load(){
   rows.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#68738a">טוען…</td></tr>';
   try{
     const j = await call({search: document.getElementById('q').value, showArchived: showArchived});
-    all = j.reports || [];
+    all = (j.reports || []).slice().sort((a,b) => (b.pinned?1:0) - (a.pinned?1:0));
+    const real = all.filter(r => !r.pinned);
+    const mon  = new Date().toISOString().slice(0,7);
+    const st = {
+      total: real.length,
+      thisMonth: real.filter(r => (r.inspection_date || '').startsWith(mon)).length,
+      withFaults: real.filter(r => (r.faults_count || 0) > 0).length,
+      faultsSum: real.reduce((a,r) => a + (r.faults_count || 0), 0)
+    };
     document.getElementById('sum').innerHTML = showArchived
-      ? '<b>' + j.stats.total + '</b> דוחות בארכיון'
-      : 'סה"כ <b>' + j.stats.total + '</b> דוחות · החודש <b>' + j.stats.thisMonth + '</b> · ' +
-        'עם ממצאים <span class="warn"><b>' + j.stats.withFaults + '</b></span> ' +
-        '(' + j.stats.faultsSum + ' סעיפים)';
+      ? '<b>' + st.total + '</b> דוחות בארכיון'
+      : 'סה"כ <b>' + st.total + '</b> דוחות · החודש <b>' + st.thisMonth + '</b> · ' +
+        'עם ממצאים <span class="warn"><b>' + st.withFaults + '</b></span> ' +
+        '(' + st.faultsSum + ' סעיפים)';
     render();
   }catch(e){
     rows.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b">' +
@@ -326,8 +337,9 @@ function render(){
   document.getElementById('empty').classList.toggle('hide', list.length > 0);
   tb.innerHTML = list.map(r => {
     const faults = r.faults_count || 0;
-    return '<tr>' +
-      '<td data-l="תאריך">' + fmt(r.inspection_date) + '</td>' +
+    return '<tr class="' + (r.pinned ? 'pinned' : '') + '">' +
+      '<td data-l="תאריך">' + fmt(r.inspection_date) +
+        (r.pinned ? '<div class="sub"><span class="pill draft">📌 טיוטה</span></div>' : '') + '</td>' +
       '<td data-l="לקוח"><span class="site">' + esc(r.client_name) + '</span>' +
         (r.portal_site ? '<div class="sub">' + esc(r.portal_site) + '</div>' : '') +
         (r.pv_order ? '<div class="sub">הזמנת PV: ' + esc(r.pv_order) + '</div>' : '') + '</td>' +
