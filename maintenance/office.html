@@ -137,7 +137,7 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
-const APP_VERSION = '2026.08.17.5';
+const APP_VERSION = '2026.08.17.6';
 
 /* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 async function checkVersion(){
@@ -249,18 +249,23 @@ function mailCell(r){
   const btn = (id, name, label) =>
     '<div><button class="act send" onclick="sendMail(\'' + id + '\',\'' +
     esc(name).replace(/'/g,"\\'") + '\')">' + label + '</button></div>';
-  const when = fmtDT(r.email_sent_at);
-  const stamp = when ? '<div class="sub">' + when + '</div>' : '';
 
   if(st === 'never')
     return '<span class="pill mute">לא נשלח</span>' +
            btn(r.id, r.client_name, '📤 שלח דוח');
 
+  const when = fmtDT(r.email_sent_at);
+  const by   = r.email_sent_by ? ('ע"י ' + esc(r.email_sent_by)) : '';
+  const info = (when || by)
+    ? '<div class="sub">' + [when, by].filter(Boolean).join(' · ') + '</div>'
+    : '';
+
   if(st === 'stale')
-    return '<span class="pill warn">נשלח לפני העריכה</span>' + stamp +
+    return '<span class="pill warn">נשלח לפני העריכה</span>' + info +
            btn(r.id, r.client_name, '📤 שלח דוח מתוקן');
 
-  return '<span class="pill ok">נשלח</span>' + stamp;
+  const edited = (r.version || 1) > 1;
+  return '<span class="pill ok">' + (edited ? 'דוח ערוך נשלח' : 'נשלח') + '</span>' + info;
 }
 
 async function sendMail(id, name){
@@ -272,7 +277,7 @@ async function sendMail(id, name){
     const r = await fetch(BASE + '/send-report', {
       method:'POST',
       headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
-      body: JSON.stringify({id: id})
+      body: JSON.stringify({id: id, sentBy: (me && me.name) || ''})
     });
     const txt = await r.text();
     if(!r.ok) throw new Error('(' + r.status + ') ' + txt.slice(0,200));
