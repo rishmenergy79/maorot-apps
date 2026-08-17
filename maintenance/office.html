@@ -149,6 +149,34 @@ window.addEventListener('load', () => setTimeout(checkVersion, 1500));
 document.addEventListener('visibilitychange', () => { if(!document.hidden) checkVersion(); });
 setInterval(checkVersion, 10 * 60 * 1000);
 
+סמן את כולו ומחק, והדבק במקומו:
+
+js
+const APP_VERSION = '2026.08.13.5';
+
+/* ---------- רענון אוטומטי לגרסה חדשה ---------- */
+async function checkVersion(){
+  try{
+    const r = await fetch('version.json?t=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) return;
+    const j = await r.json();
+    if(!j.version || j.version === APP_VERSION) return;
+
+    const already = new URLSearchParams(location.search).get('v');
+    if(already === j.version) return;
+
+    const lg = document.getElementById('login');
+    if(lg && !lg.classList.contains('hide')){
+      const u = document.getElementById('user'), p2 = document.getElementById('pass');
+      if((u && u.value) || (p2 && p2.value)) return;
+    }
+    location.replace(location.pathname + '?v=' + encodeURIComponent(j.version));
+  }catch(e){}
+}
+window.addEventListener('load', () => setTimeout(checkVersion, 4000));
+document.addEventListener('visibilitychange', () => { if(!document.hidden) checkVersion(); });
+setInterval(checkVersion, 10 * 60 * 1000);
+
 let token = '', me = null, onlyFaults = false, showArchived = false, all = [];
 
 async function call(payload){
