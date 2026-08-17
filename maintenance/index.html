@@ -393,9 +393,12 @@ const SCHEMA = [
 
   {t:'check', id:'panelClean',   q:'ממצא פאנלים', req:1, single:1, opts:['נקי','לא נקי']},
 
+  {t:'file',  id:'imgPanelClean', q:'תמונות ממצא פאנלים', req:0, audio:0, max:10,
+   reqIf:{field:'panelClean', value:'לא נקי'}},
+
   {t:'check', id:'brokenPanels', q:'נמצאו פאנלים שבורים', req:1, single:1, opts:['כן','לא']},
 
-  {t:'file',  id:'imgBroken', q:'תמונות פאנלים שבורים', req:0, audio:0, max:0,
+  {t:'file',  id:'imgBroken', q:'תמונות פאנלים שבורים', req:0, audio:0, max:10,
    showIf:{field:'brokenPanels', value:'כן'}},
 
   {t:'grid', id:'strings', mode:'radio', q:'בדיקת ייצור סטרינגים', req:0, soft:1, vals:1,
@@ -433,6 +436,8 @@ const SCHEMA = [
 
   {t:'check', id:'fanClean', q:'ניקוי מאווררים', req:1, opts:['בוצע','לא בוצע- אין צורך']},
 
+  {t:'file', id:'imgFanClean', q:'תמונות ניקוי מאווררים', req:1, audio:0, max:10},
+
   {t:'file', id:'imgInverters', q:'תמונה: ממירים', req:1, audio:1},
 
   {t:'grid', id:'s6', mode:'check', q:'6. ארונות AC- ארון מונה, ריכוז ממירים, מפסק ראשי', req:1, rows:[
@@ -456,6 +461,12 @@ const NOTE_AUDIO = 'אפשר להעלות עד 5 קבצים נתמכים: audio 
 const NOTE_MANY  = 'אפשר להעלות כמה תמונות שנדרש. גודל מקסימלי לקובץ: 10 MB.';
 const MAX_FILES = 5;
 const MAX_MB = 10;
+function fileLimit(f){ return (f.max === 0) ? Infinity : (f.max || MAX_FILES); }
+function fileNote(f){
+  if(f.max === 0) return NOTE_MANY;
+  if(f.max) return 'אפשר להעלות עד ' + f.max + ' תמונות. הוסף תמונה נוספת בלחיצה על "הוספת קובץ". גודל מקסימלי לקובץ: ' + MAX_MB + ' MB.';
+  return f.audio ? NOTE_AUDIO : NOTE_IMG;
+}
 
 /* ---------- state ---------- */
 const NA = 'לא רלוונטי';
@@ -713,7 +724,7 @@ function build(f){
 
   else if(f.t==='file'){
     c.innerHTML=`<div class="q-label">${esc(f.q)}${star(f)}</div>`
-      + `<div class="up-note">${esc(f.max===0 ? NOTE_MANY : (f.audio?NOTE_AUDIO:NOTE_IMG))}</div>`
+      + `<div class="up-note">${esc(fileNote(f))}</div>`
       + `<button type="button" class="up-btn">⬆ הוספת קובץ</button>`
       + `<input type="file" accept="image/*" multiple hidden>`
       + `<div class="thumbs"></div><div class="count"></div>`;
@@ -724,7 +735,7 @@ function build(f){
     pick.onchange=e=>{
       const list=[...e.target.files];
       list.forEach(file=>{
-        const lim = (f.max===0) ? Infinity : (f.max || MAX_FILES);
+        const lim = fileLimit(f);
         if(files[f.id].length>=lim){toast('ניתן להעלות עד '+lim+' קבצים');return;}
         if(file.size>MAX_MB*1024*1024){toast('הקובץ '+file.name+' גדול מ-'+MAX_MB+'MB');return;}
         shrink(file,url=>{files[f.id].push({name:file.name,dataUrl:url});render();});
@@ -740,14 +751,15 @@ function build(f){
         thumbs.appendChild(d);
       });
       cnt.textContent = files[f.id].length
-        ? (f.max===0 ? (files[f.id].length + ' תמונות') : (files[f.id].length+' מתוך '+MAX_FILES+' קבצים'))
+        ? (f.max===0 ? (files[f.id].length + ' תמונות')
+                     : (files[f.id].length + ' מתוך ' + fileLimit(f) + ' קבצים'))
         : '';
       tick();
     }
     c._render=render;
   }
 
-  if(f.req && f.id !== 'inspector') addNaChip(c, f);
+  if((f.req || f.reqIf || f.showIf) && f.id !== 'inspector') addNaChip(c, f);
   return c;
 }
 
@@ -809,14 +821,21 @@ function shrink(file,cb){
 }
 
 /* ---------- validation / progress ---------- */
+function condOn(cond){
+  if(!cond) return false;
+  const src = data[cond.field];
+  return Array.isArray(src) ? src.indexOf(cond.value) > -1 : src === cond.value;
+}
 function filled(f){
+  if(na[f.id] != null) return true;
   if(f.showIf){
-    const src = data[f.showIf.field];
-    const on  = Array.isArray(src) ? src.indexOf(f.showIf.value) > -1 : src === f.showIf.value;
-    if(!on) return true;
+    if(!condOn(f.showIf)) return true;
     if(f.t === 'file') return (files[f.id]||[]).length > 0;   // נדרשת לפחות תמונה אחת
   }
-  if(na[f.id] != null) return true;
+  if(f.reqIf){
+    if(!condOn(f.reqIf)) return true;
+    if(f.t === 'file') return (files[f.id]||[]).length > 0;
+  }
   if(f.t==='text'||f.t==='geo')  return !!(data[f.id]||'').trim();
   if(f.t==='check') return (data[f.id]||[]).length>0;
   if(f.t==='file')  return (files[f.id]||[]).length>0;
@@ -833,10 +852,24 @@ function applyConditions(){
   SCHEMA.filter(f => f.showIf).forEach(f => {
     const card = document.getElementById('card-' + f.id);
     if(!card) return;
-    const src  = data[f.showIf.field];
-    const on   = Array.isArray(src) ? src.indexOf(f.showIf.value) > -1 : src === f.showIf.value;
+    const on = condOn(f.showIf);
     card.style.display = on ? '' : 'none';
     if(!on && (files[f.id]||[]).length){ files[f.id] = []; if(card._render) card._render(); }
+  });
+  /* שדות שהופכים לחובה לפי תשובה קודמת — הצגת כוכבית */
+  SCHEMA.filter(f => f.reqIf).forEach(f => {
+    const card = document.getElementById('card-' + f.id);
+    if(!card) return;
+    const lab = card.querySelector('.q-label');
+    if(!lab) return;
+    const on = condOn(f.reqIf);
+    let s = lab.querySelector('.star');
+    if(on && !s){
+      s = document.createElement('span');
+      s.className = 'star';
+      s.textContent = ' *';
+      lab.appendChild(s);
+    } else if(!on && s){ s.remove(); }
   });
 }
 
@@ -855,7 +888,7 @@ function validate(){
     if(f.showIf && c.style.display === 'none') return;
     c.classList.remove('invalid');
     c.querySelectorAll('.row').forEach(r=>r.classList.remove('miss'));
-    const mustFill = f.req || (f.showIf && c.style.display !== 'none');
+    const mustFill = f.req || (f.showIf && c.style.display !== 'none') || condOn(f.reqIf);
     if(mustFill && !filled(f)){
       c.classList.add('invalid');
       if(f.t==='grid'){
@@ -961,7 +994,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.13.5';
+const APP_VERSION = '2026.08.17.2';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
