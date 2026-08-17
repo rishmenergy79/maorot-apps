@@ -1,0 +1,19 @@
+{
+  "name": "דוחות תחזוקה — משרד",
+  "short_name": "דוחות משרד",
+  "description": "צפייה ועריכה של דוחות תחזוקה שנתית — מאורות",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "office.html",
+  "scope": "./",
+  "id": "/maorot-apps/maintenance/office",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0e5c82",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
