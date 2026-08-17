@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="דוחות משרד">
+<link rel="manifest" href="manifest-office.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -144,7 +145,7 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
-const APP_VERSION = '2026.08.17.7';
+const APP_VERSION = '2026.08.17.8';
 
 /* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 async function checkVersion(){
@@ -356,6 +357,11 @@ function render(){
       '</td>' +
     '</tr>';
   }).join('');
+}
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 </script>
 </body>
