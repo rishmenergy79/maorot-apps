@@ -900,7 +900,7 @@ function tick(){
 tick();
 
 function validate(){
-  let first=null;
+  let first=null, firstF=null, firstRow=null;
   SCHEMA.forEach(f=>{
     const c=document.getElementById('card-'+f.id);
     if(f.showIf && c.style.display === 'none') return;
@@ -916,15 +916,25 @@ function validate(){
         f.rows.forEach((_,i)=>{
           if(nr[i] != null) return;
           const v=a[i]; const empty=Array.isArray(v)?!v.length:!v;
-          if(empty) c.querySelectorAll('.row')[i].classList.add('miss');
+          if(empty){
+            c.querySelectorAll('.row')[i].classList.add('miss');
+            if(!first && firstRow == null) firstRow = f.rows[i];
+          }
         });
       }
-      if(!first) first = (f.mergeInto ? (document.getElementById('card-'+f.mergeInto)||c) : c);
+      if(!first){
+        first = (f.mergeInto ? (document.getElementById('card-'+f.mergeInto)||c) : c);
+        firstF = f;
+      }
     }
   });
   if(first){
     first.scrollIntoView({behavior:'smooth',block:'center'});
-    toast('יש שאלות חובה שלא מולאו');
+    let what = firstF ? String(firstF.q).replace(/:\s*$/, '') : '';
+    if(firstF && firstF.t === 'grid' && firstRow){
+      what += ' — ' + String(firstRow).split('(')[0].trim();
+    }
+    toast(what ? ('חסר מילוי: ' + what) : 'יש שאלות חובה שלא מולאו');
     return false;
   }
   return true;
@@ -1003,7 +1013,12 @@ function makePDF(){
   if(!validate())return;
   buildReport();
   const t=document.title;
-  document.title='דוח תחזוקה שנתית - '+(data.client||'')+' - '+(data.date||'');
+  const clean = v => String(v||'').replace(/[\\/:*?"<>|]/g,'-').trim();
+  const parts = ['דוח תחזוקה שנתית'];
+  if(data.client)  parts.push(clean(data.client));
+  if(data.pvOrder) parts.push('הזמנה ' + clean(data.pvOrder));
+  if(data.date)    parts.push(data.date.split('-').reverse().join('.'));
+  document.title = parts.join(' - ');
   setTimeout(()=>{window.print();document.title=t;},120);
 }
 
@@ -1014,7 +1029,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.17.9';
+const APP_VERSION = '2026.08.17.11';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -1172,7 +1187,12 @@ function reportFileName(){
   return 'דוח-תחזוקה-' + (data.client||'אתר').replace(/[\\/:*?"<>|]/g,'-') + '-' + (data.date||'') ;
 }
 function reportSubject(){
-  return 'דו"ח תחזוקה שנתית למערכת סולארית 2026 — ' + (data.client||'') + ' — ' + (data.date? data.date.split('-').reverse().join('/') : '');
+  const clean = v => String(v||'').replace(/[\\/:*?"<>|]/g,'-').trim();
+  const parts = ['דוח תחזוקה שנתית'];
+  if(data.client)  parts.push(clean(data.client));
+  if(data.pvOrder) parts.push('הזמנה ' + clean(data.pvOrder));
+  if(data.date)    parts.push(data.date.split('-').reverse().join('.'));
+  return parts.join(' - ');
 }
 function reportBodyText(){
   const faults=[];
@@ -1499,6 +1519,10 @@ function enterApp(a){
   }
   tick();
 
+  if(/(^|[#&])demo\b/.test(location.hash) && !EDIT.id){
+    setTimeout(fillDemo, 300);
+  }
+
   if(EDIT.id){
     if(a.user.role !== 'office'){
       alert('רק משתמשי משרד יכולים לערוך דוחות.');
@@ -1507,6 +1531,128 @@ function enterApp(a){
       loadForEdit().catch(e => alert('טעינת הדוח נכשלה: ' + (e.message || e)));
     }
   }
+}
+
+
+/* ---------- מילוי דוח דמו לבדיקות (index.html#demo) ---------- */
+function demoImage(label){
+  const cv = document.createElement('canvas');
+  cv.width = 900; cv.height = 640;
+  const g = cv.getContext('2d');
+  const grd = g.createLinearGradient(0,0,0,640);
+  grd.addColorStop(0,'#eef3f9'); grd.addColorStop(1,'#dfe8f1');
+  g.fillStyle = grd; g.fillRect(0,0,900,640);
+  g.strokeStyle = '#2ba2da'; g.lineWidth = 10; g.strokeRect(14,14,872,612);
+  g.fillStyle = '#f7941e'; g.fillRect(14,14,872,14);
+  g.textAlign = 'center';
+  g.fillStyle = '#0e5c82'; g.font = 'bold 40px Arial';
+  g.fillText('תמונת בדיקה', 450, 290);
+  g.fillStyle = '#68738a'; g.font = '28px Arial';
+  g.fillText(String(label || ''), 450, 345);
+  g.font = '22px Arial';
+  g.fillText('דוח טיוטה — אינו דוח אמיתי', 450, 400);
+  return cv.toDataURL('image/jpeg', 0.7);
+}
+
+function demoPick(cardId, value){
+  const c = document.getElementById('card-' + cardId);
+  if(!c) return;
+  const inp = [...c.querySelectorAll('input[type=checkbox][data-v]')]
+                .find(x => x.dataset.v === value);
+  if(inp && !inp.checked) inp.click();
+}
+
+function demoGrid(fid, marks, naRow, naReason){
+  const f = SCHEMA.find(x => x.id === fid);
+  const c = document.getElementById('card-' + fid);
+  if(!f || !c) return;
+  f.rows.forEach((_, i) => {
+    if(naRow === i) return;
+    const want = marks[i] || 'תקין';
+    const inp = [...c.querySelectorAll('.row[data-r="' + i + '"] .cell input')]
+                  .find(x => x.dataset.v === want);
+    if(inp && !inp.checked) inp.click();
+  });
+  if(naRow != null){
+    naRows[fid] = naRows[fid] || {};
+    naRows[fid][naRow] = naReason || 'סעיף לא רלוונטי — דוח בדיקה';
+    if(c._paintRow) c._paintRow(naRow);
+  }
+}
+
+function fillDemo(){
+  const setT = (id, v) => {
+    const c = document.getElementById('card-' + id);
+    if(!c) return;
+    const i = c.querySelector('input');
+    if(!i || i.readOnly) return;
+    i.value = v; i.dispatchEvent(new Event('input'));
+  };
+  const today = new Date().toISOString().slice(0,10);
+
+  setT('date',         today);
+  setT('portalSite',   'אתר בדיקה — טיוטה');
+  setT('pvOrder',      'PV-000000');
+  setT('client',       'טיוטה — דוח לבדיקות בלבד');
+  setT('siteLocation', 'רחוב הדוגמה 1, תל אביב');
+  setT('roofAccess',   'סולם קבוע בחזית המבנה, גישה חופשית');
+  setT('inverterQty',  '2');
+  setT('inverterModel','SE17K');
+  setT('panelPower',   '550W');
+  setT('panelCount',   '120');
+
+  const wz = document.querySelector('#card-wazeLink .geo-in');
+  if(wz){
+    wz.value = 'https://waze.com/ul?ll=32.085300,34.781800&navigate=yes';
+    wz.dispatchEvent(new Event('input'));
+  }
+
+  demoPick('inverterType', 'SOLAREDGE');
+  demoPick('panelType',    'JINKO');
+  demoPick('fanClean',     'בוצע');
+  demoPick('panelClean',   'לא נקי');
+  demoPick('brokenPanels', 'כן');
+
+  /* ממצאים מכוונים — כדי שיהיה מה לבדוק */
+  demoGrid('s1', {1:'לא תקין'});
+  demoGrid('s2', {3:'לא תקין'}, 5, 'אין מערכת ניטור באתר הבדיקה');
+  demoGrid('s3', {});
+  demoGrid('s4', {2:'לא תקין'});
+  demoGrid('s5', {});
+  demoGrid('s6', {1:'לא תקין'});
+  demoGrid('s7', {});
+
+  /* סטרינגים — שניים, אחד תקין ואחד לא */
+  const sc = document.getElementById('card-strings');
+  if(sc){
+    const add = sc.querySelector('[data-add]');
+    if(add && gridShown['strings'] < 2) add.click();
+    const mark = (i, v, val) => {
+      const inp = [...sc.querySelectorAll('.row[data-r="' + i + '"] .cell input')]
+                    .find(x => x.dataset.v === v);
+      if(inp && !inp.checked) inp.click();
+      const vin = sc.querySelector('[data-vin="' + i + '"]');
+      if(vin){ vin.value = val; vin.dispatchEvent(new Event('input')); }
+    };
+    mark(0, 'תקין',    '9.8A / 742V');
+    mark(1, 'לא תקין', '4.1A / 690V');
+  }
+
+  /* תמונות — נוצרות בדפדפן, בלי קבצים חיצוניים */
+  SCHEMA.filter(f => f.t === 'file').forEach(f => {
+    const c = document.getElementById('card-' + f.id);
+    if(!c) return;
+    if(f.showIf && !condOn(f.showIf)) return;
+    files[f.id] = files[f.id] || [];
+    if(!files[f.id].length){
+      files[f.id].push({name: f.id + '-demo.jpg', dataUrl: demoImage(f.q)});
+      if(c._render) c._render();
+    }
+  });
+
+  tick();
+  toast('דוח טיוטה מולא — אפשר לשלוח');
+  window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
 async function doLogin(){
