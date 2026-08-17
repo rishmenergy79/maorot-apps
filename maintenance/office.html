@@ -145,7 +145,7 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
-const APP_VERSION = '2026.08.17.8';
+const APP_VERSION = '2026.08.17.9';
 
 /* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 async function checkVersion(){
@@ -329,7 +329,8 @@ function render(){
     return '<tr>' +
       '<td data-l="תאריך">' + fmt(r.inspection_date) + '</td>' +
       '<td data-l="לקוח"><span class="site">' + esc(r.client_name) + '</span>' +
-        (r.portal_site ? '<div class="sub">' + esc(r.portal_site) + '</div>' : '') + '</td>' +
+        (r.portal_site ? '<div class="sub">' + esc(r.portal_site) + '</div>' : '') +
+        (r.pv_order ? '<div class="sub">הזמנת PV: ' + esc(r.pv_order) + '</div>' : '') + '</td>' +
       '<td data-l="בודק">' + esc(r.user_name || r.inspector) +
         ((r.version && r.version > 1)
           ? '<div class="sub">נערך ע"י ' + esc(r.edited_by_name || '') +
