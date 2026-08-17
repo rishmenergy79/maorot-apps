@@ -18,6 +18,7 @@
   }
   .wrap{max-width:1180px;margin:0 auto;padding:16px 12px 60px}
 
+  /* ---------- header ---------- */
   header{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:16px;
          box-shadow:0 1px 3px rgba(16,32,60,.08),0 6px 18px rgba(16,32,60,.06)}
   .band{height:7px;background:linear-gradient(90deg,var(--brand-2) 45%,var(--accent) 75%,var(--accent-2))}
@@ -27,6 +28,7 @@
   .sum b{color:var(--brand-dp)}
   .sum .warn{color:var(--bad)}
 
+  /* ---------- login ---------- */
   #login{max-width:390px;margin:9vh auto;background:#fff;border-radius:16px;padding:30px 26px;
          text-align:center;box-shadow:0 20px 50px rgba(6,25,48,.14)}
   #login h2{margin:0 0 6px;font-size:19px;color:var(--brand-dp)}
@@ -40,6 +42,7 @@
   #who button{border:none;background:none;color:var(--brand-2);font-family:inherit;
               font-size:13px;text-decoration:underline;cursor:pointer}
 
+  /* ---------- toolbar ---------- */
   .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
   .tools input{flex:1;min-width:200px;padding:10px 13px;font-size:15px;font-family:inherit;
                border:1px solid var(--line);border-radius:9px;background:#fff}
@@ -47,6 +50,7 @@
                 color:var(--brand-2);font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer}
   .tools button.on{background:var(--brand-dp);border-color:var(--brand-dp);color:#fff}
 
+  /* ---------- table ---------- */
   .card{background:#fff;border-radius:12px;overflow:hidden;
         box-shadow:0 1px 3px rgba(16,32,60,.08),0 6px 18px rgba(16,32,60,.06)}
   table{width:100%;border-collapse:collapse;font-size:14px}
@@ -80,6 +84,7 @@
 </head>
 <body>
 
+<!-- ============ מסך כניסה ============ -->
 <div id="login">
   <h2>דוחות תחזוקה שנתית</h2>
   <p>מאורות — כל האנרגיה בשבילך</p>
@@ -89,6 +94,7 @@
   <div class="err" id="loginErr"></div>
 </div>
 
+<!-- ============ המסך הראשי ============ -->
 <div class="wrap hide" id="app">
   <header>
     <div class="band"></div>
@@ -127,8 +133,9 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
-const APP_VERSION = '2026.08.13.5';
+const APP_VERSION = '2026.08.17.2';
 
+/* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 async function checkVersion(){
   try{
     const r = await fetch('version.json?t=' + Date.now(), {cache:'no-store'});
