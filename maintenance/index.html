@@ -105,6 +105,8 @@
   }
   .na-btn:active{background:#f4f6f9}
   .na-btn.on{background:#fff6e8;border-color:var(--accent);color:#a35f06;font-weight:600}
+  .sub-file{margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
+  .sub-file .q-label{font-size:14.5px;color:var(--brand-dp)}
   .card-na{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .na-note{
     font-size:12.5px;color:#a35f06;background:#fff6e8;border-inline-start:3px solid var(--accent);
@@ -394,12 +396,12 @@ const SCHEMA = [
   {t:'check', id:'panelClean',   q:'ממצא פאנלים', req:1, single:1, opts:['נקי','לא נקי']},
 
   {t:'file',  id:'imgPanelClean', q:'תמונות ממצא פאנלים', req:0, audio:0, max:10,
-   reqIf:{field:'panelClean', value:'לא נקי'}},
+   mergeInto:'panelClean', reqIf:{field:'panelClean', value:'לא נקי'}},
 
   {t:'check', id:'brokenPanels', q:'נמצאו פאנלים שבורים', req:1, single:1, opts:['כן','לא']},
 
   {t:'file',  id:'imgBroken', q:'תמונות פאנלים שבורים', req:0, audio:0, max:10,
-   showIf:{field:'brokenPanels', value:'כן'}},
+   mergeInto:'brokenPanels', showIf:{field:'brokenPanels', value:'כן'}},
 
   {t:'grid', id:'strings', mode:'radio', q:'בדיקת ייצור סטרינגים', req:0, soft:1, vals:1,
    valLabel:'ערך שנמדד', dynamic:1, startRows:1,
@@ -436,7 +438,8 @@ const SCHEMA = [
 
   {t:'check', id:'fanClean', q:'ניקוי מאווררים', req:1, opts:['בוצע','לא בוצע- אין צורך']},
 
-  {t:'file', id:'imgFanClean', q:'תמונות ניקוי מאווררים', req:1, audio:0, max:10},
+  {t:'file', id:'imgFanClean', q:'תמונות ניקוי מאווררים', req:1, audio:0, max:10,
+   mergeInto:'fanClean'},
 
   {t:'file', id:'imgInverters', q:'תמונה: ממירים', req:1, audio:1},
 
@@ -507,7 +510,20 @@ const files = {};  // id -> [{name,dataUrl}]
 
 /* ---------- build ---------- */
 const host = document.getElementById('form');
-SCHEMA.forEach(f=>host.appendChild(build(f)));
+SCHEMA.forEach(f=>{
+  const el = build(f);
+  if(f.mergeInto){
+    const t = document.getElementById('card-' + f.mergeInto);
+    if(t){
+      el.classList.remove('card');
+      el.classList.add('sub-file');
+      const naw = t.querySelector('.card-na');
+      if(naw) t.insertBefore(el, naw); else t.appendChild(el);
+      return;
+    }
+  }
+  host.appendChild(el);
+});
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function star(f){return f.req?' <span class="star">*</span>':'';}
@@ -759,7 +775,7 @@ function build(f){
     c._render=render;
   }
 
-  if((f.req || f.reqIf || f.showIf) && f.id !== 'inspector') addNaChip(c, f);
+  if((f.req || f.reqIf || f.showIf) && f.id !== 'inspector' && !f.mergeInto) addNaChip(c, f);
   return c;
 }
 
@@ -828,6 +844,7 @@ function condOn(cond){
 }
 function filled(f){
   if(na[f.id] != null) return true;
+  if(f.mergeInto && na[f.mergeInto] != null) return true;
   if(f.showIf){
     if(!condOn(f.showIf)) return true;
     if(f.t === 'file') return (files[f.id]||[]).length > 0;   // נדרשת לפחות תמונה אחת
@@ -887,10 +904,12 @@ function validate(){
     const c=document.getElementById('card-'+f.id);
     if(f.showIf && c.style.display === 'none') return;
     c.classList.remove('invalid');
+    if(f.mergeInto){ const pc=document.getElementById('card-'+f.mergeInto); if(pc) pc.classList.remove('invalid'); }
     c.querySelectorAll('.row').forEach(r=>r.classList.remove('miss'));
     const mustFill = f.req || (f.showIf && c.style.display !== 'none') || condOn(f.reqIf);
     if(mustFill && !filled(f)){
-      c.classList.add('invalid');
+      const hc = f.mergeInto ? (document.getElementById('card-' + f.mergeInto) || c) : c;
+      hc.classList.add('invalid');
       if(f.t==='grid'){
         const a=data[f.id]||[], nr=naRows[f.id]||{};
         f.rows.forEach((_,i)=>{
@@ -899,7 +918,7 @@ function validate(){
           if(empty) c.querySelectorAll('.row')[i].classList.add('miss');
         });
       }
-      if(!first) first=c;
+      if(!first) first = (f.mergeInto ? (document.getElementById('card-'+f.mergeInto)||c) : c);
     }
   });
   if(first){
@@ -994,7 +1013,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.17.2';
+const APP_VERSION = '2026.08.17.3';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
