@@ -18,7 +18,7 @@
 </style>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script crossorigin src="https://unpkg.com/@supabase/supabase-js@2.105.0"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script crossorigin src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
 </head>
@@ -342,7 +342,9 @@ function renderSticker(st, { interactive, selected, onDown, onDelete, onResizeDo
         content,
         isImage && number != null && (() => {
             const fontSize = clampPx(cw * 0.045, 11, 16);
-            const oc = "#0B2A3A"; // צבע קונטור
+            const inner = "#FFFFFF"; // קונטור פנימי בהיר — בולט על רקע כהה
+            const outer = "#0B2A3A"; // קונטור חיצוני כהה — בולט על רקע בהיר
+            const ring = (c, r) => `-${r}px -${r}px 0 ${c}, ${r}px -${r}px 0 ${c}, -${r}px ${r}px 0 ${c}, ${r}px ${r}px 0 ${c}, 0 -${r}px 0 ${c}, 0 ${r}px 0 ${c}, -${r}px 0 0 ${c}, ${r}px 0 0 ${c}`;
             return (React.createElement("span", { style: {
                     position: "absolute",
                     top: "50%",
@@ -351,7 +353,7 @@ function renderSticker(st, { interactive, selected, onDown, onDelete, onResizeDo
                     fontSize,
                     fontWeight: 800,
                     color: "#00E5FF",
-                    textShadow: `-1px -1px 0 ${oc}, 1px -1px 0 ${oc}, -1px 1px 0 ${oc}, 1px 1px 0 ${oc}, 0 0 3px rgba(0,0,0,0.35)`,
+                    textShadow: `${ring(inner, 1)}, ${ring(outer, 2)}`,
                     lineHeight: 1,
                     pointerEvents: "none",
                 } }, number));
@@ -1716,13 +1718,17 @@ function LoginScreen() {
         try {
             const { error } = await sb.auth.signInWithPasskey();
             if (error) {
-                setError("לא ניתן היה להתחבר עם טביעת אצבע/פנים. ודאו שנרשמה כניסה ביומטרית בעבר, או התחברו עם סיסמה.");
+                const details = [error.code, error.name, error.message, error.status]
+                    .filter(Boolean)
+                    .join(" | ");
+                setError("כניסה ביומטרית נכשלה. פרטי השגיאה: " + (details || "לא התקבלו פרטים"));
+                console.error("signInWithPasskey error:", error);
             }
             // בהצלחה — onAuthStateChange בקומפוננטת האב יתפוס את השינוי אוטומטית
         }
         catch (e) {
             console.error(e);
-            setError("המכשיר/הדפדפן לא תומך בכניסה ביומטרית.");
+            setError("שגיאה בכניסה ביומטרית: " + (e && (e.message || e.name) ? `${e.name || ""} ${e.message || ""}` : String(e)));
         }
         finally {
             setBiometricBusy(false);
@@ -2134,15 +2140,18 @@ function CoordinationApp({ session }) {
         try {
             const { data, error } = await sb.auth.registerPasskey();
             if (error) {
-                alert("רישום כניסה ביומטרית נכשל. ודאו שהמכשיר/הדפדפן תומכים בטביעת אצבע או פנים, ונסו שוב.");
-                console.error(error);
+                const details = [error.code, error.name, error.message, error.status]
+                    .filter(Boolean)
+                    .join(" | ");
+                alert("רישום כניסה ביומטרית נכשל.\n\nפרטי השגיאה:\n" + (details || "לא התקבלו פרטים"));
+                console.error("registerPasskey error:", error);
                 return;
             }
             alert("כניסה ביומטרית נרשמה בהצלחה! מעכשיו תוכלו להתחבר עם טביעת אצבע/פנים במקום סיסמה.");
         }
         catch (e) {
+            alert("שגיאה ברישום כניסה ביומטרית.\n\nפרטים:\n" + (e && (e.message || e.name) ? `${e.name || ""} ${e.message || ""}` : String(e)));
             console.error(e);
-            alert("שגיאה ברישום כניסה ביומטרית.");
         }
     };
     const steps = ["לקוח", "ציוד", 'תצ"א', "דוח"];
