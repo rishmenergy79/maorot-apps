@@ -112,9 +112,10 @@ function openRaw(){
           ? td.nextElementSibling.textContent.trim() : '';
       };
       const clean = v => String(v||'').replace(/[\\/:*?"<>|]/g,'-').trim();
-      const client = pick('שם הלקוח');
-      const pv     = pick('מספר הזמנת PV');
-      const dt     = pick('תאריך בדיקה');
+      const good   = v => v && v.indexOf('לא רלוונטי') === -1 ? v : '';
+      const client = good(pick('שם הלקוח'));
+      const pv     = good(pick('מספר הזמנת PV'));
+      const dt     = good(pick('תאריך בדיקה'));
       const parts  = ['דוח תחזוקה שנתית'];
       if(client) parts.push(clean(client));
       if(pv)     parts.push('הזמנה ' + clean(pv));
