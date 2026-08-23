@@ -85,6 +85,8 @@
   .empty{padding:40px 20px;text-align:center;color:var(--muted)}
   .site{font-weight:600}
   .sub{font-size:12.5px;color:var(--muted)}
+  .int{margin-top:5px;padding:5px 8px;border-radius:7px;background:#fffdf3;border:1px solid #f0d9a0;
+       color:#a35f06;font-size:12.5px;line-height:1.45;white-space:pre-wrap}
   .hide{display:none}
 
   @media(max-width:760px){
@@ -148,7 +150,7 @@ const FN     = BASE + '/list-reports';
 const AUTHFN = BASE + '/auth';
 const KEY    = 'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc';
 const VIEWER = 'view.html';
-const APP_VERSION = '2026.08.17.11';
+const APP_VERSION = '2026.08.23.1';
 
 /* ---------- רענון אוטומטי לגרסה חדשה ---------- */
 async function checkVersion(){
@@ -342,7 +344,11 @@ function render(){
         (r.pinned ? '<div class="sub"><span class="pill draft">📌 טיוטה</span></div>' : '') + '</td>' +
       '<td data-l="לקוח"><span class="site">' + esc(r.client_name) + '</span>' +
         (r.portal_site ? '<div class="sub">' + esc(r.portal_site) + '</div>' : '') +
-        (r.pv_order ? '<div class="sub">הזמנת PV: ' + esc(r.pv_order) + '</div>' : '') + '</td>' +
+        (r.pv_order ? '<div class="sub">הזמנת PV: ' + esc(r.pv_order) + '</div>' : '') +
+        (r.internal_notes
+          ? '<div class="int" title="הערות פנימיות — משרד בלבד">🔒 ' +
+            esc(r.internal_notes).replace(/\n/g,' · ') + '</div>'
+          : '') + '</td>' +
       '<td data-l="בודק">' + esc(r.user_name || r.inspector) +
         ((r.version && r.version > 1)
           ? '<div class="sub">נערך ע"י ' + esc(r.edited_by_name || '') +
