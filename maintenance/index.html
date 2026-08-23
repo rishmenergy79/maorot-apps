@@ -107,6 +107,13 @@
   .na-btn.on{background:#fff6e8;border-color:var(--accent);color:#a35f06;font-weight:600}
   .sub-file{margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
   .sub-file .q-label{font-size:14.5px;color:var(--brand-dp)}
+  #report .pic-sec{margin:10px 0 4px;font-weight:700;color:var(--brand-dp);font-size:11.5px}
+  .row-pics{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+  .pic-btn{padding:6px 12px;border:1px dashed var(--brand-2);border-radius:8px;background:#f7fbfe;
+    color:var(--brand);font-size:13px;font-family:inherit;cursor:pointer}
+  .pic-btn:active{transform:translateY(1px)}
+  .row-pics .thumbs{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+  .row-pics .thumb{width:52px;height:52px}
   .grid-add .cnt{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--muted)}
   .grid-add .cnt input{width:74px;padding:7px 9px;font-size:15px;font-family:inherit;text-align:center;
     border:1px solid var(--line);border-radius:8px;background:#fbfcfe}
@@ -385,14 +392,12 @@ const SCHEMA = [
 
   {t:'file',  id:'imgDrone',    q:'תמונת רחפן של הפרוייקט', req:1, audio:0},
 
-  {t:'grid', id:'s1', mode:'radio', q:'1. קונסטרוקציה', req:1, rows:[
+  {t:'grid', id:'s1', mode:'radio', q:'1. קונסטרוקציה', req:1, photoRows:[0], rows:[
     'א. עלייה תקינה לגג (אופן הבדיקה: עפ"י תקנות הבטיחות- סולם קבוע / מדרגות)',
     'ב. בדיקת ברגים (אופן הבדיקה: מעבר על ברגי הקונסטרוקציה באופן מדגמי וחיזוקם)',
     'ג. קונסטרוקציה ( אופן הבדיקה: מעיכות, דיאגומלים)'
   ]},
 
-  {t:'file', id:'imgS1', q:'1. קונסטרוקציה — תמונות', req:1, audio:0, max:10,
-   mergeInto:'s1', hint:'לצלם: עלייה לגג · קונסטרוקציה'},
 
   {t:'grid', id:'s2', mode:'radio', q:'2. פאנלים סולאריים', req:1, rows:[
     'א. בדיקה ויזואלית (אופן הבדיקה: תקינות פיזית של שלמות מבנה הפאנלים)',
@@ -403,8 +408,6 @@ const SCHEMA = [
     'ו. בדיקות מתח (בדיקות מתח וזרם על כל הסטרינגים לפי תכנון)'
   ]},
 
-  {t:'file', id:'imgS2', q:'2. פאנלים סולאריים — תמונות', req:1, audio:0, max:10,
-   mergeInto:'s2', hint:'לצלם: מבנה הפאנלים · הצללות · עיגון וקליפים'},
 
   {t:'check', id:'panelClean',   q:'ממצא פאנלים', req:1, single:1, opts:['נקי','לא נקי']},
 
@@ -421,50 +424,42 @@ const SCHEMA = [
    hint:'לכל סטרינג שסומן חובה להקליד את הערך שנמדד. אפשר לרשום כמות סטרינגים או להוסיף אחד-אחד, עד 30.',
    rows:Array.from({length:30},(_,i)=>'סטרינג '+(i+1))},
 
-  {t:'grid', id:'s3', mode:'check', q:'3. מפסקים, מפצלים, קופסאות חיבורים', req:1, rows:[
+  {t:'grid', id:'s3', mode:'check', q:'3. מפסקים, מפצלים, קופסאות חיבורים', req:1, photoRows:[0,2], rows:[
     'א. חיזוק ברגים (אופן הבדיקה: חיזוק ברגי חיבור מפסקים, מנתקים, לוחות)',
     'ב. בדיקת איטום ללוחות חשמל (אופן הבדיקה: בדיקה ויזואלית, איטום בפני מים. לוודא סגירה של דלתות הלוח)',
     'ג. בדיקת מפסקי DC, נתיכים (אופן הבדיקה: בדיקה ויזואלית למפסקי DC ובדיקת תקינות נתיכים)',
     'ד. חיבור הכבלים, מפצלים, מהדקים (אופן הבדיקה: בדיקה ויזואלית, חיבור הכבילה, הידוק המהדקים)'
   ]},
 
-  {t:'file', id:'imgS3', q:'3. מפסקים, מפצלים, קופסאות חיבורים — תמונות', req:1, audio:0, max:10,
-   mergeInto:'s3', hint:'לצלם: חיזוק ברגים · מפסקי DC, נתיכים'},
 
-  {t:'grid', id:'s4', mode:'check', q:'4. חיווט, תעלות רשת, שרשורים', req:1, rows:[
+  {t:'grid', id:'s4', mode:'check', q:'4. חיווט, תעלות רשת, שרשורים', req:1, photoRows:[0,1], rows:[
     'א. עיגון תעלות ומכסים (אופן הבדיקה: בדיקת חוזק עיגון התעלות לקונסטרוקציה/ משקולות. בדיקת תעלות שאבן סגורות, במידת הצורך להוסיף גידים/ אזיקונים לסגירת תעלות)',
     'ב. חיבורי הארקות (אופן הבדיקה: לבדוק חיבורי הארקות ולחזקם אם צריך, כולל בתוואי תעלת הרשת)',
     'ג. פריסת כבלים וחיווטים (אופן הבדיקה: לוודא מצב כבלי ה- DC חשופים לשמש. לוודא חיווטים תקינים, לוודא שהכבלים מרוחקים מציד תעלת הרשת, בדיקת תקינות לשרשוריים)',
     'ד. כניסת כבילה ללוחות DC (אופן הבדיקה: לוודא הגנה על הכבילה)'
   ]},
 
-  {t:'file', id:'imgS4', q:'4. חיווט, תעלות רשת, שרשורים — תמונות', req:1, audio:0, max:10,
-   mergeInto:'s4', hint:'לצלם: תעלות ומכסים · חיבורי הארקות'},
 
-  {t:'grid', id:'s5', mode:'radio', q:'5. בדיקת ממירים', req:1, rows:[
+  {t:'grid', id:'s5', mode:'radio', q:'5. בדיקת ממירים', req:1, photoRows:[0], rows:[
     'א. ממירים (אופן הבדיקה: בדיקה ויזואלית של הממיר (קילופים, תקינות מסך וכו\'). בדיקת יציבות, ניקוי מאווררים במידת הצורך)',
     'ב. חיווט ותעלות (אופן הבדיקה: יש לוודא צורת חיווט כבלי ה- DC לממירים ושרשור בין הממירים. יש לוודא הגנה על הכבל ובדיקת איטום כניסות)',
     'ג. מפסקים (אופן הבדיקה: בדיקת איטום לקופסאות ותקינותן, חיזוק ברגים)',
     'ד. מתח (אופן הבדיקה: בדיקת מתחים ביציאה מהפקט לפני הכניסה לממיר)'
   ]},
 
-  {t:'file', id:'imgS5', q:'5. בדיקת ממירים — תמונות', req:1, audio:1, max:10,
-   mergeInto:'s5', hint:'לצלם: ממירים · תצוגת שגיאות'},
 
   {t:'check', id:'fanClean', q:'ניקוי מאווררים', req:1, opts:['בוצע','לא בוצע- אין צורך']},
 
   {t:'file', id:'imgFanClean', q:'תמונות ניקוי מאווררים', req:1, audio:0, max:10,
    mergeInto:'fanClean'},
 
-  {t:'grid', id:'s6', mode:'check', q:'6. ארונות AC- ארון מונה, ריכוז ממירים, מפסק ראשי', req:1, rows:[
+  {t:'grid', id:'s6', mode:'check', q:'6. ארונות AC- ארון מונה, ריכוז ממירים, מפסק ראשי', req:1, photoRows:[0], rows:[
     'א. בדיקה תרמוגרפית (אופן הבדיקה: בדיקה תרמוגרפית באמצעות מצלמת IR)',
     'ב. איטום לוחות AC (אופן הבדיקה: איטום לוחות, חדירת מים, סגירת דלתות)',
     'ג. תקינות מתח רשת (אופן הבדיקה: בדיקת תכנית מתח רשת בכניסה למפסק הראשי של המערכת)',
     'ד. יציבות וחיווט AC וחיזוק ברגים (אופן הבדיקה: בדיקת חיווט כבילה ויציבות לוחות חשמל, חיזוק ברגי מפסקים, בדיקה ויזואלית של תקינות הארון וניקיון בלוח)'
   ]},
 
-  {t:'file', id:'imgS6', q:'6. ארונות AC — תמונות', req:1, audio:1, max:10,
-   mergeInto:'s6', hint:'לצלם: ארון מונה · ריכוז ממירים · מפסק ראשי · תמונות ממצלמה תרמוגרפית'},
 
   {t:'grid', id:'s7', mode:'radio', q:'7. כבל הזנה AC/DC', req:1, rows:[
     'א. כבילה (אופן בדיקה: בדיקת חיזוק ברגים מפסק ראשי בלוח איסוף ממירים ובלוח צרכן. איטום כניסות ללוח/ הגנה על הכבל/ בדיקה ויזואלית כללית)',
@@ -472,8 +467,6 @@ const SCHEMA = [
     'ג. חיווט ויציבות כבילה (אופן הבדיקה: בדיקה ויזואלית)'
   ]},
 
-  {t:'file', id:'imgS7', q:'7. כבל הזנה AC/DC — תמונות', req:1, audio:0, max:10,
-   mergeInto:'s7', hint:'לצלם: כבל הזנה · לוח איסוף · חיזוק ברגים'},
 
   {t:'area', id:'inspectorNotes', q:'הערות מבצע הבדיקה', req:0, lines:5,
    sub:'כתיבה חופשית. ההערות יופיעו בדוח הסופי ובמייל.'},
@@ -500,6 +493,7 @@ const na     = {};   // fieldId -> reason            (שדות רגילים)
 const naRows = {};   // fieldId -> {rowIndex: reason} (שורות בפרקים)
 const gridVals = {}; // fieldId -> {rowIndex: value}  (ערך שנמדד)
 const gridShown = {}; // fieldId -> כמה שורות מוצגות (לשדות דינמיים)
+const rowFiles  = {}; // fieldId -> {rowIndex: [{name,dataUrl}]} (תמונות לשורה)
 
 /* ---- חלון הסיבה ---- */
 let naPending = null;
@@ -654,6 +648,11 @@ function build(f){
             <div class="cell"><input type="${type}" name="${nm}" data-i="${i}" data-v="לא תקין"></div>
             <div class="na-cell"><button type="button" class="na-btn" data-na="${i}">⊘</button></div>
             <div class="row-na-note" data-note="${i}" style="display:none"></div>
+            <div class="row-pics" data-pics="${i}">
+              <button type="button" class="pic-btn" data-pic="${i}">📷 הוספת תמונות${(f.photoRows||[]).indexOf(i)>-1?' <span class="star">*</span>':''}</button>
+              <input type="file" accept="image/*" multiple hidden data-pin="${i}">
+              <div class="thumbs" data-pth="${i}"></div>
+            </div>
             ${f.vals?`<div class="row-val" data-val="${i}" style="display:none">
                  <input type="text" data-vin="${i}" placeholder="${esc(f.valLabel||'ערך')}"></div>`:''}
           </div>`;
@@ -684,6 +683,8 @@ function build(f){
       note.style.display = isNa ? '' : 'none';
       note.textContent   = isNa ? ('לא רלוונטי — ' + naRows[f.id][i]) : '';
       el.querySelectorAll('.cell input').forEach(inp => { inp.disabled = isNa; });
+      const pics = el.querySelector('.row-pics');
+      if(pics) pics.style.display = isNa ? 'none' : '';
       if(isNa) el.classList.add('ans-na');
       else if(st==='תקין') el.classList.add('ans-ok');
       else if(st==='לא תקין') el.classList.add('ans-bad');
@@ -778,7 +779,36 @@ function build(f){
       });
     }
 
+    rowFiles[f.id] = rowFiles[f.id] || {};
+    const MAXROWPICS = 10;
+    const renderPics = (i) => {
+      const box = c.querySelector('[data-pth="' + i + '"]');
+      if(!box) return;
+      const list = rowFiles[f.id][i] || [];
+      box.innerHTML = '';
+      list.forEach((im, k) => {
+        const d = document.createElement('div'); d.className = 'thumb';
+        d.innerHTML = '<img src="' + im.dataUrl + '" alt=""><button type="button">✕</button>';
+        d.querySelector('button').onclick = () => { list.splice(k,1); renderPics(i); tick(); };
+        box.appendChild(d);
+      });
+    };
+    c._renderPics = renderPics;
     rowEls.forEach((el,i)=>{
+      const pb = el.querySelector('[data-pic]'), pin = el.querySelector('[data-pin]');
+      if(pb && pin){
+        pb.onclick = () => pin.click();
+        pin.onchange = e => {
+          const list = [...e.target.files];
+          rowFiles[f.id][i] = rowFiles[f.id][i] || [];
+          list.forEach(file => {
+            if(rowFiles[f.id][i].length >= MAXROWPICS){ toast('עד ' + MAXROWPICS + ' תמונות לשורה'); return; }
+            if(file.size > MAX_MB*1024*1024){ toast('הקובץ ' + file.name + ' גדול מ-' + MAX_MB + 'MB'); return; }
+            shrink(file, url => { rowFiles[f.id][i].push({name:file.name, dataUrl:url}); renderPics(i); tick(); });
+          });
+          pin.value = '';
+        };
+      }
       el.querySelector('[data-na]').onclick = () => {
         if(naRows[f.id][i] != null){ delete naRows[f.id][i]; paintRow(i); tick(); return; }
         naAsk('סימון שורה כלא רלוונטי', f.rows[i].split('(')[0].trim(), '', (reason) => {
@@ -924,10 +954,14 @@ function filled(f){
   if(f.t==='check') return (data[f.id]||[]).length>0;
   if(f.t==='file')  return (files[f.id]||[]).length>0;
   if(f.t==='grid'){
-    const a=data[f.id]||[], nr=naRows[f.id]||{};
-    return f.rows.every((_,i)=>{
+    const a=data[f.id]||[], nr=naRows[f.id]||{}, rf=rowFiles[f.id]||{};
+    const need=f.photoRows||[];
+    return f.rows.slice(0, shownCount(f)).every((_,i)=>{
       if(nr[i] != null) return true;
-      return Array.isArray(a[i]) ? a[i].length>0 : !!a[i];
+      const answered = Array.isArray(a[i]) ? a[i].length>0 : !!a[i];
+      if(!answered) return false;
+      if(need.indexOf(i) > -1 && !((rf[i]||[]).length)) return false;
+      return true;
     });
   }
   return true;
@@ -979,12 +1013,14 @@ function validate(){
       hc.classList.add('invalid');
       if(f.t==='grid'){
         const a=data[f.id]||[], nr=naRows[f.id]||{};
-        f.rows.forEach((_,i)=>{
+        const rf=rowFiles[f.id]||{}, need=f.photoRows||[];
+        f.rows.slice(0, shownCount(f)).forEach((_,i)=>{
           if(nr[i] != null) return;
           const v=a[i]; const empty=Array.isArray(v)?!v.length:!v;
-          if(empty){
+          const noPic = need.indexOf(i) > -1 && !((rf[i]||[]).length);
+          if(empty || noPic){
             c.querySelectorAll('.row')[i].classList.add('miss');
-            if(!first && firstRow == null) firstRow = f.rows[i];
+            if(!first && firstRow == null) firstRow = f.rows[i] + (empty ? '' : ' (חסרה תמונה)');
           }
         });
       }
@@ -1056,6 +1092,19 @@ function buildReport(){
         h+=`<tr><td>${txt}</td>${statusCell((data[f.id]||[])[i], nr)}</tr>`;
       });
       h+='</table>';
+
+      const rf = rowFiles[f.id] || {};
+      const withPics = f.rows.slice(0, shownCount(f))
+        .map((r,i)=>({r,i}))
+        .filter(x => (rf[x.i]||[]).length && (naRows[f.id]||{})[x.i] == null);
+      if(withPics.length){
+        h+=`<h2>${esc(f.q)} — תמונות</h2>`;
+        withPics.forEach(x => {
+          h+=`<div class="pic-sec">${esc(x.r.split('(')[0].trim())}</div><div class="imgs">`;
+          rf[x.i].forEach(im => { h+=`<figure><img src="${im.dataUrl}"></figure>`; });
+          h+='</div>';
+        });
+      }
     }
     if(f.t==='area' && !f.internal && (na[f.id]!=null || (data[f.id]||'').trim())){
       const txt = na[f.id]!=null
@@ -1096,7 +1145,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.23.1';
+const APP_VERSION = '2026.08.23.2';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -1174,6 +1223,10 @@ async function saveToCloud(){
   // 1 — תמונות
   const photos = {}; let n = 0, total = 0;
   SCHEMA.filter(f => f.t === 'file').forEach(f => total += (files[f.id] || []).length);
+  SCHEMA.filter(f => f.t === 'grid').forEach(f => {
+    const rf = rowFiles[f.id] || {};
+    Object.keys(rf).forEach(i => total += (rf[i] || []).length);
+  });
   for (const f of SCHEMA.filter(f => f.t === 'file')) {
     const list = files[f.id] || [];
     photos[f.id] = [];
@@ -1183,6 +1236,23 @@ async function saveToCloud(){
       await sbUpload(path, blob);
       photos[f.id].push({label: f.q, path: path});
       n++; toast('מעלה תמונות… ' + n + ' מתוך ' + total);
+    }
+  }
+  for (const f of SCHEMA.filter(f => f.t === 'grid')) {
+    const rf = rowFiles[f.id] || {};
+    for (const key of Object.keys(rf)) {
+      const list = rf[key] || [];
+      if(!list.length) continue;
+      const k = f.id + '_r' + key;
+      photos[k] = [];
+      const label = f.q + ' — ' + String(f.rows[key] || '').split('(')[0].trim();
+      for (let i = 0; i < list.length; i++) {
+        const blob = dataUrlToBlob(list[i].dataUrl);
+        const path = base + '/' + k + '-' + (i + 1) + '.jpg';
+        await sbUpload(path, blob);
+        photos[k].push({label: label, path: path});
+        n++; toast('מעלה תמונות… ' + n + ' מתוך ' + total);
+      }
     }
   }
 
@@ -1714,6 +1784,19 @@ function fillDemo(){
     const vals = ['9.8A / 742V','9.7A / 738V','9.9A / 744V','4.1A / 690V','9.6A / 736V'];
     vals.forEach((v,i) => mark(i, i===3 ? 'לא תקין' : 'תקין', v));
   }
+
+  /* תמונות לשורות שדורשות תיעוד */
+  SCHEMA.filter(f => f.t === 'grid' && (f.photoRows||[]).length).forEach(f => {
+    const c = document.getElementById('card-' + f.id);
+    rowFiles[f.id] = rowFiles[f.id] || {};
+    f.photoRows.forEach(i => {
+      if(!(rowFiles[f.id][i]||[]).length){
+        rowFiles[f.id][i] = [{name: f.id + '-r' + i + '.jpg',
+                              dataUrl: demoImage(String(f.rows[i]||'').split('(')[0].trim())}];
+        if(c && c._renderPics) c._renderPics(i);
+      }
+    });
+  });
 
   /* תמונות — נוצרות בדפדפן, בלי קבצים חיצוניים */
   SCHEMA.filter(f => f.t === 'file').forEach(f => {
