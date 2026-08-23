@@ -107,6 +107,14 @@
   .na-btn.on{background:#fff6e8;border-color:var(--accent);color:#a35f06;font-weight:600}
   .sub-file{margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
   .sub-file .q-label{font-size:14.5px;color:var(--brand-dp)}
+  .grid-add .cnt{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--muted)}
+  .grid-add .cnt input{width:74px;padding:7px 9px;font-size:15px;font-family:inherit;text-align:center;
+    border:1px solid var(--line);border-radius:8px;background:#fbfcfe}
+  .card textarea{width:100%;margin-top:8px;padding:11px 12px;font-size:15px;font-family:inherit;
+    border:1px solid var(--line);border-radius:9px;background:#fbfcfe;resize:vertical;line-height:1.5}
+  .card.internal{background:#fffdf3;border:1px solid #f0d9a0}
+  .card.internal .q-label{color:#a35f06}
+  .card.internal textarea{background:#fffef8;border-color:#f0d9a0}
   .card-na{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .na-note{
     font-size:12.5px;color:#a35f06;background:#fff6e8;border-inline-start:3px solid var(--accent);
@@ -383,7 +391,8 @@ const SCHEMA = [
     'ג. קונסטרוקציה ( אופן הבדיקה: מעיכות, דיאגומלים)'
   ]},
 
-  {t:'file', id:'imgRoofAccess', q:'תמונה של עלייה לגג', req:1, audio:0},
+  {t:'file', id:'imgS1', q:'1. קונסטרוקציה — תמונות', req:1, audio:0, max:10,
+   mergeInto:'s1', hint:'לצלם: עלייה לגג · קונסטרוקציה'},
 
   {t:'grid', id:'s2', mode:'radio', q:'2. פאנלים סולאריים', req:1, rows:[
     'א. בדיקה ויזואלית (אופן הבדיקה: תקינות פיזית של שלמות מבנה הפאנלים)',
@@ -393,6 +402,9 @@ const SCHEMA = [
     'ה. בדיקת הארקות לפאנלים (אופן הבדיקה: חיבור ע"י גידים במערכות ישנות וקליפ הארקה לכל פאנל במערכות חדשות)',
     'ו. בדיקות מתח (בדיקות מתח וזרם על כל הסטרינגים לפי תכנון)'
   ]},
+
+  {t:'file', id:'imgS2', q:'2. פאנלים סולאריים — תמונות', req:1, audio:0, max:10,
+   mergeInto:'s2', hint:'לצלם: מבנה הפאנלים · הצללות · עיגון וקליפים'},
 
   {t:'check', id:'panelClean',   q:'ממצא פאנלים', req:1, single:1, opts:['נקי','לא נקי']},
 
@@ -405,10 +417,9 @@ const SCHEMA = [
    mergeInto:'brokenPanels', showIf:{field:'brokenPanels', value:'כן'}},
 
   {t:'grid', id:'strings', mode:'radio', q:'בדיקת ייצור סטרינגים', req:0, soft:1, vals:1,
-   valLabel:'ערך שנמדד', dynamic:1, startRows:1,
-   hint:'לכל סטרינג שסומן חובה להקליד את הערך שנמדד. הוסף סטרינגים לפי הצורך.',
-   rows:['סטרינג 1','סטרינג 2','סטרינג 3','סטרינג 4','סטרינג 5',
-         'סטרינג 6','סטרינג 7','סטרינג 8','סטרינג 9','סטרינג 10']},
+   valLabel:'ערך שנמדד', dynamic:1, startRows:5,
+   hint:'לכל סטרינג שסומן חובה להקליד את הערך שנמדד. אפשר לרשום כמות סטרינגים או להוסיף אחד-אחד, עד 30.',
+   rows:Array.from({length:30},(_,i)=>'סטרינג '+(i+1))},
 
   {t:'grid', id:'s3', mode:'check', q:'3. מפסקים, מפצלים, קופסאות חיבורים', req:1, rows:[
     'א. חיזוק ברגים (אופן הבדיקה: חיזוק ברגי חיבור מפסקים, מנתקים, לוחות)',
@@ -417,8 +428,8 @@ const SCHEMA = [
     'ד. חיבור הכבלים, מפצלים, מהדקים (אופן הבדיקה: בדיקה ויזואלית, חיבור הכבילה, הידוק המהדקים)'
   ]},
 
-  {t:'file', id:'imgBolts',  q:'תמונה: חיזוק ברגים', req:1, audio:0},
-  {t:'file', id:'imgDcFuse', q:'תמונה: מפסקי DC, נתיכים', req:1, audio:0},
+  {t:'file', id:'imgS3', q:'3. מפסקים, מפצלים, קופסאות חיבורים — תמונות', req:1, audio:0, max:10,
+   mergeInto:'s3', hint:'לצלם: חיזוק ברגים · מפסקי DC, נתיכים'},
 
   {t:'grid', id:'s4', mode:'check', q:'4. חיווט, תעלות רשת, שרשורים', req:1, rows:[
     'א. עיגון תעלות ומכסים (אופן הבדיקה: בדיקת חוזק עיגון התעלות לקונסטרוקציה/ משקולות. בדיקת תעלות שאבן סגורות, במידת הצורך להוסיף גידים/ אזיקונים לסגירת תעלות)',
@@ -427,8 +438,8 @@ const SCHEMA = [
     'ד. כניסת כבילה ללוחות DC (אופן הבדיקה: לוודא הגנה על הכבילה)'
   ]},
 
-  {t:'file', id:'imgTrays',   q:'תמונה: תעלות ומכסים', req:1, audio:0},
-  {t:'file', id:'imgGrounds', q:'תמונה: חיבורי הארקות', req:1, audio:0},
+  {t:'file', id:'imgS4', q:'4. חיווט, תעלות רשת, שרשורים — תמונות', req:1, audio:0, max:10,
+   mergeInto:'s4', hint:'לצלם: תעלות ומכסים · חיבורי הארקות'},
 
   {t:'grid', id:'s5', mode:'radio', q:'5. בדיקת ממירים', req:1, rows:[
     'א. ממירים (אופן הבדיקה: בדיקה ויזואלית של הממיר (קילופים, תקינות מסך וכו\'). בדיקת יציבות, ניקוי מאווררים במידת הצורך)',
@@ -437,12 +448,13 @@ const SCHEMA = [
     'ד. מתח (אופן הבדיקה: בדיקת מתחים ביציאה מהפקט לפני הכניסה לממיר)'
   ]},
 
+  {t:'file', id:'imgS5', q:'5. בדיקת ממירים — תמונות', req:1, audio:1, max:10,
+   mergeInto:'s5', hint:'לצלם: ממירים · תצוגת שגיאות'},
+
   {t:'check', id:'fanClean', q:'ניקוי מאווררים', req:1, opts:['בוצע','לא בוצע- אין צורך']},
 
   {t:'file', id:'imgFanClean', q:'תמונות ניקוי מאווררים', req:1, audio:0, max:10,
    mergeInto:'fanClean'},
-
-  {t:'file', id:'imgInverters', q:'תמונה: ממירים', req:1, audio:1},
 
   {t:'grid', id:'s6', mode:'check', q:'6. ארונות AC- ארון מונה, ריכוז ממירים, מפסק ראשי', req:1, rows:[
     'א. בדיקה תרמוגרפית (אופן הבדיקה: בדיקה תרמוגרפית באמצעות מצלמת IR)',
@@ -451,13 +463,23 @@ const SCHEMA = [
     'ד. יציבות וחיווט AC וחיזוק ברגים (אופן הבדיקה: בדיקת חיווט כבילה ויציבות לוחות חשמל, חיזוק ברגי מפסקים, בדיקה ויזואלית של תקינות הארון וניקיון בלוח)'
   ]},
 
-  {t:'file', id:'imgThermal', q:'תמונות ממצלמה תרמוגרפית', req:1, audio:1},
+  {t:'file', id:'imgS6', q:'6. ארונות AC — תמונות', req:1, audio:1, max:10,
+   mergeInto:'s6', hint:'לצלם: ארון מונה · ריכוז ממירים · מפסק ראשי · תמונות ממצלמה תרמוגרפית'},
 
   {t:'grid', id:'s7', mode:'radio', q:'7. כבל הזנה AC/DC', req:1, rows:[
     'א. כבילה (אופן בדיקה: בדיקת חיזוק ברגים מפסק ראשי בלוח איסוף ממירים ובלוח צרכן. איטום כניסות ללוח/ הגנה על הכבל/ בדיקה ויזואלית כללית)',
     'ב. בדיקת הבדדה (אופן בדיקה: כבל הזנה מלוח ראשי ללוח איסוף ולממירים)',
     'ג. חיווט ויציבות כבילה (אופן הבדיקה: בדיקה ויזואלית)'
-  ]}
+  ]},
+
+  {t:'file', id:'imgS7', q:'7. כבל הזנה AC/DC — תמונות', req:1, audio:0, max:10,
+   mergeInto:'s7', hint:'לצלם: כבל הזנה · לוח איסוף · חיזוק ברגים'},
+
+  {t:'area', id:'inspectorNotes', q:'הערות מבצע הבדיקה', req:0, lines:5,
+   sub:'כתיבה חופשית. ההערות יופיעו בדוח הסופי ובמייל.'},
+
+  {t:'area', id:'internalNotes', q:'🔒 הערות פנימיות — משרד בלבד', req:0, lines:4, internal:1,
+   sub:'לשימוש פנימי בלבד. לא יופיעו בדוח, לא יישלחו במייל ולא יגיעו ללקוח. נראות רק בדף המשרד.'}
 ];
 
 const NOTE_IMG   = 'אפשר להעלות עד 5 קבצים נתמכים: image. גודל מקסימלי לקובץ: 10 MB.';
@@ -539,6 +561,15 @@ function build(f){
       + `<input type="${f.input||'text'}" placeholder="${f.input==='date'?'':'התשובה שלך'}">`;
     const inp=c.querySelector('input');
     inp.oninput=()=>{data[f.id]=inp.value.trim();tick();};
+  }
+
+  else if(f.t==='area'){
+    c.innerHTML = `<div class="q-label">${esc(f.q)}${star(f)}</div>`
+      + (f.sub?`<div class="q-hint">${esc(f.sub)}</div>`:'')
+      + `<textarea rows="${f.lines||4}" placeholder="כתיבה חופשית…"></textarea>`;
+    if(f.internal) c.classList.add('internal');
+    const ta=c.querySelector('textarea');
+    ta.oninput=()=>{data[f.id]=ta.value.trim();tick();};
   }
 
   else if(f.t==='geo'){
@@ -629,6 +660,9 @@ function build(f){
     });
     if(f.dynamic){
       h+=`<div class="grid-add">
+            <label class="cnt">כמות סטרינגים:
+              <input type="number" min="1" max="${f.rows.length}" data-cnt="1" value="${f.startRows||1}">
+            </label>
             <button type="button" data-add="1">＋ הוספת סטרינג</button>
             <button type="button" class="rm" data-rm="1">− הסרת האחרון</button>
           </div>`;
@@ -676,11 +710,43 @@ function build(f){
       const paintRows = () => {
         rowEls.forEach((el,i)=> el.classList.toggle('hide-row', i >= gridShown[f.id]));
         addB.disabled = gridShown[f.id] >= f.rows.length;
+        if(c._syncCnt) c._syncCnt();
         rmB.disabled  = gridShown[f.id] <= 1;
       };
       c._paintRows = paintRows;
+      const cntIn = c.querySelector('[data-cnt]');
+      const syncCnt = () => { if(cntIn) cntIn.value = gridShown[f.id]; };
+      c._syncCnt = syncCnt;
+      if(cntIn){
+        cntIn.onchange = () => {
+          let n = parseInt(cntIn.value, 10);
+          if(isNaN(n) || n < 1) n = 1;
+          if(n > f.rows.length) n = f.rows.length;
+          if(n < gridShown[f.id]){
+            let used = 0;
+            for(let i = n; i < gridShown[f.id]; i++){
+              const v = data[f.id][i];
+              if((Array.isArray(v) ? v.length : !!v) ||
+                 (naRows[f.id]||{})[i] != null || (gridVals[f.id]||{})[i] != null) used++;
+            }
+            if(used && !confirm('יש ' + used + ' סטרינגים מסומנים מעל הכמות שביקשת. להסיר אותם ולמחוק את מה שנרשם בהם?')){
+              syncCnt(); return;
+            }
+            for(let i = n; i < gridShown[f.id]; i++){
+              c.querySelectorAll('input[name="' + f.id + '_' + i + '"]').forEach(x => x.checked = false);
+              data[f.id][i] = (f.mode==='radio') ? '' : [];
+              if(naRows[f.id])   delete naRows[f.id][i];
+              if(gridVals[f.id]) delete gridVals[f.id][i];
+              const vin = c.querySelector('[data-vin="' + i + '"]'); if(vin) vin.value = '';
+              paintRow(i);
+            }
+          }
+          gridShown[f.id] = n;
+          paintRows(); syncCnt(); tick();
+        };
+      }
       addB.onclick = () => {
-        if(gridShown[f.id] < f.rows.length){ gridShown[f.id]++; paintRows(); tick(); }
+        if(gridShown[f.id] < f.rows.length){ gridShown[f.id]++; paintRows(); syncCnt(); tick(); }
       };
       rmB.onclick = () => {
         const last = gridShown[f.id] - 1;
@@ -695,7 +761,7 @@ function build(f){
         if(gridVals[f.id]) delete gridVals[f.id][last];
         const vin = c.querySelector(`[data-vin="${last}"]`); if(vin) vin.value = '';
         gridShown[f.id]--;
-        paintRow(last); paintRows(); tick();
+        paintRow(last); paintRows(); syncCnt(); tick();
       };
       paintRows();
     }
@@ -854,7 +920,7 @@ function filled(f){
     if(!condOn(f.reqIf)) return true;
     if(f.t === 'file') return (files[f.id]||[]).length > 0;
   }
-  if(f.t==='text'||f.t==='geo')  return !!(data[f.id]||'').trim();
+  if(f.t==='text'||f.t==='geo'||f.t==='area')  return !!(data[f.id]||'').trim();
   if(f.t==='check') return (data[f.id]||[]).length>0;
   if(f.t==='file')  return (files[f.id]||[]).length>0;
   if(f.t==='grid'){
@@ -991,6 +1057,12 @@ function buildReport(){
       });
       h+='</table>';
     }
+    if(f.t==='area' && !f.internal && (na[f.id]!=null || (data[f.id]||'').trim())){
+      const txt = na[f.id]!=null
+        ? '<span class="st-na">לא רלוונטי — ' + esc(na[f.id]) + '</span>'
+        : esc(data[f.id]).replace(/\n/g,'<br>');
+      h+=`<h2>${esc(f.q)}</h2><table><tr><td>${txt}</td></tr></table>`;
+    }
     if(f.id==='fanClean'){
       const val = na.fanClean != null ? ('לא רלוונטי — ' + na.fanClean) : (data.fanClean||[]).join(', ');
       h+=`<h2>ניקוי מאווררים</h2><table><tr><td class="k">ניקוי מאווררים</td><td>${esc(val)}</td></tr></table>`;
@@ -1013,12 +1085,7 @@ function makePDF(){
   if(!validate())return;
   buildReport();
   const t=document.title;
-  const clean = v => String(v||'').replace(/[\\/:*?"<>|]/g,'-').trim();
-  const parts = ['דוח תחזוקה שנתית'];
-  if(data.client)  parts.push(clean(data.client));
-  if(data.pvOrder) parts.push('הזמנה ' + clean(data.pvOrder));
-  if(data.date)    parts.push(data.date.split('-').reverse().join('.'));
-  document.title = parts.join(' - ');
+  document.title = reportSubject();
   setTimeout(()=>{window.print();document.title=t;},120);
 }
 
@@ -1029,7 +1096,7 @@ function clearForm(){
 }
 
 /* ---------- Supabase: שמירת הדוח בענן ---------- */
-const APP_VERSION = '2026.08.17.11';
+const APP_VERSION = '2026.08.23.1';
 const SUPABASE = {
   url:    'https://yajugfebxmehsiegoutp.supabase.co',
   key:    'sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc',
@@ -1137,6 +1204,8 @@ async function saveToCloud(){
     waze_link:       data.wazeLink || null,
     waze_coords:     data.wazeCoords || null,
     roof_access:     data.roofAccess || null,
+    inspector_notes: data.inspectorNotes || null,
+    internal_notes:  data.internalNotes || null,
     inverter_type:   joinVal(data.inverterType),
     inverter_qty:    data.inverterQty || null,
     inverter_model:  data.inverterModel || null,
@@ -1188,10 +1257,11 @@ function reportFileName(){
 }
 function reportSubject(){
   const clean = v => String(v||'').replace(/[\\/:*?"<>|]/g,'-').trim();
+  const ok = id => na[id] == null && !!(data[id]||'').trim();
   const parts = ['דוח תחזוקה שנתית'];
-  if(data.client)  parts.push(clean(data.client));
-  if(data.pvOrder) parts.push('הזמנה ' + clean(data.pvOrder));
-  if(data.date)    parts.push(data.date.split('-').reverse().join('.'));
+  if(ok('client'))  parts.push(clean(data.client));
+  if(ok('pvOrder')) parts.push('הזמנה ' + clean(data.pvOrder));
+  if(data.date)     parts.push(data.date.split('-').reverse().join('.'));
   return parts.join(' - ');
 }
 function reportBodyText(){
@@ -1217,6 +1287,7 @@ function reportBodyText(){
     '',
     faults.length ? 'ממצאים שסומנו כלא תקינים ('+faults.length+'):' : 'לא נמצאו ממצאים לא תקינים.',
     ...faults,
+    ...((data.inspectorNotes||'').trim() ? ['', 'הערות מבצע הבדיקה:', data.inspectorNotes] : []),
     '','הדוח המלא כולל התמונות מצורף כקובץ.'
   ].join('\n');
 }
@@ -1355,6 +1426,12 @@ async function loadForEdit(){
   setText('date',           rep.inspection_date);
   setText('portalSite',     rep.portal_site);
   setText('pvOrder',        rep.pv_order);
+  const setArea = (cardId, val) => {
+    const ta = document.querySelector('#card-' + cardId + ' textarea');
+    if(ta && val != null){ ta.value = val; ta.dispatchEvent(new Event('input')); }
+  };
+  setArea('inspectorNotes', rep.inspector_notes);
+  setArea('internalNotes',  rep.internal_notes);
   setText('client',         rep.client_name);
   setText('siteLocation',   rep.site_location);
   setText('roofAccess',     rep.roof_access);
@@ -1626,7 +1703,7 @@ function fillDemo(){
   const sc = document.getElementById('card-strings');
   if(sc){
     const add = sc.querySelector('[data-add]');
-    if(add && gridShown['strings'] < 2) add.click();
+    while(add && gridShown['strings'] < 5) add.click();
     const mark = (i, v, val) => {
       const inp = [...sc.querySelectorAll('.row[data-r="' + i + '"] .cell input')]
                     .find(x => x.dataset.v === v);
@@ -1634,8 +1711,8 @@ function fillDemo(){
       const vin = sc.querySelector('[data-vin="' + i + '"]');
       if(vin){ vin.value = val; vin.dispatchEvent(new Event('input')); }
     };
-    mark(0, 'תקין',    '9.8A / 742V');
-    mark(1, 'לא תקין', '4.1A / 690V');
+    const vals = ['9.8A / 742V','9.7A / 738V','9.9A / 744V','4.1A / 690V','9.6A / 736V'];
+    vals.forEach((v,i) => mark(i, i===3 ? 'לא תקין' : 'תקין', v));
   }
 
   /* תמונות — נוצרות בדפדפן, בלי קבצים חיצוניים */
@@ -1649,6 +1726,13 @@ function fillDemo(){
       if(c._render) c._render();
     }
   });
+
+  const setA = (id, v) => {
+    const ta = document.querySelector('#card-' + id + ' textarea');
+    if(ta){ ta.value = v; ta.dispatchEvent(new Event('input')); }
+  };
+  setA('inspectorNotes', 'דוח טיוטה לבדיקות מערכת. נמצאו מספר ליקויים לדוגמה, מומלץ לתאם ביקור חוזר.');
+  setA('internalNotes',  'הערה פנימית לדוגמה — לא אמורה להופיע בדוח הסופי ולא במייל.');
 
   tick();
   toast('דוח טיוטה מולא — אפשר לשלוח');
