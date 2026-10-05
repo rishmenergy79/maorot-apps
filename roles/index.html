@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>תכולות תפקיד ויעדים – מאורות אנרגיה</title>
+<meta property="og:title" content="תכולות תפקיד ויעדים – מאורות אנרגיה">
+<meta property="og:description" content="שאלון לכלל בעלי התפקידים – יש למלא שם ותפקיד ולענות על כל הסעיפים">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f8fc;--card:#fff;--ink:#1b2430;--mut:#5d6b7a;--line:#d9e6ef;--pri:#1a86c0;--pri2:#e3f2fa;--blue:#2ba2da;--acc:#f5a01a;--acc2:#fdf1dc;--err:#c0392b}
+html,body{direction:rtl;text-align:right}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,Arial,sans-serif;font-size:16px;line-height:1.55}
+header{background:#fff;color:var(--ink);padding:22px 16px 70px;border-top:6px solid var(--acc);position:relative}
+header:after{content:"";position:absolute;inset:auto 0 0 0;height:70px;background:linear-gradient(90deg,var(--blue),var(--pri))}
+.logo{display:block;width:220px;max-width:70%;height:auto;margin:0 0 6px auto}
+header .in{max-width:720px;margin:auto}
+h1{margin:8px 0 4px;font-size:28px;font-weight:800;color:var(--pri)}
+header p{margin:0 0 6px;color:var(--acc);font-weight:700}
+main{max-width:720px;margin:-50px auto 40px;padding:0 16px;position:relative;z-index:1}
+.card{background:var(--card);border-radius:14px;padding:20px;border-top:3px solid var(--blue);box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:16px}
+.intro p{margin:0 0 10px}
+.intro p:last-child{margin:0}
+.due{display:inline-block;background:var(--acc2);color:#b56d00;font-weight:700;padding:2px 10px;border-radius:20px}
+h2{font-size:18px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:14px;margin:0 0 14px}
+label.f{display:block;font-weight:600;margin:12px 0 6px}
+input[type=text],textarea{direction:rtl;text-align:right;width:100%;font:inherit;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+textarea{min-height:120px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--pri2)}
+.req{color:var(--err)}
+.q{display:flex;gap:12px}
+.num{flex:0 0 32px;height:32px;border-radius:50%;background:var(--acc);color:#fff;font-weight:700;display:grid;place-items:center}
+.q>div:not(.num){flex:1;min-width:0}
+.items{display:grid;gap:8px}
+.items .row{display:flex;gap:8px;align-items:center}
+.items .row span{flex:0 0 22px;color:var(--mut);font-weight:700;text-align:center}
+.opt{color:var(--mut);font-weight:400;font-size:13px}
+.locked{opacity:.45;pointer-events:none;filter:grayscale(.4)}
+.lockmsg{background:#fff7e0;border:1px solid #f2d27a;color:#7a5a00;padding:10px 14px;border-radius:10px;font-size:14px;margin-bottom:16px}
+.bad{border-color:var(--err)!important}
+.errtxt{color:var(--err);font-size:13px;margin-top:4px;display:none}
+.bad~.errtxt,.errtxt.show{display:block}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:14px 20px;cursor:pointer}
+.send{width:100%;background:linear-gradient(90deg,var(--blue),var(--pri));color:#fff;font-size:18px}
+.send:disabled{opacity:.6;cursor:wait}
+.prog{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(270deg,var(--acc),#f7c440);margin-right:0;transition:width .3s}
+.progt{font-size:13px;color:var(--mut);margin-top:4px}
+.done{text-align:center;padding:40px 20px}
+.done .ok{width:64px;height:64px;border-radius:50%;background:var(--acc);color:#fff;font-size:36px;display:grid;place-items:center;margin:0 auto 12px}
+.hide{display:none}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:0 16px 30px}
+</style>
+</head>
+<body>
+<header><div class="in">
+  <img class="logo" alt="מאורות – כל האנרגיה בשבילך" src="data:image/webp;base64,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">
+  <h1>תכולות תפקיד ויעדים</h1>
+  <p>שאלות רוחב לכלל בעלי התפקידים</p>
+</div></header>
+
+<main>
+<form id="frm" novalidate>
+  <div class="card intro">
+    <p>שלום לכולם,</p>
+    <p>כחלק מתהליך הדיוק והצמיחה של "מאורות אנרגיה", אנו פועלים להגדרת תכולת משרה מפורטת, שגרות עבודה ומדדי הצלחה (KPIs) עבור כל תפקיד בחברה.</p>
+    <p>המטרה היא לייצר בהירות מלאה לגבי סמכויות ואחריות, להסיר חסמים בין המחלקות, ולוודא שכל אחד ואחד מאיתנו מצויד בכלים הטובים ביותר להצלחה בתפקידו.</p>
+    <p>אנו מבקשים מכל אחד ואחת מבעלי התפקידים לעבור על השאלות שלהלן, להקדיש לכך מחשבה, ולהשיב בצורה מפורטת ככל הניתן עד לתאריך <span class="due">5 באוקטובר 2026</span>.</p>
+  </div>
+
+  <div class="card">
+    <h2>פרטי ממלא/ת הטופס</h2>
+    <p class="sub">חובה למלא שם ותפקיד לפני מענה על השאלות</p>
+    <label class="f" for="name">שם מלא <span class="req">*</span></label>
+    <input type="text" id="name" autocomplete="name" required>
+    <div class="errtxt">יש למלא שם מלא</div>
+    <label class="f" for="role">תפקיד <span class="req">*</span></label>
+    <input type="text" id="role" required>
+    <div class="errtxt">יש למלא תפקיד</div>
+  </div>
+
+  <div id="lockmsg" class="lockmsg">🔒 השאלות ייפתחו לאחר מילוי שם ותפקיד</div>
+
+  <div id="qs" class="locked">
+    <div class="card"><div class="q"><div class="num">1</div><div>
+      <h2>תכולת משרה בפועל</h2>
+      <p class="sub">מהם 5–7 הנושאים המרכזיים שאת/ה מטפל/ת בהם ביומיום?</p>
+      <div class="items" id="q1"></div>
+      <div class="errtxt" id="q1err">יש למלא לפחות 5 נושאים</div>
+    </div></div></div>
+
+    <div class="card"><div class="q"><div class="num">2</div><div>
+      <h2>סדר יום אופייני</h2>
+      <p class="sub">כיצד נראה יום עבודה רגיל שלך (מהבוקר ועד סוף היום)?</p>
+      <textarea id="q2" required placeholder="לדוגמה: 08:00 – ..."></textarea>
+      <div class="errtxt">שדה חובה</div>
+    </div></div></div>
+
+    <div class="card"><div class="q"><div class="num">3</div><div>
+      <h2>ממשקי עבודה</h2>
+      <p class="sub">מול אילו בעלי תפקידים בתוך החברה (ומחוצה לה) את/ה עובד/ת באופן שוטף, ואילו נתונים/קבצים את/ה מעביר/ה אליהם או מקבל/ת מהם?</p>
+      <label class="f" for="q3a">ממשקים בתוך החברה <span class="req">*</span></label>
+      <textarea id="q3a" required placeholder="בעל תפקיד – מה אני מעביר/מקבל"></textarea>
+      <div class="errtxt">שדה חובה</div>
+      <label class="f" for="q3b">ממשקים מחוץ לחברה <span class="opt">(אם יש)</span></label>
+      <textarea id="q3b" placeholder="גורם חיצוני – מה אני מעביר/מקבל"></textarea>
+    </div></div></div>
+
+    <div class="card"><div class="q"><div class="num">4</div><div>
+      <h2>צווארי בקבוק וחסמים</h2>
+      <p class="sub">מה מעכב אותך ביומיום מלבצע את התפקיד בצורה מהירה ואפקטיבית יותר?</p>
+      <textarea id="q4" required></textarea>
+      <div class="errtxt">שדה חובה</div>
+    </div></div></div>
+
+    <div class="card"><div class="q"><div class="num">5</div><div>
+      <h2>מערכות מידע</h2>
+      <p class="sub">אילו פעילויות את/ה מזין/ה כיום במערכות המידע, ואילו פעילויות מתנהלות "בצד" (במייל/ווטסאפ/דפים)?</p>
+      <label class="f" for="q5a">פעילויות שמוזנות במערכות המידע <span class="req">*</span></label>
+      <textarea id="q5a" required></textarea>
+      <div class="errtxt">שדה חובה</div>
+      <label class="f" for="q5b">פעילויות שמתנהלות "בצד" <span class="req">*</span></label>
+      <textarea id="q5b" required></textarea>
+      <div class="errtxt">שדה חובה</div>
+    </div></div></div>
+
+    <div class="card"><div class="q"><div class="num">6</div><div>
+      <h2>מדדי הצלחה מוצעים</h2>
+      <p class="sub">לפי אילו 2–3 מדדים כמותיים נכון לדעתך למדוד את ההצלחה שלך בתפקיד?</p>
+      <div class="items" id="q6"></div>
+      <div class="errtxt" id="q6err">יש למלא לפחות 2 מדדים</div>
+    </div></div></div>
+
+    <div class="card">
+      <h2>הערות נוספות <span class="opt">(לא חובה)</span></h2>
+      <textarea id="notes" style="min-height:80px"></textarea>
+    </div>
+
+    <div class="card">
+      <button type="submit" class="send" id="sendBtn">שליחת הטופס</button>
+      <div class="prog"><i id="bar"></i></div>
+      <div class="progt" id="progt"></div>
+      <div class="errtxt" id="senderr"></div>
+    </div>
+  </div>
+</form>
+
+<div id="done" class="card done hide">
+  <div class="ok">✓</div>
+  <h2>תודה! הטופס נשלח בהצלחה</h2>
+  <p class="sub">התשובות הועברו להנהלה.</p>
+</div>
+</main>
+<footer>מאורות אנרגיה מתחדשת · שאלון תכולות תפקיד</footer>
+
+<script>
+const TO = "dror@menergy.co.il";
+const KEY = "maorot-roles-draft";
+const $ = id => document.getElementById(id);
+
+function mkItems(box, n, min, ph){
+  for(let i=1;i<=n;i++){
+    const r=document.createElement('div');r.className='row';
+    r.innerHTML=`<span>${i}</span><input type="text" data-i="${i}" placeholder="${ph}${i>min?' (רשות)':''}">`;
+    $(box).appendChild(r);
+  }
+}
+mkItems('q1',7,5,'נושא ');
+mkItems('q6',3,2,'מדד ');
+
+const vals = box => [...$(box).querySelectorAll('input')].map(x=>x.value.trim());
+
+// gate
+function gate(){
+  const ok=$('name').value.trim()&&$('role').value.trim();
+  $('qs').classList.toggle('locked',!ok);
+  $('lockmsg').classList.toggle('hide',!!ok);
+  if(ok){$('name').classList.remove('bad');$('role').classList.remove('bad');}
+}
+['name','role'].forEach(id=>$(id).addEventListener('input',gate));
+
+// progress
+const singles=['q2','q3a','q4','q5a','q5b'];
+function progress(){
+  let t=0,d=0;
+  t+=2; if($('name').value.trim())d++; if($('role').value.trim())d++;
+  t++; if(vals('q1').filter(Boolean).length>=5)d++;
+  t++; if(vals('q6').filter(Boolean).length>=2)d++;
+  singles.forEach(s=>{t++; if($(s).value.trim())d++;});
+  $('bar').style.width=(d/t*100)+'%';
+  $('progt').textContent=`הושלמו ${d} מתוך ${t} שדות חובה`;
+}
+
+// draft save (per device)
+function save(){
+  try{
+    const o={};document.querySelectorAll('#frm input,#frm textarea').forEach((el,i)=>o[el.id||('i'+i)]=el.value);
+    localStorage.setItem(KEY,JSON.stringify(o));
+  }catch(e){}
+}
+function load(){
+  try{
+    const o=JSON.parse(localStorage.getItem(KEY)||'null');if(!o)return;
+    document.querySelectorAll('#frm input,#frm textarea').forEach((el,i)=>{const k=el.id||('i'+i);if(o[k]!=null)el.value=o[k];});
+  }catch(e){}
+}
+load();gate();progress();
+$('frm').addEventListener('input',e=>{e.target.classList.remove('bad');progress();save();});
+
+function validate(){
+  let first=null;
+  const mark=(el,bad)=>{el.classList.toggle('bad',bad);if(bad&&!first)first=el;};
+  mark($('name'),!$('name').value.trim());
+  mark($('role'),!$('role').value.trim());
+  singles.forEach(s=>mark($(s),!$(s).value.trim()));
+  const q1ok=vals('q1').filter(Boolean).length>=5;
+  $('q1err').classList.toggle('show',!q1ok); if(!q1ok&&!first)first=$('q1').querySelector('input');
+  const q6ok=vals('q6').filter(Boolean).length>=2;
+  $('q6err').classList.toggle('show',!q6ok); if(!q6ok&&!first)first=$('q6').querySelector('input');
+  if(first){first.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>first.focus(),300);}
+  return !first;
+}
+
+const list=a=>a.filter(Boolean).map((x,i)=>`${i+1}. ${x}`).join('\n');
+
+$('frm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  $('senderr').classList.remove('show');
+  if(!validate())return;
+  const name=$('name').value.trim(), role=$('role').value.trim();
+  const now=new Date().toLocaleString('he-IL',{timeZone:'Asia/Jerusalem'});
+  const data={
+    "שם מלא":name,
+    "תפקיד":role,
+    "תאריך מילוי":now,
+    "1. תכולת משרה בפועל – 5-7 נושאים מרכזיים":list(vals('q1')),
+    "2. סדר יום אופייני":$('q2').value.trim(),
+    "3. ממשקי עבודה – בתוך החברה":$('q3a').value.trim(),
+    "3. ממשקי עבודה – מחוץ לחברה":$('q3b').value.trim()||'—',
+    "4. צווארי בקבוק וחסמים":$('q4').value.trim(),
+    "5. מערכות מידע – מוזן במערכות":$('q5a').value.trim(),
+    "5. מערכות מידע – מתנהל בצד":$('q5b').value.trim(),
+    "6. מדדי הצלחה מוצעים":list(vals('q6')),
+    "הערות נוספות":$('notes').value.trim()||'—',
+    _subject:`תכולות תפקיד ויעדים – ${name} (${role})`,
+    _template:"table",
+    _captcha:"false"
+  };
+  const btn=$('sendBtn');btn.disabled=true;btn.textContent='שולח...';
+  try{
+    const r=await fetch(`https://formsubmit.co/ajax/${TO}`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||String(j.success)==='false')throw new Error(j.message||('HTTP '+r.status));
+    try{localStorage.removeItem(KEY);}catch(e){}
+    $('frm').classList.add('hide');$('done').classList.remove('hide');window.scrollTo({top:0,behavior:'smooth'});
+  }catch(err){
+    btn.disabled=false;btn.textContent='שליחת הטופס';
+    $('senderr').textContent='השליחה נכשלה – בדקו חיבור לאינטרנט ונסו שוב. התשובות שמורות במכשיר.';
+    $('senderr').classList.add('show');
+  }
+});
+</script>
+</body>
+</html>
