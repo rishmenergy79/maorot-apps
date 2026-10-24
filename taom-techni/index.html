@@ -613,27 +613,32 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
                 return null;
             const def = STICKER_MAP[sel.key] || {};
             const curPct = sel.w > 100 ? Math.min(60, (sel.w / 360) * 100) : sel.w || 18;
-            return (React.createElement("div", { style: {
-                    marginTop: 8,
+            // צף בתחתית המסך — כך הוא תמיד נגיש, בלי צורך לגלול מתחת לתמונה
+            return (React.createElement("div", { onClick: (e) => e.stopPropagation(), style: {
+                    position: "fixed",
+                    insetInlineStart: 0,
+                    insetInlineEnd: 0,
+                    bottom: 0,
+                    zIndex: 1000,
                     background: "#fff",
-                    border: `1.5px solid ${COLORS.slate}`,
-                    borderRadius: 10,
-                    padding: "9px 12px",
+                    borderTop: `2px solid ${COLORS.slate}`,
+                    boxShadow: "0 -4px 14px rgba(0,0,0,0.18)",
+                    padding: "10px 14px calc(10px + env(safe-area-inset-bottom))",
                 } },
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } },
-                    React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.ink } },
+                    React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: COLORS.ink } },
                         "\u05D2\u05D5\u05D3\u05DC: ",
                         sel.text || def.label || "מדבקה"),
-                    React.createElement("span", { style: { fontSize: 12, color: "#7C8A97" } },
+                    React.createElement("span", { style: { fontSize: 12.5, color: "#7C8A97" } },
                         Math.round(curPct),
                         "%")),
-                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                    React.createElement("span", { style: { fontSize: 15 } }, "\uFF0D"),
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                    React.createElement("span", { style: { fontSize: 17 } }, "\uFF0D"),
                     React.createElement("input", { type: "range", min: "6", max: "60", step: "1", value: Math.round(curPct), onChange: (e) => {
                             const v = Number(e.target.value);
                             onStickers(stickers.map((s) => (s.id === sel.id ? { ...s, w: v } : s)));
-                        }, onClick: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.slate, height: 28 } }),
-                    React.createElement("span", { style: { fontSize: 19 } }, "\uFF0B"))));
+                        }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.slate, height: 34 } }),
+                    React.createElement("span", { style: { fontSize: 21 } }, "\uFF0B"))));
         })(),
         React.createElement("button", { onClick: () => setShowPalette((v) => !v), style: {
                 width: "100%",
@@ -1171,29 +1176,34 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
                     return null;
                 const t = EQUIPMENT_TYPES[sel.type];
                 const size = sel.size || 32;
-                return (React.createElement("div", { style: {
-                        marginTop: 10,
+                // צף מעל סרגל הניווט התחתון — תמיד נגיש בלי לגלול
+                return (React.createElement("div", { onClick: (e) => e.stopPropagation(), style: {
+                        position: "fixed",
+                        insetInlineStart: 0,
+                        insetInlineEnd: 0,
+                        bottom: "calc(62px + env(safe-area-inset-bottom))",
+                        zIndex: 40,
                         background: "#fff",
-                        border: `1.5px solid ${COLORS.slate}`,
-                        borderRadius: 10,
-                        padding: "9px 12px",
+                        borderTop: `2px solid ${COLORS.slate}`,
+                        boxShadow: "0 -4px 14px rgba(0,0,0,0.18)",
+                        padding: "10px 14px",
                     } },
                     React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } },
-                        React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.ink } },
+                        React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: COLORS.ink } },
                             "\u05D2\u05D5\u05D3\u05DC \u05E1\u05D9\u05DE\u05D5\u05DF ",
                             sel.num,
                             " \u2014 ",
                             t.label),
-                        React.createElement("span", { style: { fontSize: 12, color: "#7C8A97" } },
+                        React.createElement("span", { style: { fontSize: 12.5, color: "#7C8A97" } },
                             size,
                             "px")),
-                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                        React.createElement("span", { style: { fontSize: 15 } }, "\uFF0D"),
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                        React.createElement("span", { style: { fontSize: 17 } }, "\uFF0D"),
                         React.createElement("input", { type: "range", min: "18", max: "90", step: "1", value: size, onChange: (e) => {
                                 const v = Number(e.target.value);
                                 setMarkers(markers.map((m) => (m.id === sel.id ? { ...m, size: v } : m)));
-                            }, onClick: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.slate, height: 28 } }),
-                        React.createElement("span", { style: { fontSize: 19 } }, "\uFF0B"))));
+                            }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.slate, height: 34 } }),
+                        React.createElement("span", { style: { fontSize: 21 } }, "\uFF0B"))));
             })(),
             React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
                 selectedMarker != null && (React.createElement("button", { onClick: () => {
