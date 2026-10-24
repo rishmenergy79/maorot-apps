@@ -605,41 +605,42 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
                 const numberMap = numberImageStickers(stickers);
                 return stickers.map((st) => renderSticker(st, { interactive: true, selected: selected === st.id, onDown, onLineDown, containerWidthPx, number: numberMap.get(st.id), onDelete: (id) => { onStickers(stickers.filter((s) => s.id !== id)); setSelected(null); } }));
             })(),
-            allowRetake && (React.createElement("button", { onClick: (e) => { e.stopPropagation(); inputRef.current.click(); }, style: { position: "absolute", bottom: 8, left: 8, background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\u05E6\u05DC\u05DD \u05E9\u05D5\u05D1"))),
+            allowRetake && (React.createElement("button", { onClick: (e) => { e.stopPropagation(); inputRef.current.click(); }, style: { position: "absolute", bottom: 8, left: 8, background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\u05E6\u05DC\u05DD \u05E9\u05D5\u05D1")),
+            (() => {
+                const sel = stickers.find((s) => s.id === selected && !s.isLine);
+                if (!sel)
+                    return null;
+                const def = STICKER_MAP[sel.key] || {};
+                const curPct = sel.w > 100 ? Math.min(60, (sel.w / 360) * 100) : sel.w || 18;
+                // צף ישירות על התמונה, מעל המדבקה שנבחרה — רואים את השינוי בזמן אמת במקום
+                return (React.createElement("div", { onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: {
+                        position: "absolute",
+                        insetInlineStart: 10,
+                        insetInlineEnd: 10,
+                        bottom: 10,
+                        zIndex: 20,
+                        background: "rgba(20,27,34,0.88)",
+                        backdropFilter: "blur(2px)",
+                        borderRadius: 12,
+                        padding: "8px 12px 10px",
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
+                    } },
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 } },
+                        React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: "#fff" } },
+                            "\u05D2\u05D5\u05D3\u05DC: ",
+                            sel.text || def.label || "מדבקה"),
+                        React.createElement("span", { style: { fontSize: 12, color: "#C7D2DC" } },
+                            Math.round(curPct),
+                            "%")),
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                        React.createElement("span", { style: { fontSize: 18, color: "#fff", lineHeight: 1 } }, "\uFF0D"),
+                        React.createElement("input", { type: "range", min: "6", max: "60", step: "1", value: Math.round(curPct), onChange: (e) => {
+                                const v = Number(e.target.value);
+                                onStickers(stickers.map((s) => (s.id === sel.id ? { ...s, w: v } : s)));
+                            }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.amber, height: 32 } }),
+                        React.createElement("span", { style: { fontSize: 22, color: "#fff", lineHeight: 1 } }, "\uFF0B"))));
+            })()),
         React.createElement(StickerLegend, { stickers: stickers, numberMap: numberImageStickers(stickers) }),
-        (() => {
-            const sel = stickers.find((s) => s.id === selected && !s.isLine);
-            if (!sel)
-                return null;
-            const def = STICKER_MAP[sel.key] || {};
-            const curPct = sel.w > 100 ? Math.min(60, (sel.w / 360) * 100) : sel.w || 18;
-            // צף בתחתית המסך — כך הוא תמיד נגיש, בלי צורך לגלול מתחת לתמונה
-            return (React.createElement("div", { onClick: (e) => e.stopPropagation(), style: {
-                    position: "fixed",
-                    insetInlineStart: 0,
-                    insetInlineEnd: 0,
-                    bottom: 0,
-                    zIndex: 1000,
-                    background: "#fff",
-                    borderTop: `2px solid ${COLORS.slate}`,
-                    boxShadow: "0 -4px 14px rgba(0,0,0,0.18)",
-                    padding: "10px 14px calc(10px + env(safe-area-inset-bottom))",
-                } },
-                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } },
-                    React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: COLORS.ink } },
-                        "\u05D2\u05D5\u05D3\u05DC: ",
-                        sel.text || def.label || "מדבקה"),
-                    React.createElement("span", { style: { fontSize: 12.5, color: "#7C8A97" } },
-                        Math.round(curPct),
-                        "%")),
-                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                    React.createElement("span", { style: { fontSize: 17 } }, "\uFF0D"),
-                    React.createElement("input", { type: "range", min: "6", max: "60", step: "1", value: Math.round(curPct), onChange: (e) => {
-                            const v = Number(e.target.value);
-                            onStickers(stickers.map((s) => (s.id === sel.id ? { ...s, w: v } : s)));
-                        }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.slate, height: 34 } }),
-                    React.createElement("span", { style: { fontSize: 21 } }, "\uFF0B"))));
-        })(),
         React.createElement("button", { onClick: () => setShowPalette((v) => !v), style: {
                 width: "100%",
                 marginTop: 8,
@@ -1169,42 +1170,43 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
                                     border: "2px solid #fff",
                                     cursor: "grab",
                                 } }, m.num))));
-                })),
-            (() => {
-                const sel = markers.find((m) => m.id === selectedMarker);
-                if (!sel)
-                    return null;
-                const t = EQUIPMENT_TYPES[sel.type];
-                const size = sel.size || 32;
-                // צף מעל סרגל הניווט התחתון — תמיד נגיש בלי לגלול
-                return (React.createElement("div", { onClick: (e) => e.stopPropagation(), style: {
-                        position: "fixed",
-                        insetInlineStart: 0,
-                        insetInlineEnd: 0,
-                        bottom: "calc(62px + env(safe-area-inset-bottom))",
-                        zIndex: 40,
-                        background: "#fff",
-                        borderTop: `2px solid ${COLORS.slate}`,
-                        boxShadow: "0 -4px 14px rgba(0,0,0,0.18)",
-                        padding: "10px 14px",
-                    } },
-                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } },
-                        React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: COLORS.ink } },
-                            "\u05D2\u05D5\u05D3\u05DC \u05E1\u05D9\u05DE\u05D5\u05DF ",
-                            sel.num,
-                            " \u2014 ",
-                            t.label),
-                        React.createElement("span", { style: { fontSize: 12.5, color: "#7C8A97" } },
-                            size,
-                            "px")),
-                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                        React.createElement("span", { style: { fontSize: 17 } }, "\uFF0D"),
-                        React.createElement("input", { type: "range", min: "18", max: "90", step: "1", value: size, onChange: (e) => {
-                                const v = Number(e.target.value);
-                                setMarkers(markers.map((m) => (m.id === sel.id ? { ...m, size: v } : m)));
-                            }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.slate, height: 34 } }),
-                        React.createElement("span", { style: { fontSize: 21 } }, "\uFF0B"))));
-            })(),
+                }),
+                (() => {
+                    const sel = markers.find((m) => m.id === selectedMarker);
+                    if (!sel)
+                        return null;
+                    const t = EQUIPMENT_TYPES[sel.type];
+                    const size = sel.size || 32;
+                    // צף ישירות על התצ"א, ליד הסימון שנבחר
+                    return (React.createElement("div", { onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: {
+                            position: "absolute",
+                            insetInlineStart: 10,
+                            insetInlineEnd: 10,
+                            bottom: 10,
+                            zIndex: 20,
+                            background: "rgba(20,27,34,0.88)",
+                            backdropFilter: "blur(2px)",
+                            borderRadius: 12,
+                            padding: "8px 12px 10px",
+                            boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
+                        } },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 } },
+                            React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: "#fff" } },
+                                "\u05D2\u05D5\u05D3\u05DC \u05E1\u05D9\u05DE\u05D5\u05DF ",
+                                sel.num,
+                                " \u2014 ",
+                                t.label),
+                            React.createElement("span", { style: { fontSize: 12, color: "#C7D2DC" } },
+                                size,
+                                "px")),
+                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                            React.createElement("span", { style: { fontSize: 18, color: "#fff", lineHeight: 1 } }, "\uFF0D"),
+                            React.createElement("input", { type: "range", min: "18", max: "90", step: "1", value: size, onChange: (e) => {
+                                    const v = Number(e.target.value);
+                                    setMarkers(markers.map((m) => (m.id === sel.id ? { ...m, size: v } : m)));
+                                }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.amber, height: 32 } }),
+                            React.createElement("span", { style: { fontSize: 22, color: "#fff", lineHeight: 1 } }, "\uFF0B"))));
+                })()),
             React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
                 selectedMarker != null && (React.createElement("button", { onClick: () => {
                         setMarkers(markers.filter((m) => m.id !== selectedMarker));
