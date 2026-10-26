@@ -120,44 +120,102 @@ function Field({ label, value, onChange, placeholder, type = "text", dir }) {
                 color: COLORS.ink,
             } })));
 }
-function PhotoInput({ photo, onPhoto, label, cameraCapture = true }) {
-    const inputRef = useRef(null);
+/* ---------- בחירת תמונה: מצלמה / גלריה / הדבקה מהלוח ----------
+   שני שדות קלט נפרדים: אחד עם capture (פותח ישירות מצלמה) ואחד בלי (פותח גלריה).
+   כך לא צריך לבחור מראש — המשתמש לוחץ על מה שהוא רוצה באותו רגע. */
+function usePhotoPick(onPick) {
+    const camRef = useRef(null);
+    const galRef = useRef(null);
+    const deliver = (f) => {
+        compressImageFile(f)
+            .then(onPick)
+            .catch(() => {
+            const r = new FileReader();
+            r.onload = () => onPick(r.result);
+            r.readAsDataURL(f);
+        });
+    };
     const handleFile = (e) => {
         const f = e.target.files && e.target.files[0];
-        if (!f)
-            return;
-        compressImageFile(f).then(onPhoto).catch(() => {
-            const reader = new FileReader();
-            reader.onload = () => onPhoto(reader.result);
-            reader.readAsDataURL(f);
-        });
+        if (f)
+            deliver(f);
         e.target.value = "";
     };
+    const inputs = (React.createElement(React.Fragment, null,
+        React.createElement("input", { ref: camRef, type: "file", accept: "image/*", capture: "environment", style: { display: "none" }, onChange: handleFile }),
+        React.createElement("input", { ref: galRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: handleFile })));
+    return {
+        inputs,
+        openCamera: () => camRef.current && camRef.current.click(),
+        openGallery: () => galRef.current && galRef.current.click(),
+        deliver,
+    };
+}
+function PhotoPicker({ onPick, allowPaste = false }) {
+    const { inputs, openCamera, openGallery, deliver } = usePhotoPick(onPick);
+    const [msg, setMsg] = useState("");
+    const pasteFromClipboard = async () => {
+        setMsg("");
+        try {
+            if (!navigator.clipboard || !navigator.clipboard.read) {
+                setMsg("הדפדפן הזה לא תומך בהדבקה מהלוח. השתמשו בגלריה.");
+                return;
+            }
+            const items = await navigator.clipboard.read();
+            for (const it of items) {
+                const type = (it.types || []).find((t) => t.startsWith("image/"));
+                if (type) {
+                    const blob = await it.getType(type);
+                    deliver(new File([blob], "clipboard.png", { type }));
+                    return;
+                }
+            }
+            setMsg("אין תמונה בלוח. צלמו מסך ולחצו ‘העתק’ בתצוגה המקדימה, ואז נסו שוב.");
+        }
+        catch (e) {
+            console.error(e);
+            setMsg("לא ניתן לקרוא מהלוח — אשרו את בקשת ההרשאה ונסו שוב.");
+        }
+    };
+    const btn = (bg, color, border) => ({
+        flex: 1,
+        padding: "18px 0",
+        border,
+        borderRadius: 10,
+        background: bg,
+        color,
+        fontSize: 14,
+        fontWeight: 700,
+        fontFamily: "inherit",
+    });
     return (React.createElement("div", null,
-        React.createElement("input", { ref: inputRef, type: "file", accept: "image/*", ...(cameraCapture ? { capture: "environment" } : {}), style: { display: "none" }, onChange: handleFile }),
+        inputs,
+        React.createElement("div", { style: { display: "flex", gap: 8 } },
+            React.createElement("button", { onClick: openCamera, style: btn(COLORS.ink, "#fff", "none") }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD \u05E2\u05DB\u05E9\u05D9\u05D5"),
+            React.createElement("button", { onClick: openGallery, style: btn("#F7FAFC", "#3D4F5F", "1.5px dashed #9FB0BF") }, "\uD83D\uDDBC\uFE0F \u05DE\u05D4\u05D2\u05DC\u05E8\u05D9\u05D4")),
+        allowPaste && (React.createElement("button", { onClick: pasteFromClipboard, style: {
+                width: "100%",
+                marginTop: 8,
+                padding: "11px 0",
+                border: `1.5px solid ${COLORS.slate}`,
+                borderRadius: 10,
+                background: "#fff",
+                color: COLORS.slate,
+                fontSize: 13.5,
+                fontWeight: 700,
+                fontFamily: "inherit",
+            } }, "\uD83D\uDCCB \u05D4\u05D3\u05D1\u05E7 \u05E6\u05D9\u05DC\u05D5\u05DD \u05DE\u05E1\u05DA \u05DE\u05D4\u05DC\u05D5\u05D7")),
+        msg && React.createElement("p", { style: { fontSize: 12.5, color: COLORS.red, marginTop: 6, lineHeight: 1.5 } }, msg)));
+}
+function PhotoInput({ photo, onPhoto, label, cameraCapture = true, allowPaste = false }) {
+    const { inputs, openCamera, openGallery } = usePhotoPick(onPhoto);
+    return (React.createElement("div", null,
+        inputs,
         photo ? (React.createElement("div", { style: { position: "relative" } },
             React.createElement("img", { src: photo, alt: label, style: { width: "100%", borderRadius: 10, display: "block", border: `1px solid ${COLORS.line}` } }),
-            React.createElement("button", { onClick: () => inputRef.current.click(), style: {
-                    position: "absolute",
-                    bottom: 8,
-                    left: 8,
-                    background: "rgba(20,27,34,0.85)",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "6px 10px",
-                    fontSize: 12,
-                    fontFamily: "inherit",
-                } }, "\u05E6\u05DC\u05DD \u05E9\u05D5\u05D1"))) : (React.createElement("button", { onClick: () => inputRef.current.click(), style: {
-                width: "100%",
-                padding: "22px 0",
-                border: `1.5px dashed #9FB0BF`,
-                borderRadius: 10,
-                background: "#F7FAFC",
-                color: "#3D4F5F",
-                fontSize: 14,
-                fontFamily: "inherit",
-            } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD \u05D0\u05D5 \u05D4\u05E2\u05DC\u05D4 \u05EA\u05DE\u05D5\u05E0\u05D4"))));
+            React.createElement("div", { style: { position: "absolute", bottom: 8, left: 8, display: "flex", gap: 6 } },
+                React.createElement("button", { onClick: openCamera, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD"),
+                React.createElement("button", { onClick: openGallery, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4")))) : (React.createElement(PhotoPicker, { onPick: onPhoto, allowPaste: allowPaste }))));
 }
 /* ---------- שלב 1: פרטי לקוח (הזנה ידנית) ---------- */
 function CustomerStep({ customer, setCustomer, meta, setMeta }) {
@@ -417,8 +475,8 @@ function StickerLegend({ stickers = [], numberMap }) {
         e.label)))));
 }
 /* ---------- צילום + הדבקת מדבקות (שלב 2) ---------- */
-function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allowRetake = true }) {
-    const inputRef = useRef(null);
+function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allowRetake = true, allowPaste = false }) {
+    const pick = usePhotoPick(onPhoto);
     const containerRef = useRef(null);
     const dragRef = useRef({ id: null, moved: false });
     const [selected, setSelected] = useState(null);
@@ -436,17 +494,6 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
         ro.observe(containerRef.current);
         return () => ro.disconnect();
     }, [photo]);
-    const handleFile = (e) => {
-        const f = e.target.files && e.target.files[0];
-        if (!f)
-            return;
-        compressImageFile(f).then(onPhoto).catch(() => {
-            const reader = new FileReader();
-            reader.onload = () => onPhoto(reader.result);
-            reader.readAsDataURL(f);
-        });
-        e.target.value = "";
-    };
     const addSticker = (def) => {
         if (def.isLine) {
             const dir = def.key; // up/down/left/right
@@ -585,27 +632,19 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
     }, []);
     if (!photo) {
         return (React.createElement("div", null,
-            React.createElement("input", { ref: inputRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: handleFile }),
-            React.createElement("button", { onClick: () => inputRef.current.click(), style: {
-                    width: "100%",
-                    padding: "22px 0",
-                    border: `1.5px dashed #9FB0BF`,
-                    borderRadius: 10,
-                    background: "#F7FAFC",
-                    color: "#3D4F5F",
-                    fontSize: 14,
-                    fontFamily: "inherit",
-                } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD \u05D0\u05D5 \u05D4\u05E2\u05DC\u05D4 \u05EA\u05DE\u05D5\u05E0\u05D4")));
+            React.createElement(PhotoPicker, { onPick: onPhoto, allowPaste: allowPaste })));
     }
     return (React.createElement("div", null,
-        React.createElement("input", { ref: inputRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: handleFile }),
+        pick.inputs,
         React.createElement("div", { ref: containerRef, onClick: () => setSelected(null), style: { position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${COLORS.line}`, touchAction: "none" } },
             React.createElement("img", { src: photo, alt: label, style: { width: "100%", display: "block", userSelect: "none" }, draggable: false }),
             (() => {
                 const numberMap = numberImageStickers(stickers);
                 return stickers.map((st) => renderSticker(st, { interactive: true, selected: selected === st.id, onDown, onLineDown, containerWidthPx, number: numberMap.get(st.id), onDelete: (id) => { onStickers(stickers.filter((s) => s.id !== id)); setSelected(null); } }));
             })(),
-            allowRetake && (React.createElement("button", { onClick: (e) => { e.stopPropagation(); inputRef.current.click(); }, style: { position: "absolute", bottom: 8, left: 8, background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\u05E6\u05DC\u05DD \u05E9\u05D5\u05D1")),
+            allowRetake && (React.createElement("div", { style: { position: "absolute", bottom: 8, left: 8, display: "flex", gap: 6 } },
+                React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openCamera(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD"),
+                React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openGallery(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4"))),
             (() => {
                 const sel = stickers.find((s) => s.id === selected && !s.isLine);
                 if (!sel)
@@ -1027,7 +1066,7 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
             address ? "בכתובת האתר" : ""),
         !address && (React.createElement("div", { style: { fontSize: 12, color: "#8A97A4", marginBottom: 12, textAlign: "center" } }, "\u05DC\u05D0 \u05D4\u05D5\u05D6\u05E0\u05D4 \u05DB\u05EA\u05D5\u05D1\u05EA \u05D1\u05E9\u05DC\u05D1 1 \u2014 GovMap \u05D9\u05D9\u05E4\u05EA\u05D7 \u05D1\u05D3\u05E3 \u05D4\u05E8\u05D0\u05E9\u05D9 \u05DC\u05D7\u05D9\u05E4\u05D5\u05E9 \u05D9\u05D3\u05E0\u05D9.")),
         address && (React.createElement("div", { style: { fontSize: 12, color: "#8A97A4", marginBottom: 12, textAlign: "center" } }, "\u05D1-GovMap: \u05D0\u05DD \u05D4\u05DB\u05EA\u05D5\u05D1\u05EA \u05DC\u05D0 \u05E0\u05D8\u05E2\u05E0\u05D4 \u05DE\u05E2\u05E6\u05DE\u05D4, \u05D4\u05D3\u05D1\u05D9\u05E7\u05D5 \u05D0\u05D5\u05EA\u05D4 \u05D1\u05E9\u05D5\u05E8\u05EA \u05D4\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05DE\u05E2\u05DC\u05D4.")),
-        !aerial ? (React.createElement(PhotoInput, { photo: null, onPhoto: setAerial, label: "\u05EA\u05E6\u05F4\u05D0", cameraCapture: false })) : (React.createElement(React.Fragment, null,
+        !aerial ? (React.createElement(PhotoInput, { photo: null, onPhoto: setAerial, label: "\u05EA\u05E6\u05F4\u05D0", cameraCapture: false, allowPaste: true })) : (React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } },
                 Object.entries(EQUIPMENT_TYPES).filter(([, t]) => !t.docOnly).map(([key, t]) => (React.createElement("button", { key: key, onClick: () => setPlacing(placing === key ? null : key), style: {
                         border: `1.5px solid ${t.color}`,
