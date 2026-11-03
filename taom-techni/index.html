@@ -1916,15 +1916,16 @@ function HistoryScreen({ userId, onEdit }) {
         let cancelled = false;
         (async () => {
             try {
+                // טוענים רק שדות קלים לרשימה (בלי תמונות, מפה וחתימות) — הנתונים המלאים נטענים רק בפתיחת תיאום
                 const { data, error } = await sb
                     .from("coordinations")
-                    .select("*")
+                    .select("id, created_at, status, customer:data->customer")
                     .eq("user_id", userId)
                     .order("created_at", { ascending: false });
                 if (error)
                     throw error;
                 if (!cancelled)
-                    setRows(data || []);
+                    setRows((data || []).map((r) => ({ ...r, data: { customer: r.customer || {} }, _light: true })));
             }
             catch (e) {
                 console.error(e);
@@ -1936,6 +1937,29 @@ function HistoryScreen({ userId, onEdit }) {
             cancelled = true;
         };
     }, [userId]);
+    // טעינת התיאום המלא (כולל תמונות) לפי מזהה — רק כשצריך אותו
+    const [loadingId, setLoadingId] = useState(null);
+    const fetchFull = async (row) => {
+        if (!row || !row._light)
+            return row;
+        const { data, error } = await sb.from("coordinations").select("*").eq("id", row.id).single();
+        if (error)
+            throw error;
+        return data;
+    };
+    const openRow = async (row) => {
+        setLoadingId(row.id);
+        try {
+            setSelected(await fetchFull(row));
+        }
+        catch (e) {
+            console.error(e);
+            alert("שגיאה בטעינת התיאום. נסו שוב.");
+        }
+        finally {
+            setLoadingId(null);
+        }
+    };
     const toggleCheck = (id) => {
         setCheckedIds((prev) => {
             const next = new Set(prev);
@@ -1961,7 +1985,8 @@ function HistoryScreen({ userId, onEdit }) {
     const reshare = async (row) => {
         setSharingId(row.id);
         try {
-            const blob = await buildPdfFromData(row.data || {});
+            const full = await fetchFull(row);
+            const blob = await buildPdfFromData(full.data || {});
             if (!blob) {
                 alert("לא ניתן היה להפיק את הדוח. נסו שוב.");
                 return;
@@ -2111,7 +2136,8 @@ function HistoryScreen({ userId, onEdit }) {
                 } },
                 React.createElement("label", { onClick: (e) => e.stopPropagation(), style: { display: "flex", alignItems: "center", padding: "0 4px", cursor: "pointer" } },
                     React.createElement("input", { type: "checkbox", checked: isChecked, onChange: () => toggleCheck(r.id), style: { width: 20, height: 20, cursor: "pointer" } })),
-                React.createElement("button", { onClick: () => setSelected(r), style: {
+                React.createElement("button", { onClick: () => openRow(r), disabled: loadingId != null, style: {
+                        opacity: loadingId != null && loadingId !== r.id ? 0.5 : 1,
                         flex: 1,
                         textAlign: "right",
                         background: "none",
