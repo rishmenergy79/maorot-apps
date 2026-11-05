@@ -89,6 +89,33 @@
        color:#a35f06;font-size:12.5px;line-height:1.45;white-space:pre-wrap}
   .hide{display:none}
 
+  /* ---------- ניהול משתמשים ---------- */
+  .modal{position:fixed;inset:0;background:rgba(10,24,41,.55);display:flex;align-items:center;
+         justify-content:center;padding:14px;z-index:60}
+  .modal .box{background:#fff;border-radius:14px;width:100%;max-width:760px;max-height:92vh;
+              display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(6,25,48,.3)}
+  .box-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .box-head h2{margin:0;font-size:17px;color:var(--brand-dp);flex:1}
+  .box-head .x{border:none;background:none;font-size:19px;color:var(--muted);cursor:pointer}
+  .box-body{padding:16px 18px 22px;overflow:auto}
+  .box-body h3{margin:16px 0 8px;font-size:14.5px;color:var(--brand-dp)}
+  .box-body h3:first-child{margin-top:0}
+  .frm{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .frm input,.frm select{flex:1;min-width:150px;padding:9px 11px;font-size:14.5px;font-family:inherit;
+    border:1px solid var(--line);border-radius:8px;background:#fbfcfe}
+  .amsg{min-height:20px;font-size:13.5px;margin-bottom:8px}
+  .amsg.err{color:var(--bad)} .amsg.ok{color:var(--ok)}
+  .ulist{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .urow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eef1f5}
+  .urow:last-child{border-bottom:none}
+  .urow.off{background:#fbfbfc;opacity:.7}
+  .uname{flex:1;min-width:150px;font-weight:600}
+  .uname small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+  .urow select{padding:6px 9px;font-size:13px;font-family:inherit;border:1px solid var(--line);
+    border-radius:7px;background:#fff}
+  .tag{padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;background:#eef3f9;color:var(--brand-dp)}
+  .tag.adm{background:#fff4e3;color:#b06a05}
+
   @media(max-width:760px){
     thead{display:none}
     tbody tr{display:block;border-bottom:1px solid var(--line);padding:12px}
@@ -128,6 +155,7 @@
     <button id="fBtn" onclick="toggleFaults()">רק עם ממצאים</button>
     <button id="aBtn" onclick="toggleArchive()">ארכיון</button>
     <button onclick="load()">רענון</button>
+    <button id="admBtn" class="hide" onclick="openAdmin()">👥 ניהול משתמשים</button>
   </div>
 
   <div class="card">
@@ -141,6 +169,35 @@
       <tbody id="rows"></tbody>
     </table>
     <div class="empty hide" id="empty">לא נמצאו דוחות.</div>
+  </div>
+</div>
+
+<!-- ============ ניהול משתמשים ============ -->
+<div id="admWrap" class="modal hide">
+  <div class="box">
+    <div class="box-head">
+      <h2>ניהול משתמשים</h2>
+      <button class="x" onclick="closeAdmin()">✕</button>
+    </div>
+
+    <div class="box-body">
+      <div id="admMsg" class="amsg"></div>
+
+      <h3>משתמש חדש</h3>
+      <div class="frm">
+        <input id="nUser"  placeholder="שם משתמש (לכניסה)" autocomplete="off">
+        <input id="nName"  placeholder="שם מלא" autocomplete="off">
+        <select id="nRole">
+          <option value="inspector">inspector — אפליקציה בלבד</option>
+          <option value="office">office — גם דף המשרד</option>
+        </select>
+        <input id="nPass" type="text" placeholder="סיסמה ראשונית" autocomplete="off">
+        <button class="act primary" onclick="admCreate()">הוספה</button>
+      </div>
+
+      <h3>משתמשים קיימים</h3>
+      <div id="admList" class="ulist">טוען…</div>
+    </div>
   </div>
 </div>
 
@@ -207,6 +264,7 @@ async function login(){
     document.getElementById('who').innerHTML =
       'מחובר: <b>' + me.name + '</b> · <button onclick="location.reload()">התנתקות</button>';
     load();
+    checkAdmin();
   }catch(e){
     err.textContent = (String(e.message).indexOf('bad credentials') > -1)
       ? 'שם משתמש או סיסמה שגויים' : ('שגיאה: ' + e.message);
@@ -381,6 +439,114 @@ function render(){
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+/* ---------- ניהול משתמשים ---------- */
+const ADMFN = BASE + '/admin-users';
+let isAdmin = false;
+
+async function adm(payload){
+  const r = await fetch(ADMFN, {
+    method:'POST',
+    headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({token: token}, payload))
+  });
+  const j = await r.json().catch(()=>({ok:false,error:'תשובה לא תקינה מהשרת'}));
+  if(!r.ok || !j.ok) throw new Error(j.error || ('שגיאה '+r.status));
+  return j;
+}
+
+async function checkAdmin(){
+  try{
+    await adm({action:'whoami'});
+    isAdmin = true;
+    document.getElementById('admBtn').classList.remove('hide');
+  }catch(e){ isAdmin = false; }
+}
+
+function amsg(txt, cls){
+  const el = document.getElementById('admMsg');
+  el.className = 'amsg' + (cls ? ' ' + cls : '');
+  el.textContent = txt || '';
+}
+function openAdmin(){
+  document.getElementById('admWrap').classList.remove('hide');
+  amsg('');
+  admLoad();
+}
+function closeAdmin(){ document.getElementById('admWrap').classList.add('hide'); }
+
+async function admLoad(){
+  const box = document.getElementById('admList');
+  box.innerHTML = 'טוען…';
+  try{
+    const j = await adm({action:'list'});
+    const rows = (j.users || []).map(u => {
+      const un = esc(u.username);
+      return '<div class="urow' + (u.active ? '' : ' off') + '">' +
+        '<div class="uname">' + esc(u.full_name) +
+          (u.is_admin ? ' <span class="tag adm">מנהל</span>' : '') +
+          (u.active ? '' : ' <span class="tag">חסום</span>') +
+          '<small>' + un + '</small></div>' +
+        '<select onchange="admRole(\'' + un + '\', this.value)">' +
+          '<option value="inspector"' + (u.role === 'inspector' ? ' selected' : '') + '>inspector</option>' +
+          '<option value="office"' + (u.role === 'office' ? ' selected' : '') + '>office</option>' +
+        '</select>' +
+        '<button class="act" onclick="admPass(\'' + un + '\')">איפוס סיסמה</button>' +
+        '<button class="act" onclick="admActive(\'' + un + '\',' + (u.active ? 'false' : 'true') + ')">' +
+          (u.active ? 'חסימה' : 'שחרור') + '</button>' +
+      '</div>';
+    }).join('');
+    box.innerHTML = rows || '<div class="urow">אין משתמשים.</div>';
+  }catch(e){
+    box.innerHTML = '';
+    amsg('שגיאה בטעינה: ' + e.message, 'err');
+  }
+}
+
+async function admCreate(){
+  const u = document.getElementById('nUser').value.trim();
+  const n = document.getElementById('nName').value.trim();
+  const r = document.getElementById('nRole').value;
+  const p = document.getElementById('nPass').value;
+  if(!u || !n || !p){ amsg('יש למלא שם משתמש, שם מלא וסיסמה', 'err'); return; }
+  amsg('מוסיף…');
+  try{
+    await adm({action:'create', username:u, fullName:n, role:r, password:p});
+    document.getElementById('nUser').value = '';
+    document.getElementById('nName').value = '';
+    document.getElementById('nPass').value = '';
+    amsg('המשתמש נוצר. מסרו לו את הסיסמה — אי אפשר לראות אותה שוב.', 'ok');
+    admLoad();
+  }catch(e){ amsg('ההוספה נכשלה: ' + e.message, 'err'); }
+}
+
+async function admPass(username){
+  const p = prompt('סיסמה חדשה עבור ' + username + ':');
+  if(p === null) return;
+  if(p.trim().length < 4){ amsg('סיסמה קצרה מדי', 'err'); return; }
+  amsg('מעדכן…');
+  try{
+    await adm({action:'password', username:username, password:p.trim()});
+    amsg('הסיסמה אופסה. מסרו אותה למשתמש.', 'ok');
+  }catch(e){ amsg('האיפוס נכשל: ' + e.message, 'err'); }
+}
+
+async function admActive(username, active){
+  if(!confirm((active ? 'לשחרר' : 'לחסום') + ' את ' + username + '?')) return;
+  try{
+    await adm({action:'active', username:username, active:active});
+    amsg(active ? 'המשתמש שוחרר.' : 'המשתמש נחסם.', 'ok');
+    admLoad();
+  }catch(e){ amsg('הפעולה נכשלה: ' + e.message, 'err'); }
+}
+
+async function admRole(username, role){
+  try{
+    await adm({action:'role', username:username, role:role});
+    amsg('ההרשאה עודכנה. תיכנס לתוקף אחרי התנתקות והתחברות מחדש.', 'ok');
+    admLoad();
+  }catch(e){ amsg('העדכון נכשל: ' + e.message, 'err'); admLoad(); }
 }
 </script>
 </body>
