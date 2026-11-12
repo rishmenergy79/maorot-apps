@@ -2582,5 +2582,145 @@ function App() {
   }
 })();
 </script>
+<!-- ===== ניהול משתמשים (מנהלים בלבד) ===== -->
+<style>
+  #ttAdmBtn{position:fixed;left:14px;bottom:14px;z-index:9000;border:0;border-radius:999px;padding:10px 16px;
+    background:#0e5f8c;color:#fff;font:600 14px Rubik,Arial,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.25);cursor:pointer;display:none}
+  #ttAdm{position:fixed;inset:0;z-index:9001;background:rgba(10,24,41,.55);display:none;align-items:center;justify-content:center;padding:12px;direction:rtl;font-family:Rubik,Arial,sans-serif}
+  #ttAdm .bx{background:#fff;color:#14212b;border-radius:14px;width:100%;max-width:860px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(6,25,48,.3)}
+  #ttAdm .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #e3ebf2}
+  #ttAdm .hd b{font-size:18px}
+  #ttAdm .x{border:0;background:none;font-size:22px;cursor:pointer;color:#5c6b76}
+  #ttAdm .bd{padding:14px 18px;overflow:auto}
+  #ttAdm .add{display:grid;grid-template-columns:1.2fr 1.4fr 1fr .8fr auto;gap:8px;margin-bottom:12px}
+  #ttAdm input,#ttAdm select{font:inherit;font-size:14px;padding:8px 10px;border:1px solid #cfdbe6;border-radius:8px;min-width:0}
+  #ttAdm button.b{font:inherit;font-size:13.5px;border:1px solid #cfdbe6;background:#f4f8fb;border-radius:8px;padding:7px 10px;cursor:pointer;white-space:nowrap}
+  #ttAdm button.p{background:#1C9FD3;border-color:#1C9FD3;color:#fff}
+  #ttAdm button.d{color:#b42318}
+  #ttAdm button.d.sure{background:#b42318;color:#fff;border-color:#b42318}
+  #ttAdm .msg{min-height:20px;font-size:13.5px;margin:4px 0 10px}
+  #ttAdm .msg.ok{color:#137333}#ttAdm .msg.err{color:#b42318}
+  #ttAdm .u{border:1px solid #e3ebf2;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  #ttAdm .u.off{background:#fafafa;opacity:.8}
+  #ttAdm .r1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  #ttAdm .r1 .em{font-weight:600;direction:ltr}
+  #ttAdm .tag{font-size:11.5px;border-radius:20px;padding:2px 8px;background:#e8f4fb;color:#0e5f8c}
+  #ttAdm .tag.f{background:#fdecea;color:#b42318}
+  #ttAdm .r2{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+  #ttAdm .sub{font-size:12px;color:#5c6b76}
+  @media (max-width:640px){#ttAdm .add{grid-template-columns:1fr 1fr}}
+</style>
+<button id="ttAdmBtn" type="button">👥 ניהול משתמשים</button>
+<div id="ttAdm" role="dialog" aria-label="ניהול משתמשים">
+  <div class="bx">
+    <div class="hd"><b>ניהול משתמשים</b><button class="x" type="button" data-close>✕</button></div>
+    <div class="bd">
+      <div class="add">
+        <input id="ttNName" placeholder="שם מלא">
+        <input id="ttNEmail" placeholder="אימייל" dir="ltr" autocomplete="off">
+        <input id="ttNPass" placeholder="סיסמה (8+ תווים)" autocomplete="new-password">
+        <select id="ttNRole"><option value="user">משתמש</option><option value="admin">מנהל</option></select>
+        <button class="b p" type="button" id="ttNAdd">➕ הוספה</button>
+      </div>
+      <div class="msg" id="ttMsg"></div>
+      <div id="ttList">טוען…</div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  if (typeof sb === "undefined") return;
+  var $ = function(id){ return document.getElementById(id); };
+  var btn = $("ttAdmBtn"), box = $("ttAdm");
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function call(action, payload){
+    return sb.functions.invoke("tt-admin", { body: Object.assign({ action: action }, payload || {}) })
+      .then(function(r){
+        if (r.error) {
+          var ctx = r.error.context;
+          if (ctx && ctx.json) return ctx.json().then(function(j){ throw new Error((j && j.error) || r.error.message); }, function(){ throw new Error(r.error.message); });
+          throw new Error(r.error.message);
+        }
+        if (!r.data || !r.data.ok) throw new Error((r.data && r.data.error) || "שגיאה");
+        return r.data;
+      });
+  }
+  function msg(t, c){ var m = $("ttMsg"); m.className = "msg" + (c ? " " + c : ""); m.textContent = t || ""; }
+  function fmt(d){ if (!d) return "לא נכנס עדיין"; var x = new Date(d); return "כניסה אחרונה " + x.toLocaleDateString("he-IL") + " " + x.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}); }
+  function genPw(){ var c="abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789",s=""; for(var i=0;i<10;i++) s+=c.charAt(Math.floor(Math.random()*c.length)); return s; }
+
+  function load(){
+    $("ttList").textContent = "טוען…";
+    call("list").then(function(r){
+      $("ttList").innerHTML = r.users.map(function(u){
+        return '<div class="u' + (u.frozen ? " off" : "") + '" data-id="' + esc(u.id) + '">' +
+          '<div class="r1"><span class="em">' + esc(u.email) + '</span>' +
+            (u.role === "admin" ? '<span class="tag">מנהל</span>' : '') +
+            (u.frozen ? '<span class="tag f">מוקפא</span>' : '') +
+            (u.me ? '<span class="tag">זה אתה</span>' : '') +
+            '<span class="sub">' + esc(fmt(u.last_sign_in)) + '</span></div>' +
+          '<div class="r2">' +
+            '<input data-name value="' + esc(u.name) + '" placeholder="שם מלא" style="width:150px">' +
+            '<button class="b" type="button" data-a="name">שמירת שם</button>' +
+            '<input data-pw placeholder="סיסמה חדשה" style="width:140px" autocomplete="new-password">' +
+            '<button class="b" type="button" data-a="gen" title="יצירת סיסמה אקראית">🎲</button>' +
+            '<button class="b" type="button" data-a="pw">החלפת סיסמה</button>' +
+            (u.me ? '' :
+              '<select data-role><option value="user"' + (u.role !== "admin" ? " selected" : "") + '>משתמש</option><option value="admin"' + (u.role === "admin" ? " selected" : "") + '>מנהל</option></select>' +
+              '<button class="b" type="button" data-a="freeze">' + (u.frozen ? "ביטול הקפאה" : "הקפאה") + '</button>' +
+              '<button class="b d" type="button" data-a="del">מחיקה</button>') +
+          '</div></div>';
+      }).join("") || "אין משתמשים";
+      var list = r.users; $("ttList")._users = list;
+    }).catch(function(e){ $("ttList").textContent = ""; msg(e.message, "err"); });
+  }
+
+  $("ttList").addEventListener("change", function(e){
+    var s = e.target.closest("[data-role]"); if (!s) return;
+    var id = s.closest(".u").dataset.id;
+    call("set_role", { id: id, role: s.value }).then(function(){ msg("ההרשאה עודכנה", "ok"); load(); }).catch(function(er){ msg(er.message, "err"); load(); });
+  });
+  $("ttList").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-a]"); if (!b) return;
+    var row = b.closest(".u"), id = row.dataset.id, a = b.dataset.a;
+    var u = ($("ttList")._users || []).filter(function(x){ return x.id === id; })[0] || {};
+    if (a === "gen") { row.querySelector("[data-pw]").value = genPw(); return; }
+    var p;
+    if (a === "name") p = call("set_name", { id: id, name: row.querySelector("[data-name]").value }).then(function(){ msg("השם נשמר", "ok"); });
+    else if (a === "pw") {
+      var pw = row.querySelector("[data-pw]").value;
+      p = call("set_password", { id: id, password: pw }).then(function(){ msg("הסיסמה של " + u.email + " הוחלפה", "ok"); });
+    }
+    else if (a === "freeze") p = call("set_frozen", { id: id, frozen: !u.frozen }).then(function(){ msg(u.frozen ? "ההקפאה בוטלה" : "המשתמש הוקפא — לא יוכל להתחבר", "ok"); load(); });
+    else if (a === "del") {
+      if (!b.classList.contains("sure")) { b.classList.add("sure"); b.textContent = "לאשר מחיקה?"; setTimeout(function(){ if (b.isConnected) { b.classList.remove("sure"); b.textContent = "מחיקה"; } }, 4000); return; }
+      p = call("delete", { id: id }).then(function(){ msg("המשתמש נמחק", "ok"); load(); });
+    }
+    if (p) { b.disabled = true; p.catch(function(er){ msg(er.message, "err"); }).then(function(){ b.disabled = false; }); }
+  });
+  $("ttNAdd").addEventListener("click", function(){
+    var b = this; b.disabled = true;
+    call("create", { name: $("ttNName").value, email: $("ttNEmail").value, password: $("ttNPass").value, role: $("ttNRole").value })
+      .then(function(){ msg("המשתמש " + $("ttNEmail").value.trim() + " נוסף", "ok"); $("ttNName").value = $("ttNEmail").value = $("ttNPass").value = ""; $("ttNRole").value = "user"; load(); })
+      .catch(function(e){ msg(e.message, "err"); })
+      .then(function(){ b.disabled = false; });
+  });
+  box.addEventListener("click", function(e){ if (e.target === box || e.target.closest("[data-close]")) box.style.display = "none"; });
+  btn.addEventListener("click", function(){ box.style.display = "flex"; msg(""); load(); });
+
+  /* ההרשאה נבדקת מול השרת, כך שמנהל חדש רואה את הכפתור בלי להתנתק ולהתחבר מחדש */
+  var lastUid = null;
+  function check(session){
+    var uid = session && session.user ? session.user.id : null;
+    if (uid === lastUid) return; lastUid = uid;
+    btn.style.display = "none"; box.style.display = "none";
+    if (!uid) return;
+    call("whoami").then(function(){ if (lastUid === uid) btn.style.display = "block"; }).catch(function(){});
+  }
+  sb.auth.getSession().then(function(r){ check(r.data.session); });
+  sb.auth.onAuthStateChange(function(_e, s){ check(s); });
+})();
+</script>
+
 </body>
 </html>
