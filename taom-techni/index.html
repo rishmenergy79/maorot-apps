@@ -2629,21 +2629,23 @@ function App() {
 </div>
 <script>
 (function(){
-  if (typeof sb === "undefined") return;
+  /* האפליקציה לא חושפת את חיבור הענן שלה, לכן הלוח קורא את ההתחברות הקיימת מהדפדפן ופונה לשרת ישירות */
+  var SB_URL = "https://yajugfebxmehsiegoutp.supabase.co";
+  var SB_KEY = "sb_publishable_ciuOALr09HjUe1MnIQn3OA_XV6bQiPc";
+  var STORE = "sb-yajugfebxmehsiegoutp-auth-token";
+  function sess(){ try { var j = JSON.parse(localStorage.getItem(STORE) || "null"); return j && j.access_token && j.user ? j : null; } catch (e) { return null; } }
   var $ = function(id){ return document.getElementById(id); };
   var btn = $("ttAdmBtn"), box = $("ttAdm");
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
   function call(action, payload){
-    return sb.functions.invoke("tt-admin", { body: Object.assign({ action: action }, payload || {}) })
-      .then(function(r){
-        if (r.error) {
-          var ctx = r.error.context;
-          if (ctx && ctx.json) return ctx.json().then(function(j){ throw new Error((j && j.error) || r.error.message); }, function(){ throw new Error(r.error.message); });
-          throw new Error(r.error.message);
-        }
-        if (!r.data || !r.data.ok) throw new Error((r.data && r.data.error) || "שגיאה");
-        return r.data;
-      });
+    var t = sess();
+    if (!t) return Promise.reject(new Error("לא מחובר"));
+    return fetch(SB_URL + "/functions/v1/tt-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SB_KEY, "Authorization": "Bearer " + t.access_token },
+      body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+    }).then(function(r){ return r.json().catch(function(){ return { ok: false, error: "שגיאה " + r.status }; }); })
+      .then(function(j){ if (!j || !j.ok) throw new Error((j && (j.error || j.message || j.msg)) || "שגיאה"); return j; });
   }
   function msg(t, c){ var m = $("ttMsg"); m.className = "msg" + (c ? " " + c : ""); m.textContent = t || ""; }
   function fmt(d){ if (!d) return "לא נכנס עדיין"; var x = new Date(d); return "כניסה אחרונה " + x.toLocaleDateString("he-IL") + " " + x.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}); }
@@ -2717,8 +2719,10 @@ function App() {
     if (!uid) return;
     call("whoami").then(function(){ if (lastUid === uid) btn.style.display = "block"; }).catch(function(){});
   }
-  sb.auth.getSession().then(function(r){ check(r.data.session); });
-  sb.auth.onAuthStateChange(function(_e, s){ check(s); });
+  /* בדיקה חוזרת של המשתמש המחובר: התחברות, התנתקות או החלפת משתמש */
+  function tick(){ var t = sess(); check(t ? { user: t.user } : null); }
+  tick(); setInterval(tick, 3000);
+  window.addEventListener("storage", function(e){ if (e.key === STORE) tick(); });
 })();
 </script>
 
