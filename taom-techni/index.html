@@ -151,14 +151,44 @@ function usePhotoPick(onPick) {
         deliver,
     };
 }
-function PhotoPicker({ onPick, allowPaste = false }) {
-    const { inputs, openCamera, openGallery, deliver } = usePhotoPick(onPick);
+/* הדבקת תמונה מהלוח — עובד בכל מקום שמעלים בו תמונה.
+   אם הדפדפן לא מרשה קריאה ישירה מהלוח, עוברים למצב המתנה ל-Ctrl+V. */
+function useClipboardPaste(deliver) {
     const [msg, setMsg] = useState("");
-    const pasteFromClipboard = async () => {
+    const [awaiting, setAwaiting] = useState(false);
+    const deliverRef = useRef(deliver);
+    deliverRef.current = deliver;
+    useEffect(() => {
+        if (!awaiting)
+            return;
+        const onPaste = (e) => {
+            const items = (e.clipboardData && e.clipboardData.items) || [];
+            for (let i = 0; i < items.length; i++) {
+                const it = items[i];
+                if (it.type && it.type.indexOf("image/") === 0) {
+                    const f = it.getAsFile();
+                    if (f) {
+                        e.preventDefault();
+                        setAwaiting(false);
+                        setMsg("");
+                        deliverRef.current(f);
+                        return;
+                    }
+                }
+            }
+            setAwaiting(false);
+            setMsg("לא נמצאה תמונה בהדבקה. העתיקו צילום מסך ונסו שוב.");
+        };
+        document.addEventListener("paste", onPaste);
+        const t = setTimeout(() => { setAwaiting(false); setMsg(""); }, 30000);
+        return () => { document.removeEventListener("paste", onPaste); clearTimeout(t); };
+    }, [awaiting]);
+    const paste = async () => {
         setMsg("");
         try {
             if (!navigator.clipboard || !navigator.clipboard.read) {
-                setMsg("הדפדפן הזה לא תומך בהדבקה מהלוח. השתמשו בגלריה.");
+                setAwaiting(true);
+                setMsg("לחצו עכשיו Ctrl+V (או ⌘V) כדי להדביק את התמונה.");
                 return;
             }
             const items = await navigator.clipboard.read();
@@ -166,7 +196,7 @@ function PhotoPicker({ onPick, allowPaste = false }) {
                 const type = (it.types || []).find((t) => t.startsWith("image/"));
                 if (type) {
                     const blob = await it.getType(type);
-                    deliver(new File([blob], "clipboard.png", { type }));
+                    deliverRef.current(new File([blob], "clipboard.png", { type }));
                     return;
                 }
             }
@@ -174,9 +204,22 @@ function PhotoPicker({ onPick, allowPaste = false }) {
         }
         catch (e) {
             console.error(e);
-            setMsg("לא ניתן לקרוא מהלוח — אשרו את בקשת ההרשאה ונסו שוב.");
+            setAwaiting(true);
+            setMsg("לא ניתן לקרוא מהלוח. לחצו עכשיו Ctrl+V (או ⌘V) כדי להדביק.");
         }
     };
+    return { paste, msg, awaiting };
+}
+/* כפתור הדבקה קטן לשכבה שמעל תמונה קיימת */
+function PasteOverlayButton({ deliver }) {
+    const { paste, msg, awaiting } = useClipboardPaste(deliver);
+    return (React.createElement(React.Fragment, null,
+        React.createElement("button", { onClick: (e) => { e.stopPropagation(); paste(); }, onPointerDown: (e) => e.stopPropagation(), title: "\u05D4\u05D3\u05D1\u05E7 \u05EA\u05DE\u05D5\u05E0\u05D4 \u05DE\u05D4\u05DC\u05D5\u05D7", style: { background: awaiting ? COLORS.amber : "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDCCB \u05D4\u05D3\u05D1\u05E7"),
+        msg && (React.createElement("span", { style: { background: "rgba(20,27,34,0.9)", color: "#fff", borderRadius: 8, padding: "6px 8px", fontSize: 11, maxWidth: 190, lineHeight: 1.4 } }, msg))));
+}
+function PhotoPicker({ onPick, allowPaste = true }) {
+    const { inputs, openCamera, openGallery, deliver } = usePhotoPick(onPick);
+    const { paste: pasteFromClipboard, msg, awaiting } = useClipboardPaste(deliver);
     const btn = (bg, color, border) => ({
         flex: 1,
         padding: "18px 0",
@@ -197,25 +240,26 @@ function PhotoPicker({ onPick, allowPaste = false }) {
                 width: "100%",
                 marginTop: 8,
                 padding: "11px 0",
-                border: `1.5px solid ${COLORS.slate}`,
+                border: `1.5px solid ${awaiting ? COLORS.amber : COLORS.slate}`,
                 borderRadius: 10,
-                background: "#fff",
+                background: awaiting ? "#FFF7E6" : "#fff",
                 color: COLORS.slate,
                 fontSize: 13.5,
                 fontWeight: 700,
                 fontFamily: "inherit",
             } }, "\uD83D\uDCCB \u05D4\u05D3\u05D1\u05E7 \u05E6\u05D9\u05DC\u05D5\u05DD \u05DE\u05E1\u05DA \u05DE\u05D4\u05DC\u05D5\u05D7")),
-        msg && React.createElement("p", { style: { fontSize: 12.5, color: COLORS.red, marginTop: 6, lineHeight: 1.5 } }, msg)));
+        msg && React.createElement("p", { style: { fontSize: 12.5, color: awaiting ? COLORS.slate : COLORS.red, marginTop: 6, lineHeight: 1.5 } }, msg)));
 }
-function PhotoInput({ photo, onPhoto, label, cameraCapture = true, allowPaste = false }) {
-    const { inputs, openCamera, openGallery } = usePhotoPick(onPhoto);
+function PhotoInput({ photo, onPhoto, label, cameraCapture = true, allowPaste = true }) {
+    const { inputs, openCamera, openGallery, deliver } = usePhotoPick(onPhoto);
     return (React.createElement("div", null,
         inputs,
         photo ? (React.createElement("div", { style: { position: "relative" } },
             React.createElement("img", { src: photo, alt: label, style: { width: "100%", borderRadius: 10, display: "block", border: `1px solid ${COLORS.line}` } }),
             React.createElement("div", { style: { position: "absolute", bottom: 8, left: 8, display: "flex", gap: 6 } },
                 React.createElement("button", { onClick: openCamera, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD"),
-                React.createElement("button", { onClick: openGallery, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4")))) : (React.createElement(PhotoPicker, { onPick: onPhoto, allowPaste: allowPaste }))));
+                React.createElement("button", { onClick: openGallery, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4"),
+                allowPaste && React.createElement(PasteOverlayButton, { deliver: deliver })))) : (React.createElement(PhotoPicker, { onPick: onPhoto, allowPaste: allowPaste }))));
 }
 /* ---------- שלב 1: פרטי לקוח (הזנה ידנית) ---------- */
 function CustomerStep({ customer, setCustomer, meta, setMeta }) {
@@ -475,7 +519,7 @@ function StickerLegend({ stickers = [], numberMap }) {
         e.label)))));
 }
 /* ---------- צילום + הדבקת מדבקות (שלב 2) ---------- */
-function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allowRetake = true, allowPaste = false }) {
+function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allowRetake = true, allowPaste = true }) {
     const pick = usePhotoPick(onPhoto);
     const containerRef = useRef(null);
     const dragRef = useRef({ id: null, moved: false });
@@ -680,9 +724,10 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
                     const numberMap = numberImageStickers(stickers);
                     return stickers.map((st) => renderSticker(st, { interactive: true, selected: selected === st.id, onDown, onLineDown, containerWidthPx, number: numberMap.get(st.id), onDelete: (id) => { onStickers(stickers.filter((s) => s.id !== id)); setSelected(null); } }));
                 })(),
-                allowRetake && (React.createElement("div", { style: { position: "absolute", bottom: 8, left: 8, display: "flex", gap: 6 } },
+                allowRetake && (React.createElement("div", { style: { position: "absolute", bottom: 8, left: 8, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", maxWidth: "92%" } },
                     React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openCamera(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD"),
-                    React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openGallery(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4"))))),
+                    React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openGallery(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4"),
+                    allowPaste && React.createElement(PasteOverlayButton, { deliver: pick.deliver }))))),
         React.createElement(StickerLegend, { stickers: stickers, numberMap: numberImageStickers(stickers) }),
         React.createElement("button", { onClick: () => setShowPalette((v) => !v), style: {
                 width: "100%",
@@ -1998,6 +2043,9 @@ function HistoryScreen({ userId, onEdit }) {
     const [deleting, setDeleting] = useState(false);
     const [query, setQuery] = useState(""); // חיפוש לפי שם, מספר הזמנה או יישוב
     const [sharingId, setSharingId] = useState(null); // תיאום שמופץ מחדש כרגע
+    const [shareOpen, setShareOpen] = useState(false); // תפריט הפצה לנבחרים
+    const [prep, setPrep] = useState(null); // {done,total} בזמן הפקת הדוחות
+    const [readyFiles, setReadyFiles] = useState(null); // קבצים מוכנים לשיתוף
     useEffect(() => {
         let cancelled = false;
         (async () => {
@@ -2103,6 +2151,118 @@ function HistoryScreen({ userId, onEdit }) {
             setSharingId(null);
         }
     };
+    /* ---------- הפצת תיאומים מסומנים ---------- */
+    const checkedRows = () => (rows || []).filter((r) => checkedIds.has(r.id));
+    const fileNameFor = (row, data) => {
+        const c = (data || {}).customer || (row.data || {}).customer || {};
+        const safe = String(c.ordname || c.name || "report").replace(/[^\w\-]+/g, "_").slice(0, 40);
+        const date = new Date(row.created_at).toISOString().slice(0, 10);
+        return `Coordination_${safe}_${date}.pdf`;
+    };
+    // מפיק PDF לכל תיאום מסומן. ההפקה אורכת זמן, ולכן השיתוף עצמו נעשה בלחיצה נפרדת
+    // אחריה — דפדפנים דורשים שהשיתוף ייצא ישירות מלחיצת המשתמש.
+    const prepareSelected = async () => {
+        const list = checkedRows();
+        if (list.length === 0)
+            return;
+        setReadyFiles(null);
+        const files = [];
+        try {
+            for (let i = 0; i < list.length; i++) {
+                setPrep({ done: i, total: list.length });
+                const full = await fetchFull(list[i]);
+                const blob = await buildPdfFromData(full.data || {});
+                if (blob)
+                    files.push(new File([blob], fileNameFor(list[i], full.data), { type: "application/pdf" }));
+            }
+            setPrep(null);
+            if (files.length === 0) {
+                alert("לא ניתן היה להפיק את הדוחות. נסו שוב.");
+                return;
+            }
+            setReadyFiles(files);
+        }
+        catch (e) {
+            console.error(e);
+            setPrep(null);
+            alert("שגיאה בהפקת הדוחות.");
+        }
+    };
+    const downloadFiles = (files) => {
+        files.forEach((f, i) => {
+            setTimeout(() => {
+                const url = URL.createObjectURL(f);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = f.name;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+            }, i * 350);
+        });
+    };
+    // שיתוף הקבצים דרך תפריט השיתוף של המכשיר — משם אפשר לוואטסאפ, מייל, דרייב וכו'
+    const shareReadyFiles = async () => {
+        const files = readyFiles || [];
+        if (files.length === 0)
+            return;
+        const title = files.length === 1 ? "דוח תיאום טכני" : `דוחות תיאום טכני (${files.length})`;
+        try {
+            if (navigator.canShare && navigator.canShare({ files })) {
+                await navigator.share({ files, title });
+            }
+            else if (navigator.canShare && navigator.canShare({ files: [files[0]] })) {
+                // המכשיר תומך בקובץ אחד בלבד — משתפים אחד־אחד
+                for (const f of files) {
+                    await navigator.share({ files: [f], title: f.name });
+                }
+            }
+            else {
+                downloadFiles(files);
+                alert("המכשיר הזה לא תומך בשיתוף קבצים ישירות. הדוחות ירדו למכשיר ואפשר לצרף אותם ידנית.");
+            }
+            setShareOpen(false);
+            setReadyFiles(null);
+        }
+        catch (e) {
+            if (e && e.name === "AbortError")
+                return; // המשתמש ביטל
+            console.error(e);
+            downloadFiles(files);
+            alert("השיתוף לא הושלם. הדוחות ירדו למכשיר במקום.");
+        }
+    };
+    // טקסט מסכם לשיתוף מהיר — שם לקוח, מספר הזמנה, יישוב ותאריך
+    const selectedSummary = () => {
+        const lines = checkedRows().map((r) => {
+            const c = (r.data || {}).customer || {};
+            const date = new Date(r.created_at).toLocaleDateString("he-IL");
+            const parts = [c.name, c.ordname ? `הזמנה ${c.ordname}` : null, c.address, date].filter(Boolean);
+            return "• " + parts.join(" · ");
+        });
+        return `תיאומים טכניים (${lines.length}):\n` + lines.join("\n");
+    };
+    const shareSummaryText = async () => {
+        const text = selectedSummary();
+        try {
+            if (navigator.share) {
+                await navigator.share({ text, title: "תיאומים טכניים" });
+                setShareOpen(false);
+                return;
+            }
+        }
+        catch (e) {
+            if (e && e.name === "AbortError")
+                return;
+        }
+        window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+        setShareOpen(false);
+    };
+    const emailSummary = () => {
+        const text = selectedSummary();
+        window.location.href =
+            "mailto:?subject=" + encodeURIComponent("תיאומים טכניים") + "&body=" + encodeURIComponent(text);
+        setShareOpen(false);
+    };
     const deleteChecked = async () => {
         if (checkedIds.size === 0)
             return;
@@ -2189,21 +2349,36 @@ function HistoryScreen({ userId, onEdit }) {
             rows.length,
             " \u05EA\u05D9\u05D0\u05D5\u05DE\u05D9\u05DD")),
         checkedIds.size > 0 && (React.createElement("div", { style: {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
                 background: "#FBEBE8",
                 border: "1px solid #EAC5BE",
                 borderRadius: 10,
                 padding: "8px 12px",
                 marginBottom: 10,
             } },
-            React.createElement("span", { style: { fontSize: 13, color: COLORS.red, fontWeight: 700 } },
-                checkedIds.size,
-                " \u05DE\u05E1\u05D5\u05DE\u05E0\u05D9\u05DD"),
-            React.createElement("div", { style: { display: "flex", gap: 8 } },
-                React.createElement("button", { onClick: () => setCheckedIds(new Set()), style: { background: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontFamily: "inherit" } }, "\u05D1\u05D8\u05DC \u05E1\u05D9\u05DE\u05D5\u05DF"),
-                React.createElement("button", { onClick: deleteChecked, disabled: deleting, style: { background: COLORS.red, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12.5, fontWeight: 700, fontFamily: "inherit", opacity: deleting ? 0.6 : 1 } }, deleting ? "מוחק…" : "🗑 מחק נבחרים")))),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" } },
+                React.createElement("span", { style: { fontSize: 13, color: COLORS.red, fontWeight: 700 } },
+                    checkedIds.size,
+                    " \u05DE\u05E1\u05D5\u05DE\u05E0\u05D9\u05DD"),
+                React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                    React.createElement("button", { onClick: () => { setCheckedIds(new Set()); setShareOpen(false); setReadyFiles(null); }, style: { background: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontFamily: "inherit" } }, "\u05D1\u05D8\u05DC \u05E1\u05D9\u05DE\u05D5\u05DF"),
+                    React.createElement("button", { onClick: () => { setShareOpen((v) => !v); setReadyFiles(null); }, style: { background: COLORS.ink, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12.5, fontWeight: 700, fontFamily: "inherit" } }, "\uD83D\uDCE4 \u05D4\u05E4\u05E5 \u05E0\u05D1\u05D7\u05E8\u05D9\u05DD"),
+                    React.createElement("button", { onClick: deleteChecked, disabled: deleting, style: { background: COLORS.red, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12.5, fontWeight: 700, fontFamily: "inherit", opacity: deleting ? 0.6 : 1 } }, deleting ? "מוחק…" : "🗑 מחק נבחרים"))),
+            shareOpen && (React.createElement("div", { style: { marginTop: 10, background: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 10, padding: 10, display: "grid", gap: 8 } }, prep ? (React.createElement("div", { style: { fontSize: 13, color: COLORS.slate, fontWeight: 700, textAlign: "center", padding: "8px 0" } },
+                "\u05DE\u05E4\u05D9\u05E7 \u05D3\u05D5\u05D7 ",
+                prep.done + 1,
+                " \u05DE\u05EA\u05D5\u05DA ",
+                prep.total,
+                "\u2026")) : readyFiles ? (React.createElement(React.Fragment, null,
+                React.createElement("button", { onClick: shareReadyFiles, style: { background: COLORS.amber, color: COLORS.ink, border: "none", borderRadius: 9, padding: "13px 0", fontSize: 14, fontWeight: 800, fontFamily: "inherit" } },
+                    "\uD83D\uDCE4 \u05E9\u05EA\u05E3 \u05E2\u05DB\u05E9\u05D9\u05D5 ",
+                    readyFiles.length,
+                    " \u05D3\u05D5\u05D7\u05D5\u05EA"),
+                React.createElement("p", { style: { fontSize: 12, color: "#7C8A97", margin: 0, lineHeight: 1.5, textAlign: "center" } }, "\u05D9\u05D9\u05E4\u05EA\u05D7 \u05EA\u05E4\u05E8\u05D9\u05D8 \u05D4\u05E9\u05D9\u05EA\u05D5\u05E3 \u05E9\u05DC \u05D4\u05DE\u05DB\u05E9\u05D9\u05E8 \u2014 \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4, \u05DE\u05D9\u05D9\u05DC, \u05D3\u05E8\u05D9\u05D9\u05D1 \u05D5\u05DB\u05DC \u05E9\u05D0\u05E8 \u05D4\u05D0\u05E4\u05E9\u05E8\u05D5\u05D9\u05D5\u05EA."),
+                React.createElement("button", { onClick: () => { downloadFiles(readyFiles); setShareOpen(false); setReadyFiles(null); }, style: { background: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 9, padding: "10px 0", fontSize: 13, fontFamily: "inherit" } }, "\u2B07\uFE0F \u05D4\u05D5\u05E8\u05D3\u05D4 \u05DC\u05DE\u05DB\u05E9\u05D9\u05E8 \u05D1\u05DE\u05E7\u05D5\u05DD"))) : (React.createElement(React.Fragment, null,
+                React.createElement("button", { onClick: prepareSelected, style: { background: COLORS.ink, color: "#fff", border: "none", borderRadius: 9, padding: "13px 0", fontSize: 14, fontWeight: 800, fontFamily: "inherit" } }, "\uD83D\uDCC4 \u05D4\u05E4\u05E7 \u05D5\u05E9\u05EA\u05E3 \u05D0\u05EA \u05D4\u05D3\u05D5\u05D7\u05D5\u05EA (PDF)"),
+                React.createElement("div", { style: { display: "flex", gap: 8 } },
+                    React.createElement("button", { onClick: shareSummaryText, style: { flex: 1, background: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 9, padding: "10px 0", fontSize: 13, fontFamily: "inherit" } }, "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05E8\u05E9\u05D9\u05DE\u05D4 \u05DB\u05D8\u05E7\u05E1\u05D8"),
+                    React.createElement("button", { onClick: emailSummary, style: { flex: 1, background: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 9, padding: "10px 0", fontSize: 13, fontFamily: "inherit" } }, "\u2709\uFE0F \u05DE\u05D9\u05D9\u05DC")))))))),
         rows && rows.length > 0 && visibleRows.length === 0 && (React.createElement("p", { style: { color: "#7C8A97", fontSize: 13.5 } }, "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05EA\u05D9\u05D0\u05D5\u05DE\u05D9\u05DD \u05D4\u05EA\u05D5\u05D0\u05DE\u05D9\u05DD \u05DC\u05D7\u05D9\u05E4\u05D5\u05E9.")),
         React.createElement("div", { style: { display: "grid", gap: 10 } }, visibleRows.map((r) => {
             const d = r.data || {};
