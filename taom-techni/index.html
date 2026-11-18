@@ -634,51 +634,55 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
         return (React.createElement("div", null,
             React.createElement(PhotoPicker, { onPick: onPhoto, allowPaste: allowPaste })));
     }
+    // המדבקה הנבחרת (לא קו) — לשליטת הגודל בעמודה שליד התמונה
+    const sizeSel = stickers.find((s) => s.id === selected && !s.isLine) || null;
+    const sizePctOf = (s) => (s.w > 100 ? Math.min(60, (s.w / 360) * 100) : s.w || 18);
+    const setSizeOf = (s, v) => onStickers(stickers.map((x) => (x.id === s.id ? { ...x, w: Math.max(6, Math.min(60, v)) } : x)));
     return (React.createElement("div", null,
         pick.inputs,
-        React.createElement("div", { ref: containerRef, onClick: () => setSelected(null), style: { position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${COLORS.line}`, touchAction: "none" } },
-            React.createElement("img", { src: photo, alt: label, style: { width: "100%", display: "block", userSelect: "none" }, draggable: false }),
-            (() => {
-                const numberMap = numberImageStickers(stickers);
-                return stickers.map((st) => renderSticker(st, { interactive: true, selected: selected === st.id, onDown, onLineDown, containerWidthPx, number: numberMap.get(st.id), onDelete: (id) => { onStickers(stickers.filter((s) => s.id !== id)); setSelected(null); } }));
-            })(),
-            allowRetake && (React.createElement("div", { style: { position: "absolute", bottom: 8, left: 8, display: "flex", gap: 6 } },
-                React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openCamera(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD"),
-                React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openGallery(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4"))),
-            (() => {
-                const sel = stickers.find((s) => s.id === selected && !s.isLine);
-                if (!sel)
-                    return null;
-                const def = STICKER_MAP[sel.key] || {};
-                const curPct = sel.w > 100 ? Math.min(60, (sel.w / 360) * 100) : sel.w || 18;
-                // צף ישירות על התמונה, מעל המדבקה שנבחרה — רואים את השינוי בזמן אמת במקום
-                return (React.createElement("div", { onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: {
-                        position: "absolute",
-                        insetInlineStart: 10,
-                        insetInlineEnd: 10,
-                        bottom: 10,
-                        zIndex: 20,
-                        background: "rgba(20,27,34,0.88)",
-                        backdropFilter: "blur(2px)",
-                        borderRadius: 12,
-                        padding: "8px 12px 10px",
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
-                    } },
-                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 } },
-                        React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: "#fff" } },
-                            "\u05D2\u05D5\u05D3\u05DC: ",
-                            sel.text || def.label || "מדבקה"),
-                        React.createElement("span", { style: { fontSize: 12, color: "#C7D2DC" } },
-                            Math.round(curPct),
-                            "%")),
-                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                        React.createElement("span", { style: { fontSize: 18, color: "#fff", lineHeight: 1 } }, "\uFF0D"),
-                        React.createElement("input", { type: "range", min: "6", max: "60", step: "1", value: Math.round(curPct), onChange: (e) => {
-                                const v = Number(e.target.value);
-                                onStickers(stickers.map((s) => (s.id === sel.id ? { ...s, w: v } : s)));
-                            }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.amber, height: 32 } }),
-                        React.createElement("span", { style: { fontSize: 22, color: "#fff", lineHeight: 1 } }, "\uFF0B"))));
-            })()),
+        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "stretch" } },
+            React.createElement("div", { onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: {
+                    width: 58,
+                    flexShrink: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    background: sizeSel ? "#fff" : "transparent",
+                    border: sizeSel ? `1.5px solid ${COLORS.slate}` : `1px dashed ${COLORS.line}`,
+                    borderRadius: 12,
+                    padding: "8px 4px",
+                } }, sizeSel ? (React.createElement(React.Fragment, null,
+                React.createElement("button", { onClick: () => setSizeOf(sizeSel, Math.round(sizePctOf(sizeSel)) + 2), style: { width: 38, height: 34, borderRadius: 9, border: "none", background: COLORS.ink, color: "#fff", fontSize: 19, lineHeight: 1, fontFamily: "inherit" } }, "\uFF0B"),
+                React.createElement("input", { type: "range", min: "6", max: "60", step: "1", value: Math.round(sizePctOf(sizeSel)), onChange: (e) => setSizeOf(sizeSel, Number(e.target.value)), style: {
+                        writingMode: "vertical-lr",
+                        direction: "rtl",
+                        WebkitAppearance: "slider-vertical",
+                        width: 26,
+                        height: 140,
+                        accentColor: COLORS.amber,
+                    } }),
+                React.createElement("button", { onClick: () => setSizeOf(sizeSel, Math.round(sizePctOf(sizeSel)) - 2), style: { width: 38, height: 34, borderRadius: 9, border: "none", background: COLORS.ink, color: "#fff", fontSize: 19, lineHeight: 1, fontFamily: "inherit" } }, "\uFF0D"),
+                React.createElement("span", { style: { fontSize: 11.5, fontWeight: 800, color: COLORS.slate } },
+                    Math.round(sizePctOf(sizeSel)),
+                    "%"))) : (React.createElement("span", { style: { fontSize: 10.5, color: "#9AA7B2", textAlign: "center", lineHeight: 1.35 } },
+                "\u05D1\u05D7\u05E8\u05D5",
+                React.createElement("br", null),
+                "\u05DE\u05D3\u05D1\u05E7\u05D4",
+                React.createElement("br", null),
+                "\u05DC\u05E9\u05D9\u05E0\u05D5\u05D9",
+                React.createElement("br", null),
+                "\u05D2\u05D5\u05D3\u05DC"))),
+            React.createElement("div", { ref: containerRef, onClick: () => setSelected(null), style: { flex: 1, minWidth: 0, position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${COLORS.line}`, touchAction: "none" } },
+                React.createElement("img", { src: photo, alt: label, style: { width: "100%", display: "block", userSelect: "none" }, draggable: false }),
+                (() => {
+                    const numberMap = numberImageStickers(stickers);
+                    return stickers.map((st) => renderSticker(st, { interactive: true, selected: selected === st.id, onDown, onLineDown, containerWidthPx, number: numberMap.get(st.id), onDelete: (id) => { onStickers(stickers.filter((s) => s.id !== id)); setSelected(null); } }));
+                })(),
+                allowRetake && (React.createElement("div", { style: { position: "absolute", bottom: 8, left: 8, display: "flex", gap: 6 } },
+                    React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openCamera(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD"),
+                    React.createElement("button", { onClick: (e) => { e.stopPropagation(); pick.openGallery(); }, style: { background: "rgba(20,27,34,0.85)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontFamily: "inherit" } }, "\uD83D\uDDBC\uFE0F \u05D2\u05DC\u05E8\u05D9\u05D4"))))),
         React.createElement(StickerLegend, { stickers: stickers, numberMap: numberImageStickers(stickers) }),
         React.createElement("button", { onClick: () => setShowPalette((v) => !v), style: {
                 width: "100%",
@@ -729,7 +733,46 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
                     React.createElement("img", { src: s.img, alt: s.label, style: { width: 44, height: 44, objectFit: "contain", borderRadius: 6, background: "#fff" } }),
                     React.createElement("span", { style: { fontSize: 10.5, color: "#41525F", maxWidth: 60, textAlign: "center" } }, s.label)))))))))));
 }
-/* ---------- שלב 2: ציוד ותמונות ---------- */
+/* ---------- שלב 2: הגדלת חיבור ---------- */
+function ConnectionUpgradeStep({ upgrade, setUpgrade }) {
+    const [editing, setEditing] = useState(false);
+    const u = upgrade || EMPTY_UPGRADE;
+    const set = (k) => (v) => setUpgrade({ ...u, [k]: v });
+    return (React.createElement("div", null,
+        React.createElement(SectionTitle, null, "\u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8"),
+        React.createElement("p", { style: { fontSize: 13.5, color: "#5B6B7A", margin: "0 0 12px" } }, "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05D7\u05D9\u05D1\u05D5\u05E8 \u05D4\u05E7\u05D9\u05D9\u05DD \u05D5\u05D4\u05E0\u05D3\u05E8\u05E9. \u05D4\u05E9\u05D3\u05D5\u05EA \u05D9\u05D5\u05E4\u05D9\u05E2\u05D5 \u05D1\u05D3\u05D5\u05D7."),
+        React.createElement("div", { style: { background: COLORS.card, border: `1px solid ${COLORS.line}`, borderRadius: 14, padding: 14 } },
+            React.createElement(Field, { label: "\u05DE\u05E1\u05E4\u05E8 \u05DE\u05D5\u05E0\u05D4 \u05E6\u05E8\u05D9\u05DB\u05D4", value: u.meterNo, onChange: set("meterNo"), placeholder: "\u05DE\u05E1\u05E4\u05E8 \u05D4\u05DE\u05D5\u05E0\u05D4 \u05DB\u05E4\u05D9 \u05E9\u05DE\u05D5\u05E4\u05D9\u05E2 \u05E2\u05DC \u05D4\u05DE\u05D5\u05E0\u05D4", dir: "ltr" }),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+                React.createElement(Field, { label: "\u05D2\u05D5\u05D3\u05DC \u05D7\u05D9\u05D1\u05D5\u05E8 \u05E7\u05D9\u05D9\u05DD", value: u.existingSize, onChange: set("existingSize"), placeholder: '\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: 3x40A', dir: "ltr" }),
+                React.createElement(Field, { label: "\u05D2\u05D5\u05D3\u05DC \u05D7\u05D9\u05D1\u05D5\u05E8 \u05E0\u05D3\u05E8\u05E9", value: u.requiredSize, onChange: set("requiredSize"), placeholder: '\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: 3x80A', dir: "ltr" })),
+            React.createElement(Field, { label: "\u05D4\u05E2\u05E8\u05D5\u05EA", value: u.notes, onChange: set("notes"), placeholder: "\u05EA\u05E9\u05EA\u05D9\u05D5\u05EA, \u05DE\u05E8\u05D7\u05E7\u05D9\u05DD, \u05D0\u05D9\u05DC\u05D5\u05E6\u05D9\u05DD \u05D1\u05E9\u05D8\u05D7\u2026" })),
+        React.createElement(SectionTitle, null, "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u2014 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8"),
+        React.createElement("div", { style: { background: COLORS.card, border: `1px solid ${COLORS.line}`, borderRadius: 14, padding: 12 } }, u.photo ? (React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" } },
+            React.createElement("div", { style: { position: "relative", width: 150, flexShrink: 0 } },
+                React.createElement(StickerView, { photo: u.photo, stickers: u.stickers || [], width: 150, alt: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8" })),
+            React.createElement("button", { onClick: () => setEditing(true), style: {
+                    flex: 1,
+                    background: COLORS.slate,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "11px 0",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    fontFamily: "inherit",
+                } }, "\u270F\uFE0F \u05E2\u05E8\u05D5\u05DA \u05EA\u05DE\u05D5\u05E0\u05D4 \u05D5\u05DE\u05D3\u05D1\u05E7\u05D5\u05EA"))) : (React.createElement(PhotoAnnotator, { photo: null, onPhoto: (p) => {
+                setUpgrade({ ...u, photo: p });
+                setEditing(true); // עוברים ישר למצב עריכה גדול אחרי ההעלאה
+            }, stickers: u.stickers || [], onStickers: (s) => setUpgrade({ ...u, stickers: s }), label: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8", allowPaste: true }))),
+        editing && ReactDOM.createPortal(React.createElement("div", { style: { position: "fixed", inset: 0, background: COLORS.paper, zIndex: 999, display: "flex", flexDirection: "column" } },
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: COLORS.ink, flexShrink: 0 } },
+                React.createElement("h3", { style: { margin: 0, fontSize: 15, color: "#fff" } }, "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8 \u2014 \u05E2\u05E8\u05D9\u05DB\u05D4"),
+                React.createElement("button", { onClick: () => setEditing(false), style: { background: COLORS.amber, color: COLORS.ink, border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit" } }, "\u2713 \u05E1\u05D9\u05D9\u05DE\u05EA\u05D9")),
+            React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: 8 } },
+                React.createElement(PhotoAnnotator, { photo: u.photo, onPhoto: (p) => setUpgrade({ ...u, photo: p }), stickers: u.stickers || [], onStickers: (s) => setUpgrade({ ...u, stickers: s }), label: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8", allowPaste: true }))), document.body)));
+}
+/* ---------- שלב 3: ציוד ותמונות ---------- */
 function EquipmentStep({ items, setItems }) {
     const [editingItemId, setEditingItemId] = useState(null);
     const addItem = (type) => setItems([...items, { id: nextId(), type, photo: null, location: "", notes: "", stickers: [] }]);
@@ -1111,141 +1154,146 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
                 : placing
                     ? `מצב הצבה: הקישו על התצ"א כדי למקם ${EQUIPMENT_TYPES[placing].label}. גרירה מזיזה סימון קיים; בחירת סימון מציגה ידית להגדלה/הקטנה.`
                     : 'בחרו סוג ציוד להצבה, "תוואי הזנה" לקו צהוב, או "סמן שטח לעריכה" לחתוך אזור ולהוסיף עליו מדבקות.'),
-            React.createElement("div", { ref: containerRef, onClick: onImageClick, style: {
-                    position: "relative",
-                    borderRadius: 14,
-                    overflow: "hidden",
-                    border: `1px solid ${COLORS.line}`,
-                    touchAction: regionMode ? "none" : "pan-y",
-                    cursor: regionMode ? "crosshair" : placing ? "crosshair" : "default",
-                } },
-                React.createElement("img", { ref: imgElRef, src: aerial, alt: '\u05EA\u05E6"\u05D0', style: { width: "100%", display: "block", userSelect: "none" }, draggable: false, crossOrigin: "anonymous" }),
-                regionMode && (React.createElement("div", { onPointerDown: onRegionPointerDown, style: { position: "absolute", inset: 0, zIndex: 5, cursor: "crosshair" } })),
-                draftRect && (React.createElement("div", { style: {
-                        position: "absolute",
-                        left: `${Math.min(draftRect.x1, draftRect.x2)}%`,
-                        top: `${Math.min(draftRect.y1, draftRect.y2)}%`,
-                        width: `${Math.abs(draftRect.x2 - draftRect.x1)}%`,
-                        height: `${Math.abs(draftRect.y2 - draftRect.y1)}%`,
-                        border: "2px dashed #00897B",
-                        background: "rgba(0,137,123,0.15)",
-                        pointerEvents: "none",
-                    } })),
-                (regions || []).map((r, idx) => (React.createElement("div", { key: r.id, onClick: (e) => {
-                        e.stopPropagation();
-                        setEditingRegion(r);
-                    }, style: {
-                        position: "absolute",
-                        left: `${r.x}%`,
-                        top: `${r.y}%`,
-                        width: `${r.w}%`,
-                        height: `${r.h}%`,
-                        border: "2px solid #00897B",
-                        background: "rgba(0,137,123,0.08)",
-                        cursor: "pointer",
-                        zIndex: 4,
-                    }, title: "\u05DC\u05D7\u05E6\u05D5 \u05DC\u05E2\u05E8\u05D9\u05DB\u05EA \u05D4\u05D0\u05D6\u05D5\u05E8" },
-                    React.createElement("span", { style: {
-                            position: "absolute",
-                            top: -11,
-                            insetInlineStart: -2,
-                            background: "#00897B",
-                            color: "#fff",
-                            fontSize: 10.5,
-                            fontWeight: 800,
-                            borderRadius: 5,
-                            padding: "1px 6px",
-                        } },
-                        "\u05D0\u05D6\u05D5\u05E8 ",
-                        idx + 1)))),
-                React.createElement("svg", { style: { position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" } }, (lines || []).map((l) => (React.createElement("g", { key: l.id },
-                    React.createElement("line", { x1: `${l.x1}%`, y1: `${l.y1}%`, x2: `${l.x2}%`, y2: `${l.y2}%`, stroke: "#fff", strokeWidth: selectedLine === l.id ? 8 : 6, strokeLinecap: "round" }),
-                    React.createElement("line", { x1: `${l.x1}%`, y1: `${l.y1}%`, x2: `${l.x2}%`, y2: `${l.y2}%`, stroke: FEED_LINE_COLOR, strokeWidth: selectedLine === l.id ? 5 : 4, strokeLinecap: "round" }))))),
-                (lines || []).map((l) => {
-                    const mid = { x: (l.x1 + l.x2) / 2, y: (l.y1 + l.y2) / 2 };
-                    const sel = selectedLine === l.id;
-                    const handle = (px, py, mode, key) => (React.createElement("div", { key: key, onPointerDown: (e) => startLineDrag(e, l.id, mode), style: {
-                            position: "absolute", left: `${px}%`, top: `${py}%`, transform: "translate(-50%,-50%)",
-                            width: mode === "line" ? 20 : 18, height: mode === "line" ? 20 : 18,
-                            borderRadius: mode === "line" ? 5 : "50%",
-                            background: mode === "line" ? "rgba(255,176,32,0.9)" : FEED_LINE_COLOR,
-                            border: "2px solid #fff", boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-                            cursor: mode === "line" ? "move" : "grab", touchAction: "none",
-                            opacity: sel ? 1 : 0.85,
-                        } }));
-                    return (React.createElement("div", { key: l.id },
-                        handle(mid.x, mid.y, "line", l.id + "-mid"),
-                        handle(l.x1, l.y1, "p1", l.id + "-p1"),
-                        handle(l.x2, l.y2, "p2", l.id + "-p2")));
-                }),
-                markers.map((m) => {
-                    const t = EQUIPMENT_TYPES[m.type];
-                    const markerColor = m.color || t.color;
-                    const isSel = selectedMarker === m.id;
-                    const size = m.size || 32;
-                    return (React.createElement("div", { key: m.id, style: {
-                            position: "absolute",
-                            left: `${m.x}%`,
-                            top: `${m.y}%`,
-                            transform: "translate(-50%, -50%)",
+            React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "stretch" } },
+                (() => {
+                    const sel = markers.find((m) => m.id === selectedMarker) || null;
+                    const size = sel ? sel.size || 32 : 0;
+                    const setSize = (v) => setMarkers(markers.map((m) => (m.id === sel.id ? { ...m, size: Math.max(18, Math.min(90, v)) } : m)));
+                    return (React.createElement("div", { onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: {
+                            width: 58,
+                            flexShrink: 0,
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            userSelect: "none",
-                        } },
-                        React.createElement("div", { style: { position: "relative" } },
-                            React.createElement("div", { onPointerDown: (e) => startMarkerDrag(e, m.id), style: {
-                                    width: size,
-                                    height: size,
-                                    borderRadius: Math.max(4, size * 0.18),
-                                    background: markerColor,
-                                    color: "#fff",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: Math.max(11, size * 0.46),
-                                    fontWeight: 800,
-                                    boxShadow: isSel ? `0 0 0 3px #fff, 0 0 0 5px ${markerColor}` : "0 1px 4px rgba(0,0,0,0.4)",
-                                    border: "2px solid #fff",
-                                    cursor: "grab",
-                                } }, m.num))));
-                }),
-                (() => {
-                    const sel = markers.find((m) => m.id === selectedMarker);
-                    if (!sel)
-                        return null;
-                    const t = EQUIPMENT_TYPES[sel.type];
-                    const size = sel.size || 32;
-                    // צף ישירות על התצ"א, ליד הסימון שנבחר
-                    return (React.createElement("div", { onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: {
-                            position: "absolute",
-                            insetInlineStart: 10,
-                            insetInlineEnd: 10,
-                            bottom: 10,
-                            zIndex: 20,
-                            background: "rgba(20,27,34,0.88)",
-                            backdropFilter: "blur(2px)",
+                            justifyContent: "center",
+                            gap: 6,
+                            background: sel ? "#fff" : "transparent",
+                            border: sel ? `1.5px solid ${COLORS.slate}` : `1px dashed ${COLORS.line}`,
                             borderRadius: 12,
-                            padding: "8px 12px 10px",
-                            boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
-                        } },
-                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 } },
-                            React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: "#fff" } },
-                                "\u05D2\u05D5\u05D3\u05DC \u05E1\u05D9\u05DE\u05D5\u05DF ",
-                                sel.num,
-                                " \u2014 ",
-                                t.label),
-                            React.createElement("span", { style: { fontSize: 12, color: "#C7D2DC" } },
-                                size,
-                                "px")),
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                            React.createElement("span", { style: { fontSize: 18, color: "#fff", lineHeight: 1 } }, "\uFF0D"),
-                            React.createElement("input", { type: "range", min: "18", max: "90", step: "1", value: size, onChange: (e) => {
-                                    const v = Number(e.target.value);
-                                    setMarkers(markers.map((m) => (m.id === sel.id ? { ...m, size: v } : m)));
-                                }, onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation(), style: { flex: 1, accentColor: COLORS.amber, height: 32 } }),
-                            React.createElement("span", { style: { fontSize: 22, color: "#fff", lineHeight: 1 } }, "\uFF0B"))));
-                })()),
+                            padding: "8px 4px",
+                        } }, sel ? (React.createElement(React.Fragment, null,
+                        React.createElement("button", { onClick: () => setSize(size + 4), style: { width: 38, height: 34, borderRadius: 9, border: "none", background: COLORS.ink, color: "#fff", fontSize: 19, lineHeight: 1, fontFamily: "inherit" } }, "\uFF0B"),
+                        React.createElement("input", { type: "range", min: "18", max: "90", step: "1", value: size, onChange: (e) => setSize(Number(e.target.value)), style: {
+                                writingMode: "vertical-lr",
+                                direction: "rtl",
+                                WebkitAppearance: "slider-vertical",
+                                width: 26,
+                                height: 140,
+                                accentColor: COLORS.amber,
+                            } }),
+                        React.createElement("button", { onClick: () => setSize(size - 4), style: { width: 38, height: 34, borderRadius: 9, border: "none", background: COLORS.ink, color: "#fff", fontSize: 19, lineHeight: 1, fontFamily: "inherit" } }, "\uFF0D"),
+                        React.createElement("span", { style: { fontSize: 11.5, fontWeight: 800, color: COLORS.slate } },
+                            size,
+                            "px"))) : (React.createElement("span", { style: { fontSize: 10.5, color: "#9AA7B2", textAlign: "center", lineHeight: 1.35 } },
+                        "\u05D1\u05D7\u05E8\u05D5",
+                        React.createElement("br", null),
+                        "\u05E1\u05D9\u05DE\u05D5\u05DF",
+                        React.createElement("br", null),
+                        "\u05DC\u05E9\u05D9\u05E0\u05D5\u05D9",
+                        React.createElement("br", null),
+                        "\u05D2\u05D5\u05D3\u05DC"))));
+                })(),
+                React.createElement("div", { ref: containerRef, onClick: onImageClick, style: {
+                        flex: 1,
+                        minWidth: 0,
+                        position: "relative",
+                        borderRadius: 14,
+                        overflow: "hidden",
+                        border: `1px solid ${COLORS.line}`,
+                        touchAction: regionMode ? "none" : "pan-y",
+                        cursor: regionMode ? "crosshair" : placing ? "crosshair" : "default",
+                    } },
+                    React.createElement("img", { ref: imgElRef, src: aerial, alt: '\u05EA\u05E6"\u05D0', style: { width: "100%", display: "block", userSelect: "none" }, draggable: false, crossOrigin: "anonymous" }),
+                    regionMode && (React.createElement("div", { onPointerDown: onRegionPointerDown, style: { position: "absolute", inset: 0, zIndex: 5, cursor: "crosshair" } })),
+                    draftRect && (React.createElement("div", { style: {
+                            position: "absolute",
+                            left: `${Math.min(draftRect.x1, draftRect.x2)}%`,
+                            top: `${Math.min(draftRect.y1, draftRect.y2)}%`,
+                            width: `${Math.abs(draftRect.x2 - draftRect.x1)}%`,
+                            height: `${Math.abs(draftRect.y2 - draftRect.y1)}%`,
+                            border: "2px dashed #00897B",
+                            background: "rgba(0,137,123,0.15)",
+                            pointerEvents: "none",
+                        } })),
+                    (regions || []).map((r, idx) => (React.createElement("div", { key: r.id, onClick: (e) => {
+                            e.stopPropagation();
+                            setEditingRegion(r);
+                        }, style: {
+                            position: "absolute",
+                            left: `${r.x}%`,
+                            top: `${r.y}%`,
+                            width: `${r.w}%`,
+                            height: `${r.h}%`,
+                            border: "2px solid #00897B",
+                            background: "rgba(0,137,123,0.08)",
+                            cursor: "pointer",
+                            zIndex: 4,
+                        }, title: "\u05DC\u05D7\u05E6\u05D5 \u05DC\u05E2\u05E8\u05D9\u05DB\u05EA \u05D4\u05D0\u05D6\u05D5\u05E8" },
+                        React.createElement("span", { style: {
+                                position: "absolute",
+                                top: -11,
+                                insetInlineStart: -2,
+                                background: "#00897B",
+                                color: "#fff",
+                                fontSize: 10.5,
+                                fontWeight: 800,
+                                borderRadius: 5,
+                                padding: "1px 6px",
+                            } },
+                            "\u05D0\u05D6\u05D5\u05E8 ",
+                            idx + 1)))),
+                    React.createElement("svg", { style: { position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" } }, (lines || []).map((l) => (React.createElement("g", { key: l.id },
+                        React.createElement("line", { x1: `${l.x1}%`, y1: `${l.y1}%`, x2: `${l.x2}%`, y2: `${l.y2}%`, stroke: "#fff", strokeWidth: selectedLine === l.id ? 8 : 6, strokeLinecap: "round" }),
+                        React.createElement("line", { x1: `${l.x1}%`, y1: `${l.y1}%`, x2: `${l.x2}%`, y2: `${l.y2}%`, stroke: FEED_LINE_COLOR, strokeWidth: selectedLine === l.id ? 5 : 4, strokeLinecap: "round" }))))),
+                    (lines || []).map((l) => {
+                        const mid = { x: (l.x1 + l.x2) / 2, y: (l.y1 + l.y2) / 2 };
+                        const sel = selectedLine === l.id;
+                        const handle = (px, py, mode, key) => (React.createElement("div", { key: key, onPointerDown: (e) => startLineDrag(e, l.id, mode), style: {
+                                position: "absolute", left: `${px}%`, top: `${py}%`, transform: "translate(-50%,-50%)",
+                                width: mode === "line" ? 20 : 18, height: mode === "line" ? 20 : 18,
+                                borderRadius: mode === "line" ? 5 : "50%",
+                                background: mode === "line" ? "rgba(255,176,32,0.9)" : FEED_LINE_COLOR,
+                                border: "2px solid #fff", boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                                cursor: mode === "line" ? "move" : "grab", touchAction: "none",
+                                opacity: sel ? 1 : 0.85,
+                            } }));
+                        return (React.createElement("div", { key: l.id },
+                            handle(mid.x, mid.y, "line", l.id + "-mid"),
+                            handle(l.x1, l.y1, "p1", l.id + "-p1"),
+                            handle(l.x2, l.y2, "p2", l.id + "-p2")));
+                    }),
+                    markers.map((m) => {
+                        const t = EQUIPMENT_TYPES[m.type];
+                        const markerColor = m.color || t.color;
+                        const isSel = selectedMarker === m.id;
+                        const size = m.size || 32;
+                        return (React.createElement("div", { key: m.id, style: {
+                                position: "absolute",
+                                left: `${m.x}%`,
+                                top: `${m.y}%`,
+                                transform: "translate(-50%, -50%)",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                userSelect: "none",
+                            } },
+                            React.createElement("div", { style: { position: "relative" } },
+                                React.createElement("div", { onPointerDown: (e) => startMarkerDrag(e, m.id), style: {
+                                        width: size,
+                                        height: size,
+                                        borderRadius: Math.max(4, size * 0.18),
+                                        background: markerColor,
+                                        color: "#fff",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: Math.max(11, size * 0.46),
+                                        fontWeight: 800,
+                                        boxShadow: isSel ? `0 0 0 3px #fff, 0 0 0 5px ${markerColor}` : "0 1px 4px rgba(0,0,0,0.4)",
+                                        border: "2px solid #fff",
+                                        cursor: "grab",
+                                    } }, m.num))));
+                    }))),
             React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
                 selectedMarker != null && (React.createElement("button", { onClick: () => {
                         setMarkers(markers.filter((m) => m.id !== selectedMarker));
@@ -1506,6 +1554,7 @@ async function buildPdfFromData(data) {
             customer: { ...EMPTY_CUSTOMER, ...(d.customer || {}) },
             setCustomer: () => { },
             meta: d.meta || { coordinator: "", generalNotes: "" },
+            upgrade: d.upgrade || {},
             items: d.items || [],
             aerial: d.aerial || null,
             markers: d.markers || [],
@@ -1536,7 +1585,7 @@ async function buildPdfFromData(data) {
         host.remove();
     }
 }
-function ReportStep({ customer, setCustomer, meta, items, aerial, markers, lines, regions, signatures, setSignatures, readOnly, onSent }) {
+function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, markers, lines, regions, signatures, setSignatures, readOnly, onSent }) {
     const [pdfBusy, setPdfBusy] = useState(false);
     if (!customer.name) {
         return React.createElement("p", { style: { color: "#5B6B7A", fontSize: 14 } }, "\u05DE\u05DC\u05D0\u05D5 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D1\u05E9\u05DC\u05D1 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF \u05DB\u05D3\u05D9 \u05DC\u05D4\u05E4\u05D9\u05E7 \u05D3\u05D5\u05D7.");
@@ -1651,6 +1700,25 @@ function ReportStep({ customer, setCustomer, meta, items, aerial, markers, lines
                     ].map(([k, v]) => (React.createElement("tr", { key: k },
                         React.createElement("td", { style: { padding: "6px 8px", color: "#7C8A97", width: 120, verticalAlign: "top", borderBottom: `1px solid ${COLORS.paper}` } }, k),
                         React.createElement("td", { style: { padding: "6px 8px", color: COLORS.ink, borderBottom: `1px solid ${COLORS.paper}` } }, v))))))),
+            (() => {
+                const u = upgrade || {};
+                const hasFields = [u.meterNo, u.existingSize, u.requiredSize, u.notes].some((v) => String(v !== null && v !== void 0 ? v : "").trim() !== "");
+                if (!hasFields && !u.photo)
+                    return null;
+                return (React.createElement("div", { className: "print-avoid-break pdf-chunk", style: { marginBottom: 18, breakInside: "avoid", pageBreakInside: "avoid" } },
+                    React.createElement("h3", { style: { fontSize: 15, margin: "0 0 8px", color: BRAND_BLUE } }, "\u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8"),
+                    React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: u.photo ? 10 : 0 } },
+                        React.createElement("tbody", null, [
+                            ["מספר מונה צריכה", u.meterNo || "—"],
+                            ["גודל חיבור קיים", u.existingSize || "—"],
+                            ["גודל חיבור נדרש", u.requiredSize || "—"],
+                            ["הערות", u.notes || "—"],
+                        ].map(([k, v]) => (React.createElement("tr", { key: k },
+                            React.createElement("td", { style: { padding: "6px 8px", color: "#7C8A97", width: 120, verticalAlign: "top", borderBottom: `1px solid ${COLORS.paper}` } }, k),
+                            React.createElement("td", { style: { padding: "6px 8px", color: COLORS.ink, borderBottom: `1px solid ${COLORS.paper}` } }, v)))))),
+                    u.photo && (React.createElement("div", { style: { width: "100%", maxWidth: 480, margin: "0 auto" } },
+                        React.createElement(StickerView, { photo: u.photo, stickers: u.stickers || [], width: "100%", alt: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8" })))));
+            })(),
             aerial && (React.createElement("div", { className: "aerial-report-block pdf-chunk", style: { marginBottom: 18, breakInside: "avoid", pageBreakInside: "avoid" } },
                 React.createElement("h3", { style: { fontSize: 15, margin: "0 0 8px", color: BRAND_BLUE } }, "\u05DE\u05D1\u05D8 \u05E2\u05DC \u2014 \u05DE\u05D9\u05E7\u05D5\u05DE\u05D9 \u05E6\u05D9\u05D5\u05D3 (\u05EA\u05E6\"\u05D0)"),
                 React.createElement("div", { className: "aerial-report-frame", style: { position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${COLORS.line}` } },
@@ -2192,12 +2260,21 @@ const EMPTY_CUSTOMER = {
     storageKwh: "",
     customerEmail: "",
 };
+const EMPTY_UPGRADE = {
+    meterNo: "", // מספר מונה צריכה
+    existingSize: "", // גודל חיבור קיים
+    requiredSize: "", // גודל חיבור נדרש
+    notes: "",
+    photo: null, // תמונת מיקום מרחבי להגדלת החיבור
+    stickers: [],
+};
 function CoordinationApp({ session }) {
     const userId = session.user.id;
     const [step, setStep] = useState(0);
     const [view, setView] = useState("history"); // app | history — נפתח תמיד ברשימת התיאומים
     const [customer, setCustomer] = useState({ ...EMPTY_CUSTOMER });
     const [meta, setMeta] = useState({ coordinator: "", generalNotes: "" });
+    const [upgrade, setUpgrade] = useState({ ...EMPTY_UPGRADE });
     const [items, setItems] = useState([]);
     const [aerial, setAerial] = useState(null);
     const [markers, setMarkers] = useState([]);
@@ -2224,6 +2301,7 @@ function CoordinationApp({ session }) {
             filledMeta ||
             signed ||
             (items || []).length > 0 ||
+            Object.values(upgrade || {}).some((v) => (Array.isArray(v) ? v.length > 0 : String(v !== null && v !== void 0 ? v : "").trim() !== "")) ||
             !!aerial ||
             (markers || []).length > 0 ||
             (lines || []).length > 0 ||
@@ -2240,7 +2318,7 @@ function CoordinationApp({ session }) {
         }
         setSaveState("saving");
         const t = setTimeout(async () => {
-            const payload = { customer, meta, items, aerial, markers, lines, regions, signatures };
+            const payload = { customer, meta, upgrade, items, aerial, markers, lines, regions, signatures };
             try {
                 if (rowIdRef.current) {
                     const { error } = await sb
@@ -2288,6 +2366,7 @@ function CoordinationApp({ session }) {
         }
         setCustomer({ ...EMPTY_CUSTOMER });
         setMeta({ coordinator: "", generalNotes: "" });
+        setUpgrade({ ...EMPTY_UPGRADE });
         setItems([]);
         setAerial(null);
         setMarkers([]);
@@ -2309,6 +2388,7 @@ function CoordinationApp({ session }) {
         rowIdRef.current = null;
         setCustomer({ ...EMPTY_CUSTOMER });
         setMeta({ coordinator: "", generalNotes: "" });
+        setUpgrade({ ...EMPTY_UPGRADE });
         setItems([]);
         setAerial(null);
         setMarkers([]);
@@ -2343,6 +2423,7 @@ function CoordinationApp({ session }) {
         const d = row.data || {};
         setCustomer({ ...EMPTY_CUSTOMER, ...(d.customer || {}) });
         setMeta(d.meta || { coordinator: "", generalNotes: "" });
+        setUpgrade({ ...EMPTY_UPGRADE, ...(d.upgrade || {}) });
         setItems(d.items || []);
         setAerial(d.aerial || null);
         setMarkers(d.markers || []);
@@ -2350,8 +2431,9 @@ function CoordinationApp({ session }) {
         setRegions(d.regions || []);
         setSignatures(d.signatures || { company: { name: "", img: null }, customer: { name: "", img: null } });
         const stickerIds = (d.items || []).flatMap((x) => (x.stickers || []).map((s) => s.id || 0));
+        const upgradeStickerIds = ((d.upgrade || {}).stickers || []).map((s) => s.id || 0);
         const regionStickerIds = (d.regions || []).flatMap((x) => (x.stickers || []).map((s) => s.id || 0));
-        const maxId = Math.max(0, ...(d.items || []).map((x) => x.id || 0), ...(d.markers || []).map((x) => x.id || 0), ...(d.lines || []).map((x) => x.id || 0), ...(d.regions || []).map((x) => x.id || 0), ...stickerIds, ...regionStickerIds);
+        const maxId = Math.max(0, ...(d.items || []).map((x) => x.id || 0), ...(d.markers || []).map((x) => x.id || 0), ...(d.lines || []).map((x) => x.id || 0), ...(d.regions || []).map((x) => x.id || 0), ...stickerIds, ...regionStickerIds, ...upgradeStickerIds);
         idCounter = maxId + 1;
         loaded.current = true;
         setStep(0);
@@ -2380,7 +2462,7 @@ function CoordinationApp({ session }) {
             console.error(e);
         }
     };
-    const steps = ["לקוח", "ציוד", 'תצ"א', "דוח"];
+    const steps = ["לקוח", "הגדלת חיבור", "ציוד", 'תצ"א', "דוח"];
     return (React.createElement("div", { dir: "rtl", style: {
             minHeight: "100vh",
             background: COLORS.paper,
@@ -2492,10 +2574,11 @@ function CoordinationApp({ session }) {
                         } }, "\u05D4\u05EA\u05E0\u05EA\u05E7")))),
         React.createElement("main", { style: { maxWidth: 560, margin: "0 auto", padding: "4px 14px 20px" } }, view === "history" ? (React.createElement(HistoryScreen, { userId: userId, onEdit: loadCoordinationForEdit })) : (React.createElement(React.Fragment, null,
             step === 0 && (React.createElement(CustomerStep, { customer: customer, setCustomer: setCustomer, meta: meta, setMeta: setMeta })),
-            step === 1 && React.createElement(EquipmentStep, { items: items, setItems: setItems }),
-            step === 2 && React.createElement(AerialStep, { aerial: aerial, setAerial: setAerial, markers: markers, setMarkers: setMarkers, lines: lines, setLines: setLines, regions: regions, setRegions: setRegions, address: customer.address }),
-            step === 3 && React.createElement(ReportStep, { customer: customer, setCustomer: setCustomer, meta: meta, items: items, aerial: aerial, markers: markers, lines: lines, regions: regions, signatures: signatures, setSignatures: setSignatures, onSent: finishCoordination }),
-            step < 3 && (React.createElement("button", { onClick: () => setStep(step + 1), style: {
+            step === 1 && React.createElement(ConnectionUpgradeStep, { upgrade: upgrade, setUpgrade: setUpgrade }),
+            step === 2 && React.createElement(EquipmentStep, { items: items, setItems: setItems }),
+            step === 3 && React.createElement(AerialStep, { aerial: aerial, setAerial: setAerial, markers: markers, setMarkers: setMarkers, lines: lines, setLines: setLines, regions: regions, setRegions: setRegions, address: customer.address }),
+            step === 4 && React.createElement(ReportStep, { customer: customer, setCustomer: setCustomer, meta: meta, upgrade: upgrade, items: items, aerial: aerial, markers: markers, lines: lines, regions: regions, signatures: signatures, setSignatures: setSignatures, onSent: finishCoordination }),
+            step < 4 && (React.createElement("button", { onClick: () => setStep(step + 1), style: {
                     width: "100%",
                     marginTop: 20,
                     background: COLORS.ink,
@@ -2526,11 +2609,12 @@ function CoordinationApp({ session }) {
             const active = step === i;
             return (React.createElement("button", { key: s, onClick: () => setStep(i), style: {
                     flex: 1,
-                    padding: "12px 0 14px",
+                    padding: "10px 2px 12px",
                     background: "none",
                     border: "none",
                     fontFamily: "inherit",
-                    fontSize: 13,
+                    fontSize: 11.5,
+                    lineHeight: 1.2,
                     fontWeight: active ? 800 : 500,
                     color: active ? COLORS.ink : "#7C8A97",
                     borderTop: active ? `3px solid ${COLORS.amber}` : "3px solid transparent",
