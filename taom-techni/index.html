@@ -735,23 +735,20 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
 }
 /* ---------- שלב 2: הגדלת חיבור ---------- */
 function ConnectionUpgradeStep({ upgrade, setUpgrade }) {
-    const [editing, setEditing] = useState(false);
+    const [editing, setEditing] = useState(null); // null | "photo" | "meterPhoto"
     const u = upgrade || EMPTY_UPGRADE;
     const set = (k) => (v) => setUpgrade({ ...u, [k]: v });
-    return (React.createElement("div", null,
-        React.createElement(SectionTitle, null, "\u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8"),
-        React.createElement("p", { style: { fontSize: 13.5, color: "#5B6B7A", margin: "0 0 12px" } }, "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05D7\u05D9\u05D1\u05D5\u05E8 \u05D4\u05E7\u05D9\u05D9\u05DD \u05D5\u05D4\u05E0\u05D3\u05E8\u05E9. \u05D4\u05E9\u05D3\u05D5\u05EA \u05D9\u05D5\u05E4\u05D9\u05E2\u05D5 \u05D1\u05D3\u05D5\u05D7."),
-        React.createElement("div", { style: { background: COLORS.card, border: `1px solid ${COLORS.line}`, borderRadius: 14, padding: 14 } },
-            React.createElement(Field, { label: "\u05DE\u05E1\u05E4\u05E8 \u05DE\u05D5\u05E0\u05D4 \u05E6\u05E8\u05D9\u05DB\u05D4", value: u.meterNo, onChange: set("meterNo"), placeholder: "\u05DE\u05E1\u05E4\u05E8 \u05D4\u05DE\u05D5\u05E0\u05D4 \u05DB\u05E4\u05D9 \u05E9\u05DE\u05D5\u05E4\u05D9\u05E2 \u05E2\u05DC \u05D4\u05DE\u05D5\u05E0\u05D4", dir: "ltr" }),
-            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-                React.createElement(Field, { label: "\u05D2\u05D5\u05D3\u05DC \u05D7\u05D9\u05D1\u05D5\u05E8 \u05E7\u05D9\u05D9\u05DD", value: u.existingSize, onChange: set("existingSize"), placeholder: '\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: 3x40A', dir: "ltr" }),
-                React.createElement(Field, { label: "\u05D2\u05D5\u05D3\u05DC \u05D7\u05D9\u05D1\u05D5\u05E8 \u05E0\u05D3\u05E8\u05E9", value: u.requiredSize, onChange: set("requiredSize"), placeholder: '\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: 3x80A', dir: "ltr" })),
-            React.createElement(Field, { label: "\u05D4\u05E2\u05E8\u05D5\u05EA", value: u.notes, onChange: set("notes"), placeholder: "\u05EA\u05E9\u05EA\u05D9\u05D5\u05EA, \u05DE\u05E8\u05D7\u05E7\u05D9\u05DD, \u05D0\u05D9\u05DC\u05D5\u05E6\u05D9\u05DD \u05D1\u05E9\u05D8\u05D7\u2026" })),
-        React.createElement(SectionTitle, null, "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u2014 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8"),
-        React.createElement("div", { style: { background: COLORS.card, border: `1px solid ${COLORS.line}`, borderRadius: 14, padding: 12 } }, u.photo ? (React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" } },
+    // שני אזורי תמונה בעלי אותן יכולות עריכה בדיוק
+    const PHOTOS = [
+        { key: "photo", stickersKey: "stickers", title: "מיקום מרחבי — הגדלת חיבור", label: "מיקום מרחבי הגדלת חיבור" },
+        { key: "meterPhoto", stickersKey: "meterStickers", title: "צילום מונה בשטח", label: "צילום מונה בשטח" },
+    ];
+    const photoBlock = (p) => (React.createElement("div", { key: p.key },
+        React.createElement(SectionTitle, null, p.title),
+        React.createElement("div", { style: { background: COLORS.card, border: `1px solid ${COLORS.line}`, borderRadius: 14, padding: 12 } }, u[p.key] ? (React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" } },
             React.createElement("div", { style: { position: "relative", width: 150, flexShrink: 0 } },
-                React.createElement(StickerView, { photo: u.photo, stickers: u.stickers || [], width: 150, alt: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8" })),
-            React.createElement("button", { onClick: () => setEditing(true), style: {
+                React.createElement(StickerView, { photo: u[p.key], stickers: u[p.stickersKey] || [], width: 150, alt: p.label })),
+            React.createElement("button", { onClick: () => setEditing(p.key), style: {
                     flex: 1,
                     background: COLORS.slate,
                     color: "#fff",
@@ -761,16 +758,33 @@ function ConnectionUpgradeStep({ upgrade, setUpgrade }) {
                     fontSize: 14,
                     fontWeight: 700,
                     fontFamily: "inherit",
-                } }, "\u270F\uFE0F \u05E2\u05E8\u05D5\u05DA \u05EA\u05DE\u05D5\u05E0\u05D4 \u05D5\u05DE\u05D3\u05D1\u05E7\u05D5\u05EA"))) : (React.createElement(PhotoAnnotator, { photo: null, onPhoto: (p) => {
-                setUpgrade({ ...u, photo: p });
-                setEditing(true); // עוברים ישר למצב עריכה גדול אחרי ההעלאה
-            }, stickers: u.stickers || [], onStickers: (s) => setUpgrade({ ...u, stickers: s }), label: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8", allowPaste: true }))),
-        editing && ReactDOM.createPortal(React.createElement("div", { style: { position: "fixed", inset: 0, background: COLORS.paper, zIndex: 999, display: "flex", flexDirection: "column" } },
-            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: COLORS.ink, flexShrink: 0 } },
-                React.createElement("h3", { style: { margin: 0, fontSize: 15, color: "#fff" } }, "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8 \u2014 \u05E2\u05E8\u05D9\u05DB\u05D4"),
-                React.createElement("button", { onClick: () => setEditing(false), style: { background: COLORS.amber, color: COLORS.ink, border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit" } }, "\u2713 \u05E1\u05D9\u05D9\u05DE\u05EA\u05D9")),
-            React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: 8 } },
-                React.createElement(PhotoAnnotator, { photo: u.photo, onPhoto: (p) => setUpgrade({ ...u, photo: p }), stickers: u.stickers || [], onStickers: (s) => setUpgrade({ ...u, stickers: s }), label: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8", allowPaste: true }))), document.body)));
+                } }, "\u270F\uFE0F \u05E2\u05E8\u05D5\u05DA \u05EA\u05DE\u05D5\u05E0\u05D4 \u05D5\u05DE\u05D3\u05D1\u05E7\u05D5\u05EA"))) : (React.createElement(PhotoAnnotator, { photo: null, onPhoto: (img) => {
+                setUpgrade({ ...u, [p.key]: img });
+                setEditing(p.key); // עוברים ישר למצב עריכה גדול אחרי ההעלאה
+            }, stickers: u[p.stickersKey] || [], onStickers: (s) => setUpgrade({ ...u, [p.stickersKey]: s }), label: p.label, allowPaste: true })))));
+    return (React.createElement("div", null,
+        React.createElement(SectionTitle, null, "\u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8"),
+        React.createElement("p", { style: { fontSize: 13.5, color: "#5B6B7A", margin: "0 0 12px" } }, "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05D7\u05D9\u05D1\u05D5\u05E8 \u05D4\u05E7\u05D9\u05D9\u05DD \u05D5\u05D4\u05E0\u05D3\u05E8\u05E9. \u05D4\u05E9\u05D3\u05D5\u05EA \u05D9\u05D5\u05E4\u05D9\u05E2\u05D5 \u05D1\u05D3\u05D5\u05D7."),
+        React.createElement("div", { style: { background: COLORS.card, border: `1px solid ${COLORS.line}`, borderRadius: 14, padding: 14 } },
+            React.createElement(Field, { label: "\u05DE\u05E1\u05E4\u05E8 \u05DE\u05D5\u05E0\u05D4 \u05E6\u05E8\u05D9\u05DB\u05D4", value: u.meterNo, onChange: set("meterNo"), placeholder: "\u05DE\u05E1\u05E4\u05E8 \u05D4\u05DE\u05D5\u05E0\u05D4 \u05DB\u05E4\u05D9 \u05E9\u05DE\u05D5\u05E4\u05D9\u05E2 \u05E2\u05DC \u05D4\u05DE\u05D5\u05E0\u05D4", dir: "ltr" }),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+                React.createElement(Field, { label: "\u05D2\u05D5\u05D3\u05DC \u05D7\u05D9\u05D1\u05D5\u05E8 \u05E7\u05D9\u05D9\u05DD", value: u.existingSize, onChange: set("existingSize"), placeholder: '\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: 3x40A', dir: "ltr" }),
+                React.createElement(Field, { label: "\u05D2\u05D5\u05D3\u05DC \u05D7\u05D9\u05D1\u05D5\u05E8 \u05E0\u05D3\u05E8\u05E9", value: u.requiredSize, onChange: set("requiredSize"), placeholder: '\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: 3x80A', dir: "ltr" })),
+            React.createElement(Field, { label: "\u05D4\u05E2\u05E8\u05D5\u05EA", value: u.notes, onChange: set("notes"), placeholder: "\u05EA\u05E9\u05EA\u05D9\u05D5\u05EA, \u05DE\u05E8\u05D7\u05E7\u05D9\u05DD, \u05D0\u05D9\u05DC\u05D5\u05E6\u05D9\u05DD \u05D1\u05E9\u05D8\u05D7\u2026" })),
+        PHOTOS.map(photoBlock),
+        editing && ReactDOM.createPortal((() => {
+            const p = PHOTOS.find((x) => x.key === editing);
+            if (!p)
+                return null;
+            return (React.createElement("div", { style: { position: "fixed", inset: 0, background: COLORS.paper, zIndex: 999, display: "flex", flexDirection: "column" } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: COLORS.ink, flexShrink: 0 } },
+                    React.createElement("h3", { style: { margin: 0, fontSize: 15, color: "#fff" } },
+                        p.title,
+                        " \u2014 \u05E2\u05E8\u05D9\u05DB\u05D4"),
+                    React.createElement("button", { onClick: () => setEditing(null), style: { background: COLORS.amber, color: COLORS.ink, border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit" } }, "\u2713 \u05E1\u05D9\u05D9\u05DE\u05EA\u05D9")),
+                React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: 8 } },
+                    React.createElement(PhotoAnnotator, { photo: u[p.key], onPhoto: (img) => setUpgrade({ ...u, [p.key]: img }), stickers: u[p.stickersKey] || [], onStickers: (s) => setUpgrade({ ...u, [p.stickersKey]: s }), label: p.label, allowPaste: true }))));
+        })(), document.body)));
 }
 /* ---------- שלב 3: ציוד ותמונות ---------- */
 function EquipmentStep({ items, setItems }) {
@@ -1703,7 +1717,7 @@ function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, marke
             (() => {
                 const u = upgrade || {};
                 const hasFields = [u.meterNo, u.existingSize, u.requiredSize, u.notes].some((v) => String(v !== null && v !== void 0 ? v : "").trim() !== "");
-                if (!hasFields && !u.photo)
+                if (!hasFields && !u.photo && !u.meterPhoto)
                     return null;
                 return (React.createElement("div", { className: "print-avoid-break pdf-chunk", style: { marginBottom: 18, breakInside: "avoid", pageBreakInside: "avoid" } },
                     React.createElement("h3", { style: { fontSize: 15, margin: "0 0 8px", color: BRAND_BLUE } }, "\u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8"),
@@ -1716,8 +1730,12 @@ function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, marke
                         ].map(([k, v]) => (React.createElement("tr", { key: k },
                             React.createElement("td", { style: { padding: "6px 8px", color: "#7C8A97", width: 120, verticalAlign: "top", borderBottom: `1px solid ${COLORS.paper}` } }, k),
                             React.createElement("td", { style: { padding: "6px 8px", color: COLORS.ink, borderBottom: `1px solid ${COLORS.paper}` } }, v)))))),
-                    u.photo && (React.createElement("div", { style: { width: "100%", maxWidth: 480, margin: "0 auto" } },
-                        React.createElement(StickerView, { photo: u.photo, stickers: u.stickers || [], width: "100%", alt: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8" })))));
+                    u.photo && (React.createElement("div", { style: { width: "100%", maxWidth: 480, margin: "0 auto 12px" } },
+                        React.createElement("div", { style: { fontSize: 12.5, color: "#7C8A97", marginBottom: 4 } }, "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9"),
+                        React.createElement(StickerView, { photo: u.photo, stickers: u.stickers || [], width: "100%", alt: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E8\u05D7\u05D1\u05D9 \u05D4\u05D2\u05D3\u05DC\u05EA \u05D7\u05D9\u05D1\u05D5\u05E8" }))),
+                    u.meterPhoto && (React.createElement("div", { style: { width: "100%", maxWidth: 480, margin: "0 auto" } },
+                        React.createElement("div", { style: { fontSize: 12.5, color: "#7C8A97", marginBottom: 4 } }, "\u05E6\u05D9\u05DC\u05D5\u05DD \u05DE\u05D5\u05E0\u05D4 \u05D1\u05E9\u05D8\u05D7"),
+                        React.createElement(StickerView, { photo: u.meterPhoto, stickers: u.meterStickers || [], width: "100%", alt: "\u05E6\u05D9\u05DC\u05D5\u05DD \u05DE\u05D5\u05E0\u05D4 \u05D1\u05E9\u05D8\u05D7" })))));
             })(),
             aerial && (React.createElement("div", { className: "aerial-report-block pdf-chunk", style: { marginBottom: 18, breakInside: "avoid", pageBreakInside: "avoid" } },
                 React.createElement("h3", { style: { fontSize: 15, margin: "0 0 8px", color: BRAND_BLUE } }, "\u05DE\u05D1\u05D8 \u05E2\u05DC \u2014 \u05DE\u05D9\u05E7\u05D5\u05DE\u05D9 \u05E6\u05D9\u05D5\u05D3 (\u05EA\u05E6\"\u05D0)"),
@@ -2267,6 +2285,8 @@ const EMPTY_UPGRADE = {
     notes: "",
     photo: null, // תמונת מיקום מרחבי להגדלת החיבור
     stickers: [],
+    meterPhoto: null, // צילום מונה הצריכה בשטח
+    meterStickers: [],
 };
 function CoordinationApp({ session }) {
     const userId = session.user.id;
@@ -2431,7 +2451,10 @@ function CoordinationApp({ session }) {
         setRegions(d.regions || []);
         setSignatures(d.signatures || { company: { name: "", img: null }, customer: { name: "", img: null } });
         const stickerIds = (d.items || []).flatMap((x) => (x.stickers || []).map((s) => s.id || 0));
-        const upgradeStickerIds = ((d.upgrade || {}).stickers || []).map((s) => s.id || 0);
+        const upgradeStickerIds = [
+            ...(((d.upgrade || {}).stickers) || []).map((s) => s.id || 0),
+            ...(((d.upgrade || {}).meterStickers) || []).map((s) => s.id || 0),
+        ];
         const regionStickerIds = (d.regions || []).flatMap((x) => (x.stickers || []).map((s) => s.id || 0));
         const maxId = Math.max(0, ...(d.items || []).map((x) => x.id || 0), ...(d.markers || []).map((x) => x.id || 0), ...(d.lines || []).map((x) => x.id || 0), ...(d.regions || []).map((x) => x.id || 0), ...stickerIds, ...regionStickerIds, ...upgradeStickerIds);
         idCounter = maxId + 1;
