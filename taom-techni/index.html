@@ -2161,6 +2161,28 @@ function LoginScreen() {
    מציגה את התיאומים שבמצב עריכה (טיוטות) על מפת רחובות אמיתית, מסדרת אותם
    לסדר ביקור יעיל מהמיקום הנוכחי ומציירת את המסלול.
    תיאום בלי נקודת מיקום שמורה מופיע ברשימה נפרדת וניתן לנעוץ אותו על המפה. */
+/* חילוץ שם היישוב מהכתובת כפי שהיא נרשמת בפריוריטי:
+   "זרועה 80 (גוש 100813 חלקה 5)" → זרועה ; "משק 35, פטיש" → פטיש */
+function localityOf(addr) {
+    let s = String(addr || "").replace(/\([^)]*\)/g, " ").trim();
+    s = s.replace(/[,،]\s*$/, "").trim();
+    if (s.includes(","))
+        s = s.split(",").pop().trim();
+    s = s.replace(/\s*\d[\d\/\-]*\s*$/, "").trim();
+    return s;
+}
+// איתור קואורדינטות של יישוב דרך OpenStreetMap. דיוק ברמת יישוב — מספיק לתכנון סיור.
+async function geocodeLocality(name) {
+    const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=il&accept-language=he&q=" +
+        encodeURIComponent(name);
+    const r = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!r.ok)
+        throw new Error("geocode " + r.status);
+    const j = await r.json();
+    if (!j || !j[0])
+        return null;
+    return { lat: Number(j[0].lat), lng: Number(j[0].lon) };
+}
 const R_EARTH_KM = 6371;
 const toRad = (d) => (d * Math.PI) / 180;
 function kmBetween(a, b) {
@@ -2197,6 +2219,7 @@ function TourMapScreen({ userId, onEdit, onBack }) {
     const [pinning, setPinning] = useState(null); // תיאום שממתין לנעיצה על המפה
     const [saving, setSaving] = useState(false);
     const [hoverId, setHoverId] = useState(null);
+    const [locating, setLocating] = useState(null); // {done,total} בזמן איתור לפי כתובת
     const mapRef = useRef(null);
     const mapEl = useRef(null);
     const layerRef = useRef(null);
@@ -2236,32 +2259,75 @@ function TourMapScreen({ userId, onEdit, onBack }) {
         address: (r.customer || {}).address || "",
         lat: Number((r.customer || {}).lat),
         lng: Number((r.customer || {}).lng),
+        approx: !!(r.customer || {}).geoApprox,
     }));
     const withoutPoint = (rows || []).filter((r) => (r.customer || {}).lat == null || (r.customer || {}).lng == null);
     const route = useMemo(() => orderByProximity(withPoint, me), [rows, me]);
     const totalKm = route.reduce((s, x) => s + (x.leg || 0), 0);
     // שמירת נקודה שנעצה ידנית על המפה, בתוך נתוני התיאום
-    const savePin = async (rowId, lat, lng) => {
-        setSaving(true);
+    const savePin = async (rowId, lat, lng, approx) => {
+        if (!approx)
+            setSaving(true);
         try {
             const { data, error } = await sb.from("coordinations").select("data").eq("id", rowId).single();
             if (error)
                 throw error;
             const d = data.data || {};
-            const next = { ...d, customer: { ...(d.customer || {}), lat, lng } };
-            const { error: e2 } = await sb.from("coordinations").update({ data: next }).eq("id", rowId);
+            const cust = { ...(d.customer || {}), lat, lng, geoApprox: !!approx };
+            const { error: e2 } = await sb.from("coordinations").update({ data: { ...d, customer: cust } }).eq("id", rowId);
             if (e2)
                 throw e2;
-            setRows((prev) => (prev || []).map((r) => r.id === rowId ? { ...r, customer: { ...(r.customer || {}), lat, lng } } : r));
-            setPinning(null);
+            setRows((prev) => (prev || []).map((r) => r.id === rowId ? { ...r, customer: { ...(r.customer || {}), lat, lng, geoApprox: !!approx } } : r));
+            if (!approx)
+                setPinning(null);
         }
         catch (e) {
             console.error(e);
-            alert("לא הצלחנו לשמור את המיקום. נסו שוב.");
+            if (!approx)
+                alert("לא הצלחנו לשמור את המיקום. נסו שוב.");
+            throw e;
         }
         finally {
-            setSaving(false);
+            if (!approx)
+                setSaving(false);
         }
+    };
+    // איתור קבוצתי לפי שם היישוב שבכתובת — נקודת פתיחה שאפשר לתקן אחר כך בנעיצה
+    const locateAllByAddress = async () => {
+        const targets = withoutPoint.filter((r) => localityOf((r.customer || {}).address));
+        if (targets.length === 0) {
+            alert("אין כתובות שניתן לאתר לפיהן. אפשר לנעוץ ידנית על המפה.");
+            return;
+        }
+        const cache = new Map();
+        let ok = 0, miss = 0;
+        for (let i = 0; i < targets.length; i++) {
+            setLocating({ done: i, total: targets.length });
+            const row = targets[i];
+            const name = localityOf((row.customer || {}).address);
+            try {
+                let pt = cache.get(name);
+                if (pt === undefined) {
+                    pt = await geocodeLocality(name);
+                    cache.set(name, pt);
+                    await new Promise((r) => setTimeout(r, 1100)); // מגבלת קצב של השירות
+                }
+                if (!pt) {
+                    miss++;
+                    continue;
+                }
+                await savePin(row.id, pt.lat, pt.lng, true);
+                ok++;
+            }
+            catch (e) {
+                console.error(e);
+                miss++;
+            }
+        }
+        setLocating(null);
+        alert(`אותרו ${ok} תיאומים לפי היישוב שבכתובת.` +
+            (miss ? ` ${miss} לא נמצאו — אפשר לנעוץ אותם ידנית.` : "") +
+            "\nהנקודות הן ברמת יישוב. נעיצה ידנית או ‘קבע מיקום מדויק’ בשטח מדייקת אותן.");
     };
     // אתחול המפה פעם אחת
     useEffect(() => {
@@ -2290,24 +2356,37 @@ function TourMapScreen({ userId, onEdit, onBack }) {
             return;
         layer.clearLayers();
         const pts = [];
+        // כמה תיאומים באותו יישוב יושבים על אותה נקודה — מפזרים אותם מעט כדי שכולם ייראו
+        const seen = new Map();
         route.forEach((s, i) => {
+            const key = s.lat.toFixed(5) + "," + s.lng.toFixed(5);
+            const k = seen.get(key) || 0;
+            seen.set(key, k + 1);
+            const ang = (k * 2 * Math.PI) / 6;
+            const off = k === 0 ? 0 : 0.0007 * Math.ceil(k / 6);
+            const lat = s.lat + off * Math.cos(ang);
+            const lng = s.lng + off * Math.sin(ang);
             const big = hoverId === s.id;
+            const size = big ? 32 : 26;
             const icon = window.L.divIcon({
                 className: "",
-                html: '<div style="width:' + (big ? 32 : 26) + 'px;height:' + (big ? 32 : 26) + 'px;border-radius:50%;' +
-                    'background:' + MAP_PIN_BLUE + ';color:#fff;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45);' +
+                html: '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;' +
+                    "background:" + (s.approx ? "#8CA3B8" : MAP_PIN_BLUE) + ";color:#fff;" +
+                    "border:2.5px " + (s.approx ? "dashed" : "solid") + " #fff;box-shadow:0 1px 5px rgba(0,0,0,.45);" +
                     'display:flex;align-items:center;justify-content:center;font:800 ' + (big ? 14 : 12) + 'px Heebo,sans-serif">' +
                     (i + 1) + "</div>",
-                iconSize: [big ? 32 : 26, big ? 32 : 26],
-                iconAnchor: [big ? 16 : 13, big ? 16 : 13],
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
             });
-            window.L.marker([s.lat, s.lng], { icon })
+            window.L.marker([lat, lng], { icon })
                 .bindPopup('<div style="direction:rtl;font-family:Heebo,sans-serif;font-size:13px">' +
                 "<b>" + (i + 1) + ". " + s.name + "</b><br/>" +
                 (s.ord ? "הזמנה " + s.ord + "<br/>" : "") +
-                (s.address || "") + "</div>")
+                (s.address || "") +
+                (s.approx ? '<br/><span style="color:#7C8A97">מיקום משוער לפי היישוב</span>' : "") +
+                "</div>")
                 .addTo(layer);
-            pts.push([s.lat, s.lng]);
+            pts.push([lat, lng]);
         });
         if (me) {
             window.L.marker([me.lat, me.lng], {
@@ -2367,6 +2446,7 @@ function TourMapScreen({ userId, onEdit, onBack }) {
                         s.ord ? `הזמנה ${s.ord}` : "",
                         s.ord && s.address ? " · " : "",
                         s.address)),
+                s.approx && (React.createElement("span", { title: "\u05DE\u05D9\u05E7\u05D5\u05DD \u05DE\u05E9\u05D5\u05E2\u05E8 \u05DC\u05E4\u05D9 \u05D4\u05D9\u05D9\u05E9\u05D5\u05D1", style: { flex: "0 0 auto", fontSize: 10.5, color: "#5B6B7A", background: "#EEF2F6", border: `1px solid ${COLORS.line}`, borderRadius: 999, padding: "2px 7px" } }, "~\u05D9\u05D9\u05E9\u05D5\u05D1")),
                 (me || i > 0) && (React.createElement("span", { style: { flex: "0 0 auto", fontSize: 12, fontWeight: 700, color: "#7C8A97" } },
                     kmText(s.leg),
                     " \u05E7\u05F4\u05DE")),
@@ -2377,7 +2457,13 @@ function TourMapScreen({ userId, onEdit, onBack }) {
                     "\u05DC\u05DC\u05D0 \u05DE\u05D9\u05E7\u05D5\u05DD \u05E9\u05DE\u05D5\u05E8 (",
                     withoutPoint.length,
                     ")"),
-                React.createElement("p", { style: { fontSize: 11.5, color: "#7C8A97", margin: "0 0 7px", lineHeight: 1.6 } }, "\u05EA\u05D9\u05D0\u05D5\u05DE\u05D9\u05DD \u05D0\u05DC\u05D4 \u05DC\u05D0 \u05DE\u05D5\u05E4\u05D9\u05E2\u05D9\u05DD \u05E2\u05DC \u05D4\u05DE\u05E4\u05D4. \u05DC\u05D7\u05E6\u05D5 \u201C\u05E0\u05E2\u05E5 \u05E2\u05DC \u05D4\u05DE\u05E4\u05D4\u201D \u05D5\u05D0\u05D6 \u05D4\u05E7\u05D9\u05E9\u05D5 \u05E2\u05DC \u05D4\u05DE\u05E7\u05D5\u05DD \u05D4\u05E0\u05DB\u05D5\u05DF \u2014 \u05D4\u05E0\u05E7\u05D5\u05D3\u05D4 \u05EA\u05D9\u05E9\u05DE\u05E8 \u05D1\u05EA\u05D9\u05D0\u05D5\u05DD."),
+                React.createElement("p", { style: { fontSize: 11.5, color: "#7C8A97", margin: "0 0 7px", lineHeight: 1.6 } }, "\u05EA\u05D9\u05D0\u05D5\u05DE\u05D9\u05DD \u05D0\u05DC\u05D4 \u05DC\u05D0 \u05DE\u05D5\u05E4\u05D9\u05E2\u05D9\u05DD \u05E2\u05DC \u05D4\u05DE\u05E4\u05D4. \u05D0\u05E4\u05E9\u05E8 \u05DC\u05D0\u05EA\u05E8 \u05D0\u05EA \u05DB\u05D5\u05DC\u05DD \u05D1\u05D1\u05EA \u05D0\u05D7\u05EA \u05DC\u05E4\u05D9 \u05D4\u05D9\u05D9\u05E9\u05D5\u05D1 \u05E9\u05D1\u05DB\u05EA\u05D5\u05D1\u05EA, \u05D0\u05D5 \u05DC\u05E0\u05E2\u05D5\u05E5 \u05DB\u05DC \u05D0\u05D7\u05D3 \u05D9\u05D3\u05E0\u05D9\u05EA."),
+                locating ? (React.createElement("div", { style: { background: "#FFF7E6", border: `1px solid ${COLORS.amber}`, borderRadius: 10, padding: "10px 12px", marginBottom: 8, fontSize: 13, fontWeight: 700, textAlign: "center" } },
+                    "\u05DE\u05D0\u05EA\u05E8 ",
+                    locating.done + 1,
+                    " \u05DE\u05EA\u05D5\u05DA ",
+                    locating.total,
+                    "\u2026")) : (React.createElement("button", { onClick: locateAllByAddress, style: { width: "100%", marginBottom: 8, background: COLORS.ink, color: "#fff", border: "none", borderRadius: 10, padding: "11px 0", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit" } }, "\uD83D\uDCCD \u05D0\u05EA\u05E8 \u05D0\u05EA \u05DB\u05D5\u05DC\u05DD \u05DC\u05E4\u05D9 \u05D4\u05D9\u05D9\u05E9\u05D5\u05D1 \u05E9\u05D1\u05DB\u05EA\u05D5\u05D1\u05EA")),
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } }, withoutPoint.map((r) => (React.createElement("div", { key: r.id, style: card },
                     React.createElement("span", { style: { flex: 1, minWidth: 0 } },
                         React.createElement("span", { style: { display: "block", fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, (r.customer || {}).name || "ללא שם"),
