@@ -36,7 +36,8 @@
     fail("לא ניתן לטעון את Supabase. צריך חיבור אינטרנט בפתיחה הראשונה. בדוק חיבור ורענן.");
     return;
   }
-  var useState = React.useState, useRef = React.useRef, useEffect = React.useEffect;
+  var useState = React.useState, useRef = React.useRef, useEffect = React.useEffect,
+      useMemo = React.useMemo, useContext = React.useContext, createContext = React.createContext;
   try {
 "use strict";
 /* =========================================================
@@ -69,6 +70,50 @@ const EQUIPMENT_TYPES = {
     battery: { label: "קבינט אגירה", short: "א", color: "#9B51E0" },
     pillar_halav: { label: "פילר חלב", short: "פ", color: "#C2185B" },
 };
+/* ---------- סוג התיאום ----------
+   שני הסוגים זהים לחלוטין במסכים, בשלבים ובדוח — ההבדל היחיד הוא בכיתובים.
+   בתיאום הגדלת חיבור אין מונה ייצור, ולכן אותו סימון נקרא "מונה צריכה". */
+const COORD_MODES = {
+    solar: { key: "solar", title: "תיאום טכני סולארי", short: "סולארי", icon: "☀️" },
+    upgrade: { key: "upgrade", title: "תיאום טכני הגדלת חיבור", short: "הגדלה", icon: "⚡" },
+};
+const DEFAULT_MODE = "solar";
+const modeOf = (m) => (COORD_MODES[m] ? m : DEFAULT_MODE);
+// החלפות כיתוב לפי סוג התיאום — המפתחות נשארים זהים, רק התווית משתנה
+const MODE_LABELS = {
+    upgrade: {
+        equipment: { production: "מונה צריכה" },
+        stickers: {
+            cabinet_production: "ארון מדידה צריכה",
+            production_metering: "מערכת מניית צריכה",
+        },
+    },
+};
+function equipmentTypesFor(mode) {
+    const ov = (MODE_LABELS[modeOf(mode)] || {}).equipment || {};
+    if (Object.keys(ov).length === 0)
+        return EQUIPMENT_TYPES;
+    const out = {};
+    Object.keys(EQUIPMENT_TYPES).forEach((k) => {
+        out[k] = ov[k] ? { ...EQUIPMENT_TYPES[k], label: ov[k] } : EQUIPMENT_TYPES[k];
+    });
+    return out;
+}
+// תווית מדבקה לפי סוג התיאום — המפתח נשאר זהה, רק הכיתוב משתנה
+function stickerLabelFor(key, mode) {
+    const ov = (MODE_LABELS[modeOf(mode)] || {}).stickers || {};
+    return ov[key] || (STICKER_MAP[key] || {}).label || key;
+}
+const ModeContext = createContext(DEFAULT_MODE);
+const useCoordMode = () => modeOf(useContext(ModeContext));
+function useEquipmentTypes() {
+    const mode = useCoordMode();
+    return useMemo(() => equipmentTypesFor(mode), [mode]);
+}
+function useStickerLabel() {
+    const mode = useCoordMode();
+    return useMemo(() => (key) => stickerLabelFor(key, mode), [mode]);
+}
 const FEED_LINE_COLOR = "#FFD400"; // צהוב — תוואי הזנה
 const BRAND_BLUE = "#1C9FD3";
 const BRAND_ORANGE = "#F3A11A";
@@ -262,6 +307,59 @@ function PhotoInput({ photo, onPhoto, label, cameraCapture = true, allowPaste = 
                 allowPaste && React.createElement(PasteOverlayButton, { deliver: deliver })))) : (React.createElement(PhotoPicker, { onPick: onPhoto, allowPaste: allowPaste }))));
 }
 /* ---------- שלב 1: פרטי לקוח (הזנה ידנית) ---------- */
+/* שורת ניווט ל-Waze בשלב הלקוח.
+   ברירת המחדל היא ניווט לפי הכתובת שהוקלדה; "קבע מיקום מדויק" שומר קואורדינטות
+   מהמכשיר בזמן שנמצאים באתר — משם הניווט מדויק גם כשהכתובת לא ברורה. */
+function WazeLink({ customer, onLocate }) {
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState("");
+    const url = wazeUrl(customer);
+    const pinned = customer.lat != null && customer.lng != null;
+    const locate = async () => {
+        setErr("");
+        setBusy(true);
+        const pos = await getLocationOnce(8000);
+        setBusy(false);
+        if (!pos) {
+            setErr("לא הצלחנו לקבל מיקום. אשרו הרשאת מיקום לדפדפן ונסו שוב.");
+            return;
+        }
+        onLocate(pos);
+    };
+    return (React.createElement("div", { style: { marginTop: -4, marginBottom: 2 } },
+        React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } },
+            React.createElement("a", { href: url || undefined, target: "_blank", rel: "noopener noreferrer", onClick: (e) => { if (!url)
+                    e.preventDefault(); }, style: {
+                    flex: "1 1 150px",
+                    textAlign: "center",
+                    textDecoration: "none",
+                    background: url ? "#33CCFF" : "#E7ECF1",
+                    color: url ? "#06303D" : "#9AA7B2",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    fontSize: 13.5,
+                    fontWeight: 800,
+                } }, "\uD83E\uDDED \u05E0\u05D5\u05D5\u05D8 \u05D1-Waze"),
+            React.createElement("button", { onClick: locate, disabled: busy, style: {
+                    flex: "1 1 150px",
+                    background: pinned ? "#E8F6EE" : "#fff",
+                    border: `1px solid ${pinned ? COLORS.green : COLORS.line}`,
+                    color: pinned ? COLORS.green : COLORS.slate,
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    fontFamily: "inherit",
+                    opacity: busy ? 0.6 : 1,
+                } }, busy ? "מאתר…" : pinned ? "✓ מיקום מדויק נשמר" : "📍 קבע מיקום מדויק")),
+        React.createElement("p", { style: { fontSize: 11.5, color: err ? COLORS.red : "#7C8A97", margin: "5px 2px 0", lineHeight: 1.5 } }, err
+            ? err
+            : pinned
+                ? `ניווט לפי הנקודה שנשמרה באתר (${Number(customer.lat).toFixed(5)}, ${Number(customer.lng).toFixed(5)}).`
+                : url
+                    ? "הניווט לפי הכתובת שהוקלדה. בשטח כדאי ללחוץ ‘קבע מיקום מדויק’ — כך הניווט והמפה יהיו מדויקים."
+                    : "הזינו כתובת, או לחצו ‘קבע מיקום מדויק’ כשאתם באתר.")));
+}
 function CustomerStep({ customer, setCustomer, meta, setMeta }) {
     const set = (k) => (v) => setCustomer({ ...customer, [k]: v });
     return (React.createElement("div", null,
@@ -270,6 +368,7 @@ function CustomerStep({ customer, setCustomer, meta, setMeta }) {
         React.createElement("div", { style: { background: COLORS.card, border: `1px solid ${COLORS.line}`, borderRadius: 14, padding: 14 } },
             React.createElement(Field, { label: "\u05E9\u05DD \u05DC\u05E7\u05D5\u05D7", value: customer.name, onChange: set("name"), placeholder: '\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: \u05E7\u05D9\u05D1\u05D5\u05E5 \u05E9\u05D3\u05D4 \u05D0\u05D5\u05E8 \u05D1\u05E2"\u05DE' }),
             React.createElement(Field, { label: "\u05DB\u05EA\u05D5\u05D1\u05EA \u05D4\u05D0\u05EA\u05E8", value: customer.address, onChange: set("address"), placeholder: "\u05E8\u05D7\u05D5\u05D1, \u05DE\u05E1\u05E4\u05E8, \u05D9\u05D9\u05E9\u05D5\u05D1" }),
+            React.createElement(WazeLink, { customer: customer, onLocate: (pos) => setCustomer({ ...customer, lat: pos.lat, lng: pos.lng }) }),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
                 React.createElement(Field, { label: "\u05D0\u05D9\u05E9 \u05E7\u05E9\u05E8", value: customer.contact, onChange: set("contact"), placeholder: "\u05E9\u05DD \u05DE\u05DC\u05D0" }),
                 React.createElement(Field, { label: "\u05D8\u05DC\u05E4\u05D5\u05DF", value: customer.phone, onChange: set("phone"), placeholder: "050-0000000", dir: "ltr" })),
@@ -493,12 +592,10 @@ function StickerView({ photo, stickers = [], width, alt }) {
 }
 // מקרא ממוספר למדבקות תמונה — כדי שכיתובים לא יסתירו זה את זה על גבי התמונה עצמה
 function StickerLegend({ stickers = [], numberMap }) {
+    const labelOf = useStickerLabel();
     const entries = (stickers || [])
         .filter((s) => numberMap.has(s.id))
-        .map((s) => {
-        const def = STICKER_MAP[s.key] || {};
-        return { num: numberMap.get(s.id), label: s.text || def.label || s.key };
-    })
+        .map((s) => ({ num: numberMap.get(s.id), label: s.text || labelOf(s.key) }))
         .sort((a, b) => a.num - b.num);
     if (entries.length === 0)
         return null;
@@ -520,6 +617,7 @@ function StickerLegend({ stickers = [], numberMap }) {
 }
 /* ---------- צילום + הדבקת מדבקות (שלב 2) ---------- */
 function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allowRetake = true, allowPaste = true }) {
+    const labelOf = useStickerLabel();
     const pick = usePhotoPick(onPhoto);
     const containerRef = useRef(null);
     const dragRef = useRef({ id: null, moved: false });
@@ -764,7 +862,7 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
             React.createElement("div", { style: { display: "flex", gap: 7 } }, ARROWS.map((a) => (React.createElement("button", { key: a.key, onClick: () => addSticker(a), title: a.label || "חץ", style: { background: "#fff", border: `1.5px solid ${a.key === "feedline" ? FEED_LINE_COLOR : COLORS.line}`, borderRadius: 10, padding: "4px 12px", fontSize: 20, fontFamily: "inherit", lineHeight: 1 } }, a.icon)))),
             IMAGE_STICKERS.length > 0 && (React.createElement(React.Fragment, null,
                 React.createElement("div", { style: { fontSize: 11.5, color: "#7C8A97", margin: "12px 0 6px", fontWeight: 700 } }, "\u05DE\u05D3\u05D1\u05E7\u05D5\u05EA \u05EA\u05DE\u05D5\u05E0\u05D4"),
-                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, IMAGE_STICKERS.map((s) => (React.createElement("button", { key: s.key, onClick: () => addSticker(s), title: s.label, style: {
+                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, IMAGE_STICKERS.map((s) => (React.createElement("button", { key: s.key, onClick: () => addSticker(s), title: labelOf(s.key), style: {
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
@@ -775,8 +873,8 @@ function PhotoAnnotator({ photo, onPhoto, stickers = [], onStickers, label, allo
                         padding: 6,
                         fontFamily: "inherit",
                     } },
-                    React.createElement("img", { src: s.img, alt: s.label, style: { width: 44, height: 44, objectFit: "contain", borderRadius: 6, background: "#fff" } }),
-                    React.createElement("span", { style: { fontSize: 10.5, color: "#41525F", maxWidth: 60, textAlign: "center" } }, s.label)))))))))));
+                    React.createElement("img", { src: s.img, alt: labelOf(s.key), style: { width: 44, height: 44, objectFit: "contain", borderRadius: 6, background: "#fff" } }),
+                    React.createElement("span", { style: { fontSize: 10.5, color: "#41525F", maxWidth: 60, textAlign: "center" } }, labelOf(s.key))))))))))));
 }
 /* ---------- שלב 2: הגדלת חיבור ---------- */
 function ConnectionUpgradeStep({ upgrade, setUpgrade }) {
@@ -833,6 +931,7 @@ function ConnectionUpgradeStep({ upgrade, setUpgrade }) {
 }
 /* ---------- שלב 3: ציוד ותמונות ---------- */
 function EquipmentStep({ items, setItems }) {
+    const EQ = useEquipmentTypes();
     const [editingItemId, setEditingItemId] = useState(null);
     const addItem = (type) => setItems([...items, { id: nextId(), type, photo: null, location: "", notes: "", stickers: [] }]);
     const update = (id, patch) => setItems(items.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -841,7 +940,7 @@ function EquipmentStep({ items, setItems }) {
     return (React.createElement("div", null,
         React.createElement(SectionTitle, null, "\u05E6\u05D9\u05D5\u05D3 \u05D5\u05EA\u05DE\u05D5\u05E0\u05D5\u05EA \u05DE\u05D9\u05E7\u05D5\u05DD"),
         React.createElement("p", { style: { fontSize: 13.5, color: "#5B6B7A", margin: "0 0 12px" } }, "\u05DC\u05D7\u05E6\u05D5 \u05DC\u05D4\u05D5\u05E1\u05E4\u05EA \u05E4\u05E8\u05D9\u05D8 \u05DE\u05DB\u05DC \u05E1\u05D5\u05D2 \u2014 \u05D0\u05D9\u05DF \u05D4\u05D2\u05D1\u05DC\u05D4 \u05E2\u05DC \u05D4\u05DB\u05DE\u05D5\u05EA. \u05DC\u05DB\u05DC \u05E4\u05E8\u05D9\u05D8 \u05E6\u05DC\u05DE\u05D5 \u05D0\u05EA \u05D4\u05DE\u05D9\u05E7\u05D5\u05DD \u05D4\u05DE\u05D9\u05D5\u05E2\u05D3 \u05D5\u05D4\u05D5\u05E1\u05D9\u05E4\u05D5 \u05EA\u05D9\u05D0\u05D5\u05E8."),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr", gap: 8, marginBottom: 16 } }, Object.entries(EQUIPMENT_TYPES).map(([key, t]) => (React.createElement("button", { key: key, onClick: () => addItem(key), style: {
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr", gap: 8, marginBottom: 16 } }, Object.entries(EQ).map(([key, t]) => (React.createElement("button", { key: key, onClick: () => addItem(key), style: {
                 border: `1.5px solid ${t.color}`,
                 color: t.color,
                 background: "#fff",
@@ -878,7 +977,7 @@ function EquipmentStep({ items, setItems }) {
                 fontSize: 14,
             } }, "\u05E2\u05D3\u05D9\u05D9\u05DF \u05DC\u05D0 \u05E0\u05D5\u05E1\u05E3 \u05E6\u05D9\u05D5\u05D3. \u05D4\u05EA\u05D7\u05D9\u05DC\u05D5 \u05DE\u05D4\u05DB\u05E4\u05EA\u05D5\u05E8\u05D9\u05DD \u05DC\u05DE\u05E2\u05DC\u05D4.")),
         React.createElement("div", { style: { display: "grid", gap: 14 } }, items.map((it, idx) => {
-            const t = EQUIPMENT_TYPES[it.type];
+            const t = EQ[it.type];
             const num = items.filter((x) => x.type === it.type).indexOf(it) + 1;
             return (React.createElement("div", { key: it.id, style: {
                     background: COLORS.card,
@@ -930,14 +1029,15 @@ function EquipmentStep({ items, setItems }) {
             } },
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: COLORS.ink, flexShrink: 0 } },
                 React.createElement("h3", { style: { margin: 0, fontSize: 15, color: "#fff" } },
-                    EQUIPMENT_TYPES[editingItem.type].label,
+                    EQ[editingItem.type].label,
                     " \u2014 \u05E2\u05E8\u05D9\u05DB\u05D4"),
                 React.createElement("button", { onClick: () => setEditingItemId(null), style: { background: COLORS.amber, color: COLORS.ink, border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit" } }, "\u2713 \u05E1\u05D9\u05D9\u05DE\u05EA\u05D9")),
             React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: 8 } },
-                React.createElement(PhotoAnnotator, { photo: editingItem.photo, onPhoto: (p) => update(editingItem.id, { photo: p }), stickers: editingItem.stickers || [], onStickers: (s) => update(editingItem.id, { stickers: s }), label: EQUIPMENT_TYPES[editingItem.type].label }))), document.body)));
+                React.createElement(PhotoAnnotator, { photo: editingItem.photo, onPhoto: (p) => update(editingItem.id, { photo: p }), stickers: editingItem.stickers || [], onStickers: (s) => update(editingItem.id, { stickers: s }), label: EQ[editingItem.type].label }))), document.body)));
 }
 /* ---------- שלב 3: תצ"א וסימון מיקומים ---------- */
 function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, regions, setRegions, address }) {
+    const EQ = useEquipmentTypes();
     const [placing, setPlacing] = useState(null); // סוג ציוד שממתין להצבה
     const [selectedMarker, setSelectedMarker] = useState(null);
     const [selectedLine, setSelectedLine] = useState(null);
@@ -1170,7 +1270,7 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
         address && (React.createElement("div", { style: { fontSize: 12, color: "#8A97A4", marginBottom: 12, textAlign: "center" } }, "\u05D1-GovMap: \u05D0\u05DD \u05D4\u05DB\u05EA\u05D5\u05D1\u05EA \u05DC\u05D0 \u05E0\u05D8\u05E2\u05E0\u05D4 \u05DE\u05E2\u05E6\u05DE\u05D4, \u05D4\u05D3\u05D1\u05D9\u05E7\u05D5 \u05D0\u05D5\u05EA\u05D4 \u05D1\u05E9\u05D5\u05E8\u05EA \u05D4\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05DE\u05E2\u05DC\u05D4.")),
         !aerial ? (React.createElement(PhotoInput, { photo: null, onPhoto: setAerial, label: "\u05EA\u05E6\u05F4\u05D0", cameraCapture: false, allowPaste: true })) : (React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } },
-                Object.entries(EQUIPMENT_TYPES).filter(([, t]) => !t.docOnly).map(([key, t]) => (React.createElement("button", { key: key, onClick: () => setPlacing(placing === key ? null : key), style: {
+                Object.entries(EQ).filter(([, t]) => !t.docOnly).map(([key, t]) => (React.createElement("button", { key: key, onClick: () => setPlacing(placing === key ? null : key), style: {
                         border: `1.5px solid ${t.color}`,
                         background: placing === key ? t.color : "#fff",
                         color: placing === key ? "#fff" : t.color,
@@ -1211,7 +1311,7 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
             React.createElement("p", { style: { fontSize: 12.5, color: "#5B6B7A", margin: "0 0 8px" } }, regionMode
                 ? 'מצב סימון שטח: גררו על התצ"א כדי לסמן מלבן. בשחרור ייפתח עורך מדבקות לאותו שטח.'
                 : placing
-                    ? `מצב הצבה: הקישו על התצ"א כדי למקם ${EQUIPMENT_TYPES[placing].label}. גרירה מזיזה סימון קיים; בחירת סימון מציגה ידית להגדלה/הקטנה.`
+                    ? `מצב הצבה: הקישו על התצ"א כדי למקם ${EQ[placing].label}. גרירה מזיזה סימון קיים; בחירת סימון מציגה ידית להגדלה/הקטנה.`
                     : 'בחרו סוג ציוד להצבה, "תוואי הזנה" לקו צהוב, או "סמן שטח לעריכה" לחתוך אזור ולהוסיף עליו מדבקות.'),
             React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "stretch" } },
                 (() => {
@@ -1322,7 +1422,7 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
                             handle(l.x2, l.y2, "p2", l.id + "-p2")));
                     }),
                     markers.map((m) => {
-                        const t = EQUIPMENT_TYPES[m.type];
+                        const t = EQ[m.type];
                         const markerColor = m.color || t.color;
                         const isSel = selectedMarker === m.id;
                         const size = m.size || 32;
@@ -1396,7 +1496,7 @@ function AerialStep({ aerial, setAerial, markers, setMarkers, lines, setLines, r
                     } }, "\u05D4\u05D7\u05DC\u05E3 \u05EA\u05E6\"\u05D0")),
             React.createElement("div", { style: { display: "flex", gap: "6px 14px", flexWrap: "wrap", marginTop: 12 } },
                 markers.map((m) => {
-                    const t = EQUIPMENT_TYPES[m.type];
+                    const t = EQ[m.type];
                     const markerColor = m.color || t.color;
                     return (React.createElement("div", { key: m.id, style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#41525F" } },
                         React.createElement("span", { style: { width: 14, height: 14, borderRadius: 4, background: markerColor, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 9, fontWeight: 800 } }, m.num),
@@ -1609,7 +1709,7 @@ async function buildPdfFromData(data) {
     document.body.appendChild(host);
     const root = ReactDOM.createRoot(host);
     try {
-        root.render(React.createElement(ReportStep, {
+        root.render(React.createElement(ModeContext.Provider, { value: modeOf(d.mode) }, React.createElement(ReportStep, {
             customer: { ...EMPTY_CUSTOMER, ...(d.customer || {}) },
             setCustomer: () => { },
             meta: d.meta || { coordinator: "", generalNotes: "" },
@@ -1622,7 +1722,7 @@ async function buildPdfFromData(data) {
             signatures: d.signatures || { company: { name: "", img: null }, customer: { name: "", img: null } },
             setSignatures: () => { },
             readOnly: true,
-        }));
+        })));
         // ממתינים לציור ולטעינת כל התמונות לפני הלכידה
         await new Promise((r) => setTimeout(r, 400));
         const imgs = Array.from(host.querySelectorAll("img"));
@@ -1645,6 +1745,8 @@ async function buildPdfFromData(data) {
     }
 }
 function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, markers, lines, regions, signatures, setSignatures, readOnly, onSent }) {
+    const EQ = useEquipmentTypes();
+    const mode = useCoordMode();
     const [pdfBusy, setPdfBusy] = useState(false);
     if (!customer.name) {
         return React.createElement("p", { style: { color: "#5B6B7A", fontSize: 14 } }, "\u05DE\u05DC\u05D0\u05D5 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D1\u05E9\u05DC\u05D1 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF \u05DB\u05D3\u05D9 \u05DC\u05D4\u05E4\u05D9\u05E7 \u05D3\u05D5\u05D7.");
@@ -1724,7 +1826,9 @@ function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, marke
     };
     return (React.createElement("div", null,
         React.createElement("div", { className: "no-print", style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-            React.createElement(SectionTitle, null, "\u05D3\u05D5\u05D7 \u05EA\u05D9\u05D0\u05D5\u05DD \u05D8\u05DB\u05E0\u05D9"),
+            React.createElement(SectionTitle, null,
+                "\u05D3\u05D5\u05D7 ",
+                COORD_MODES[mode].title),
             React.createElement("button", { onClick: printReport, style: {
                     background: COLORS.amber,
                     color: COLORS.ink,
@@ -1740,7 +1844,9 @@ function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, marke
                 React.createElement("div", { style: { borderBottom: `3px solid ${BRAND_ORANGE}`, paddingBottom: 12, marginBottom: 14, display: "flex", alignItems: "center", gap: 14 } },
                     React.createElement("img", { src: COMPANY_LOGO, alt: "\u05DC\u05D5\u05D2\u05D5 \u05DE\u05D0\u05D5\u05E8\u05D5\u05EA \u05D0\u05E0\u05E8\u05D2\u05D9\u05D4 \u05DE\u05EA\u05D7\u05D3\u05E9\u05EA", style: { height: 44, width: "auto", flexShrink: 0 } }),
                     React.createElement("div", null,
-                        React.createElement("div", { style: { fontSize: 12.5, letterSpacing: 0.5, color: BRAND_BLUE, fontWeight: 700 } }, "\u05D3\u05D5\u05D7 \u05EA\u05D9\u05D0\u05D5\u05DD \u05D8\u05DB\u05E0\u05D9 \u05DE\u05E2\u05E8\u05DB\u05EA \u05E1\u05D5\u05DC\u05D0\u05E8\u05D9\u05EA \u2014 \u05DE\u05D0\u05D5\u05E8\u05D5\u05EA \u05D0\u05E0\u05E8\u05D2\u05D9\u05D4 \u05DE\u05EA\u05D7\u05D3\u05E9\u05EA \u05D1\u05E2\"\u05DE"),
+                        React.createElement("div", { style: { fontSize: 12.5, letterSpacing: 0.5, color: BRAND_BLUE, fontWeight: 700 } },
+                            mode === "upgrade" ? "דוח תיאום טכני הגדלת חיבור" : "דוח תיאום טכני מערכת סולארית",
+                            " \u2014 \u05DE\u05D0\u05D5\u05E8\u05D5\u05EA \u05D0\u05E0\u05E8\u05D2\u05D9\u05D4 \u05DE\u05EA\u05D7\u05D3\u05E9\u05EA \u05D1\u05E2\"\u05DE"),
                         React.createElement("h1", { style: { margin: "6px 0 0", fontSize: 22, color: BRAND_ORANGE } }, customer.name),
                         React.createElement("div", { style: { fontSize: 13, color: "#41525F", marginTop: 4 } },
                             customer.ordname ? `הזמנה ${customer.ordname} · ` : "",
@@ -1790,7 +1896,7 @@ function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, marke
                         React.createElement("line", { x1: `${l.x1}%`, y1: `${l.y1}%`, x2: `${l.x2}%`, y2: `${l.y2}%`, stroke: "#fff", strokeWidth: 5, strokeLinecap: "round" }),
                         React.createElement("line", { x1: `${l.x1}%`, y1: `${l.y1}%`, x2: `${l.x2}%`, y2: `${l.y2}%`, stroke: FEED_LINE_COLOR, strokeWidth: 3.5, strokeLinecap: "round" })))))),
                     markers.map((m) => {
-                        const t = EQUIPMENT_TYPES[m.type];
+                        const t = EQ[m.type];
                         const markerColor = m.color || t.color;
                         const repSize = Math.round((m.size || 32) * 0.75);
                         return (React.createElement("div", { key: m.id, style: {
@@ -1818,7 +1924,7 @@ function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, marke
                     })),
                 React.createElement("div", { style: { display: "flex", gap: "5px 12px", flexWrap: "wrap", marginTop: 8, fontSize: 12, color: "#41525F" } },
                     markers.map((m) => {
-                        const t = EQUIPMENT_TYPES[m.type];
+                        const t = EQ[m.type];
                         const markerColor = m.color || t.color;
                         return (React.createElement("span", { key: m.id, style: { display: "inline-flex", alignItems: "center", gap: 5 } },
                             React.createElement("span", { style: { width: 12, height: 12, borderRadius: 3, background: markerColor, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 8, fontWeight: 800 } }, m.num),
@@ -1830,7 +1936,7 @@ function ReportStep({ customer, setCustomer, meta, upgrade, items, aerial, marke
             React.createElement("h3", { style: { fontSize: 15, margin: "0 0 10px", color: BRAND_BLUE } }, "\u05E4\u05D9\u05E8\u05D5\u05D8 \u05E6\u05D9\u05D5\u05D3 \u05D5\u05DE\u05D9\u05E7\u05D5\u05DE\u05D9\u05DD"),
             items.length === 0 && React.createElement("p", { style: { fontSize: 13, color: "#7C8A97" } }, "\u05DC\u05D0 \u05D4\u05D5\u05D6\u05DF \u05E6\u05D9\u05D5\u05D3."),
             React.createElement("div", { style: { display: "block" } }, items.map((it) => {
-                const t = EQUIPMENT_TYPES[it.type];
+                const t = EQ[it.type];
                 const num = items.filter((x) => x.type === it.type).indexOf(it) + 1;
                 return (React.createElement("div", { key: it.id, className: "print-avoid-break pdf-chunk pdf-fullpage", style: { border: `1px solid ${COLORS.line}`, borderInlineStart: `5px solid ${t.color}`, borderRadius: 10, padding: 12, marginBottom: 12, breakInside: "avoid", pageBreakInside: "avoid" } },
                     React.createElement("div", { style: { fontWeight: 700, fontSize: 14, marginBottom: 6, color: COLORS.ink } },
@@ -1911,6 +2017,17 @@ function getDeviceInfo() {
     catch (_) {
         return "";
     }
+}
+/* קישור ניווט ל-Waze — לפי קואורדינטות אם נשמרו, אחרת לפי טקסט הכתובת */
+function wazeUrl(customer) {
+    const c = customer || {};
+    if (c.lat != null && c.lng != null) {
+        return `https://waze.com/ul?ll=${c.lat},${c.lng}&navigate=yes`;
+    }
+    const addr = String(c.address || "").trim();
+    if (!addr)
+        return null;
+    return `https://waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`;
 }
 function getLocationOnce(timeoutMs = 4000) {
     return new Promise((resolve) => {
@@ -2311,7 +2428,8 @@ function HistoryScreen({ userId, onEdit }) {
                         fontWeight: 700,
                         fontFamily: "inherit",
                     } }, "\u270F\uFE0F \u05E2\u05E8\u05D5\u05DA \u05EA\u05D9\u05D0\u05D5\u05DD \u05D6\u05D4"))),
-            React.createElement(ReportStep, { customer: { ...EMPTY_CUSTOMER, ...(d.customer || {}) }, meta: d.meta || { coordinator: "", generalNotes: "" }, items: d.items || [], aerial: d.aerial || null, markers: d.markers || [], lines: d.lines || [], regions: d.regions || [], signatures: d.signatures || { company: { name: "", img: null }, customer: { name: "", img: null } }, readOnly: true })));
+            React.createElement(ModeContext.Provider, { value: modeOf(d.mode) },
+                React.createElement(ReportStep, { customer: { ...EMPTY_CUSTOMER, ...(d.customer || {}) }, meta: d.meta || { coordinator: "", generalNotes: "" }, upgrade: d.upgrade || {}, items: d.items || [], aerial: d.aerial || null, markers: d.markers || [], lines: d.lines || [], regions: d.regions || [], signatures: d.signatures || { company: { name: "", img: null }, customer: { name: "", img: null } }, readOnly: true }))));
     }
     return (React.createElement("div", null,
         React.createElement(SectionTitle, null, "\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D9\u05EA \u05EA\u05D9\u05D0\u05D5\u05DE\u05D9\u05DD"),
@@ -2444,6 +2562,8 @@ function HistoryScreen({ userId, onEdit }) {
 /* ---------- אפליקציה ראשית ---------- */
 const EMPTY_CUSTOMER = {
     name: "",
+    lat: null, // מיקום האתר שנקבע בשטח — לניווט ולמפת הסיורים
+    lng: null,
     plannerName: "",
     address: "",
     contact: "",
@@ -2468,6 +2588,7 @@ function CoordinationApp({ session }) {
     const [step, setStep] = useState(0);
     const [view, setView] = useState("history"); // app | history — נפתח תמיד ברשימת התיאומים
     const [customer, setCustomer] = useState({ ...EMPTY_CUSTOMER });
+    const [mode, setMode] = useState(DEFAULT_MODE); // solar | upgrade — משנה רק כיתובים
     const [meta, setMeta] = useState({ coordinator: "", generalNotes: "" });
     const [upgrade, setUpgrade] = useState({ ...EMPTY_UPGRADE });
     const [items, setItems] = useState([]);
@@ -2513,7 +2634,7 @@ function CoordinationApp({ session }) {
         }
         setSaveState("saving");
         const t = setTimeout(async () => {
-            const payload = { customer, meta, upgrade, items, aerial, markers, lines, regions, signatures };
+            const payload = { mode, customer, meta, upgrade, items, aerial, markers, lines, regions, signatures };
             try {
                 if (rowIdRef.current) {
                     const { error } = await sb
@@ -2560,6 +2681,7 @@ function CoordinationApp({ session }) {
             rowIdRef.current = null;
         }
         setCustomer({ ...EMPTY_CUSTOMER });
+        setMode(DEFAULT_MODE);
         setMeta({ coordinator: "", generalNotes: "" });
         setUpgrade({ ...EMPTY_UPGRADE });
         setItems([]);
@@ -2582,6 +2704,7 @@ function CoordinationApp({ session }) {
     const startNewCoordination = () => {
         rowIdRef.current = null;
         setCustomer({ ...EMPTY_CUSTOMER });
+        setMode(DEFAULT_MODE);
         setMeta({ coordinator: "", generalNotes: "" });
         setUpgrade({ ...EMPTY_UPGRADE });
         setItems([]);
@@ -2617,6 +2740,7 @@ function CoordinationApp({ session }) {
         rowIdRef.current = row.id;
         const d = row.data || {};
         setCustomer({ ...EMPTY_CUSTOMER, ...(d.customer || {}) });
+        setMode(modeOf(d.mode));
         setMeta(d.meta || { coordinator: "", generalNotes: "" });
         setUpgrade({ ...EMPTY_UPGRADE, ...(d.upgrade || {}) });
         setItems(d.items || []);
@@ -2661,16 +2785,22 @@ function CoordinationApp({ session }) {
         }
     };
     const steps = ["לקוח", "הגדלת חיבור", "ציוד", 'תצ"א', "דוח"];
-    return (React.createElement("div", { dir: "rtl", style: {
-            minHeight: "100vh",
-            background: COLORS.paper,
-            fontFamily: "'Heebo','Segoe UI',system-ui,-apple-system,sans-serif",
-            color: COLORS.ink,
-            paddingBottom: 84,
-        } },
-        React.createElement("style", null, `
+    return (React.createElement(ModeContext.Provider, { value: mode },
+        React.createElement("div", { dir: "rtl", style: {
+                minHeight: "100vh",
+                background: COLORS.paper,
+                fontFamily: "'Heebo','Segoe UI',system-ui,-apple-system,sans-serif",
+                color: COLORS.ink,
+                paddingBottom: 84,
+            } },
+            React.createElement("style", null, `
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap');
         button { cursor: pointer; }
+        /* בכותרת יש הרבה כפתורים — במסכי טלפון הם יורדים לשורה שנייה במקום לגלוש הצידה */
+        @media (max-width: 560px) {
+          .app-header .hdr-actions { flex: 1 1 100%; align-items: stretch !important; }
+          .app-header .hdr-buttons { justify-content: flex-start !important; }
+        }
         @media print {
           .no-print, .app-header, .app-nav { display: none !important; }
           body { background: #fff; }
@@ -2692,134 +2822,148 @@ function CoordinationApp({ session }) {
           }
         }
       `),
-        React.createElement("header", { className: "app-header", style: { background: COLORS.ink, color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 } },
-            React.createElement("div", { style: { width: 34, height: 34, borderRadius: 10, background: COLORS.amber, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 } }, "\u2600\uFE0F"),
-            React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                React.createElement("div", { style: { fontWeight: 800, fontSize: 16 } }, "\u05EA\u05D9\u05D0\u05D5\u05DD \u05D8\u05DB\u05E0\u05D9 \u05E9\u05D8\u05D7"),
-                React.createElement("div", { style: { fontSize: 11.5, color: "#AEBCC9", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, customer.name ? `${customer.name}${customer.ordname ? " · " + customer.ordname : ""}` : "לקוח · תצ״א · דוח PDF")),
-            React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 } },
-                React.createElement("span", { style: { fontSize: 10.5, color: saveState === "error" ? "#E4A0A0" : "#8FE0AE", whiteSpace: "nowrap" } }, saveState === "loading"
-                    ? "טוען…"
-                    : saveState === "saving"
-                        ? "מסנכרן…"
-                        : saveState === "saved"
-                            ? "✓ מסונכרן"
-                            : saveState === "error"
-                                ? "שגיאת סנכרון"
-                                : ""),
-                React.createElement("div", { style: { display: "flex", gap: 5 } },
-                    React.createElement("button", { onClick: () => setView(view === "history" ? "app" : "history"), style: {
-                            background: view === "history" ? COLORS.amber : "rgba(255,255,255,0.12)",
-                            color: view === "history" ? COLORS.ink : "#fff",
-                            border: "1px solid rgba(255,255,255,0.25)",
-                            borderRadius: 8,
-                            padding: "4px 9px",
+            React.createElement("header", { className: "app-header", style: { background: COLORS.ink, color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } },
+                React.createElement("div", { style: { width: 34, height: 34, borderRadius: 10, background: COLORS.amber, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 } }, COORD_MODES[mode].icon),
+                React.createElement("div", { style: { flex: "1 1 150px", minWidth: 0 } },
+                    React.createElement("div", { style: { fontWeight: 800, fontSize: 16 } }, COORD_MODES[mode].title),
+                    React.createElement("div", { style: { fontSize: 11.5, color: "#AEBCC9", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, customer.name ? `${customer.name}${customer.ordname ? " · " + customer.ordname : ""}` : "לקוח · תצ״א · דוח PDF"),
+                    React.createElement("div", { style: { display: "inline-flex", marginTop: 6, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 9, padding: 2, gap: 2 } }, Object.values(COORD_MODES).map((m) => (React.createElement("button", { key: m.key, onClick: () => setMode(m.key), style: {
+                            background: mode === m.key ? COLORS.amber : "transparent",
+                            color: mode === m.key ? COLORS.ink : "#CFE0EC",
+                            border: "none",
+                            borderRadius: 7,
+                            padding: "3px 10px",
                             fontSize: 11.5,
-                            fontWeight: view === "history" ? 800 : 400,
+                            fontWeight: mode === m.key ? 800 : 500,
                             fontFamily: "inherit",
                             whiteSpace: "nowrap",
-                        } }, "\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D4"),
-                    React.createElement("button", { onClick: () => {
-                            // אם פתוח תיאום עם תוכן — מסיימים אותו קודם; אחרת פשוט פותחים חדש
-                            if (view === "app" && (rowIdRef.current || hasRealContent())) {
-                                if (!window.confirm("לסיים את התיאום הנוכחי ולפתוח תיאום חדש? הנוכחי יישמר בהיסטוריה."))
-                                    return;
-                                finishCoordination().then(startNewCoordination);
-                            }
-                            else {
-                                startNewCoordination();
-                            }
-                        }, style: {
-                            background: COLORS.green,
-                            color: "#fff",
-                            border: "1px solid rgba(255,255,255,0.25)",
-                            borderRadius: 8,
-                            padding: "4px 9px",
-                            fontSize: 11.5,
-                            fontWeight: 700,
-                            fontFamily: "inherit",
-                            whiteSpace: "nowrap",
-                        } }, "\uFF0B \u05EA\u05D9\u05D0\u05D5\u05DD \u05D7\u05D3\u05E9"),
-                    view === "app" && (React.createElement("button", { onClick: resetAll, style: {
-                            background: "rgba(255,255,255,0.12)",
-                            color: "#fff",
-                            border: "1px solid rgba(255,255,255,0.25)",
-                            borderRadius: 8,
-                            padding: "4px 9px",
-                            fontSize: 11.5,
-                            fontFamily: "inherit",
-                            whiteSpace: "nowrap",
-                        } }, "\u2713 \u05E1\u05D9\u05D9\u05DD \u05EA\u05D9\u05D0\u05D5\u05DD")),
-                    React.createElement("button", { onClick: registerBiometric, style: {
-                            background: "rgba(255,255,255,0.12)",
-                            color: "#fff",
-                            border: "1px solid rgba(255,255,255,0.25)",
-                            borderRadius: 8,
-                            padding: "4px 9px",
-                            fontSize: 11.5,
-                            fontFamily: "inherit",
-                            whiteSpace: "nowrap",
-                        } }, "\uD83D\uDD10 \u05D4\u05E4\u05E2\u05DC \u05D8\u05D1\u05D9\u05E2\u05EA \u05D0\u05E6\u05D1\u05E2"),
-                    React.createElement("button", { onClick: signOut, title: session.user.email, style: {
-                            background: "rgba(255,255,255,0.12)",
-                            color: "#fff",
-                            border: "1px solid rgba(255,255,255,0.25)",
-                            borderRadius: 8,
-                            padding: "4px 9px",
-                            fontSize: 11.5,
-                            fontFamily: "inherit",
-                            whiteSpace: "nowrap",
-                        } }, "\u05D4\u05EA\u05E0\u05EA\u05E7")))),
-        React.createElement("main", { style: { maxWidth: 560, margin: "0 auto", padding: "4px 14px 20px" } }, view === "history" ? (React.createElement(HistoryScreen, { userId: userId, onEdit: loadCoordinationForEdit })) : (React.createElement(React.Fragment, null,
-            step === 0 && (React.createElement(CustomerStep, { customer: customer, setCustomer: setCustomer, meta: meta, setMeta: setMeta })),
-            step === 1 && React.createElement(ConnectionUpgradeStep, { upgrade: upgrade, setUpgrade: setUpgrade }),
-            step === 2 && React.createElement(EquipmentStep, { items: items, setItems: setItems }),
-            step === 3 && React.createElement(AerialStep, { aerial: aerial, setAerial: setAerial, markers: markers, setMarkers: setMarkers, lines: lines, setLines: setLines, regions: regions, setRegions: setRegions, address: customer.address }),
-            step === 4 && React.createElement(ReportStep, { customer: customer, setCustomer: setCustomer, meta: meta, upgrade: upgrade, items: items, aerial: aerial, markers: markers, lines: lines, regions: regions, signatures: signatures, setSignatures: setSignatures, onSent: finishCoordination }),
-            step < 4 && (React.createElement("button", { onClick: () => setStep(step + 1), style: {
-                    width: "100%",
-                    marginTop: 20,
-                    background: COLORS.ink,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 12,
-                    padding: "14px 0",
-                    fontSize: 15.5,
-                    fontWeight: 800,
-                    fontFamily: "inherit",
+                        } },
+                        m.icon,
+                        " ",
+                        m.short))))),
+                React.createElement("div", { className: "hdr-actions", style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 } },
+                    React.createElement("span", { style: { fontSize: 10.5, color: saveState === "error" ? "#E4A0A0" : "#8FE0AE", whiteSpace: "nowrap" } }, saveState === "loading"
+                        ? "טוען…"
+                        : saveState === "saving"
+                            ? "מסנכרן…"
+                            : saveState === "saved"
+                                ? "✓ מסונכרן"
+                                : saveState === "error"
+                                    ? "שגיאת סנכרון"
+                                    : ""),
+                    React.createElement("div", { className: "hdr-buttons", style: { display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "flex-end" } },
+                        React.createElement("button", { onClick: () => setView(view === "history" ? "app" : "history"), style: {
+                                background: view === "history" ? COLORS.amber : "rgba(255,255,255,0.12)",
+                                color: view === "history" ? COLORS.ink : "#fff",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                                borderRadius: 8,
+                                padding: "4px 9px",
+                                fontSize: 11.5,
+                                fontWeight: view === "history" ? 800 : 400,
+                                fontFamily: "inherit",
+                                whiteSpace: "nowrap",
+                            } }, "\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D4"),
+                        React.createElement("button", { onClick: () => {
+                                // אם פתוח תיאום עם תוכן — מסיימים אותו קודם; אחרת פשוט פותחים חדש
+                                if (view === "app" && (rowIdRef.current || hasRealContent())) {
+                                    if (!window.confirm("לסיים את התיאום הנוכחי ולפתוח תיאום חדש? הנוכחי יישמר בהיסטוריה."))
+                                        return;
+                                    finishCoordination().then(startNewCoordination);
+                                }
+                                else {
+                                    startNewCoordination();
+                                }
+                            }, style: {
+                                background: COLORS.green,
+                                color: "#fff",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                                borderRadius: 8,
+                                padding: "4px 9px",
+                                fontSize: 11.5,
+                                fontWeight: 700,
+                                fontFamily: "inherit",
+                                whiteSpace: "nowrap",
+                            } }, "\uFF0B \u05EA\u05D9\u05D0\u05D5\u05DD \u05D7\u05D3\u05E9"),
+                        view === "app" && (React.createElement("button", { onClick: resetAll, style: {
+                                background: "rgba(255,255,255,0.12)",
+                                color: "#fff",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                                borderRadius: 8,
+                                padding: "4px 9px",
+                                fontSize: 11.5,
+                                fontFamily: "inherit",
+                                whiteSpace: "nowrap",
+                            } }, "\u2713 \u05E1\u05D9\u05D9\u05DD \u05EA\u05D9\u05D0\u05D5\u05DD")),
+                        React.createElement("button", { onClick: registerBiometric, style: {
+                                background: "rgba(255,255,255,0.12)",
+                                color: "#fff",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                                borderRadius: 8,
+                                padding: "4px 9px",
+                                fontSize: 11.5,
+                                fontFamily: "inherit",
+                                whiteSpace: "nowrap",
+                            } }, "\uD83D\uDD10 \u05D4\u05E4\u05E2\u05DC \u05D8\u05D1\u05D9\u05E2\u05EA \u05D0\u05E6\u05D1\u05E2"),
+                        React.createElement("button", { onClick: signOut, title: session.user.email, style: {
+                                background: "rgba(255,255,255,0.12)",
+                                color: "#fff",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                                borderRadius: 8,
+                                padding: "4px 9px",
+                                fontSize: 11.5,
+                                fontFamily: "inherit",
+                                whiteSpace: "nowrap",
+                            } }, "\u05D4\u05EA\u05E0\u05EA\u05E7")))),
+            React.createElement("main", { style: { maxWidth: 560, margin: "0 auto", padding: "4px 14px 20px" } }, view === "history" ? (React.createElement(HistoryScreen, { userId: userId, onEdit: loadCoordinationForEdit })) : (React.createElement(React.Fragment, null,
+                step === 0 && (React.createElement(CustomerStep, { customer: customer, setCustomer: setCustomer, meta: meta, setMeta: setMeta })),
+                step === 1 && React.createElement(ConnectionUpgradeStep, { upgrade: upgrade, setUpgrade: setUpgrade }),
+                step === 2 && React.createElement(EquipmentStep, { items: items, setItems: setItems }),
+                step === 3 && React.createElement(AerialStep, { aerial: aerial, setAerial: setAerial, markers: markers, setMarkers: setMarkers, lines: lines, setLines: setLines, regions: regions, setRegions: setRegions, address: customer.address }),
+                step === 4 && React.createElement(ReportStep, { customer: customer, setCustomer: setCustomer, meta: meta, upgrade: upgrade, items: items, aerial: aerial, markers: markers, lines: lines, regions: regions, signatures: signatures, setSignatures: setSignatures, onSent: finishCoordination }),
+                step < 4 && (React.createElement("button", { onClick: () => setStep(step + 1), style: {
+                        width: "100%",
+                        marginTop: 20,
+                        background: COLORS.ink,
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 12,
+                        padding: "14px 0",
+                        fontSize: 15.5,
+                        fontWeight: 800,
+                        fontFamily: "inherit",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                    } },
+                    "\u05D4\u05DE\u05E9\u05DA \u05DC",
+                    steps[step + 1],
+                    " \u2190"))))),
+            React.createElement("nav", { className: "app-nav", style: {
+                    position: "fixed",
+                    bottom: 0,
+                    insetInlineStart: 0,
+                    insetInlineEnd: 0,
+                    background: "#fff",
+                    borderTop: `1px solid ${COLORS.line}`,
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                } },
-                "\u05D4\u05DE\u05E9\u05DA \u05DC",
-                steps[step + 1],
-                " \u2190"))))),
-        React.createElement("nav", { className: "app-nav", style: {
-                position: "fixed",
-                bottom: 0,
-                insetInlineStart: 0,
-                insetInlineEnd: 0,
-                background: "#fff",
-                borderTop: `1px solid ${COLORS.line}`,
-                display: "flex",
-            } }, steps.map((s, i) => {
-            const active = step === i;
-            return (React.createElement("button", { key: s, onClick: () => setStep(i), style: {
-                    flex: 1,
-                    padding: "10px 2px 12px",
-                    background: "none",
-                    border: "none",
-                    fontFamily: "inherit",
-                    fontSize: 11.5,
-                    lineHeight: 1.2,
-                    fontWeight: active ? 800 : 500,
-                    color: active ? COLORS.ink : "#7C8A97",
-                    borderTop: active ? `3px solid ${COLORS.amber}` : "3px solid transparent",
-                } },
-                React.createElement("span", { style: { display: "block", fontSize: 11, color: active ? COLORS.amber : "#B4C0CB", fontWeight: 800 } }, i + 1),
-                s));
-        }))));
+                } }, steps.map((s, i) => {
+                const active = step === i;
+                return (React.createElement("button", { key: s, onClick: () => setStep(i), style: {
+                        flex: 1,
+                        padding: "10px 2px 12px",
+                        background: "none",
+                        border: "none",
+                        fontFamily: "inherit",
+                        fontSize: 11.5,
+                        lineHeight: 1.2,
+                        fontWeight: active ? 800 : 500,
+                        color: active ? COLORS.ink : "#7C8A97",
+                        borderTop: active ? `3px solid ${COLORS.amber}` : "3px solid transparent",
+                    } },
+                    React.createElement("span", { style: { display: "block", fontSize: 11, color: active ? COLORS.amber : "#B4C0CB", fontWeight: 800 } }, i + 1),
+                    s));
+            })))));
 }
 /* ---------- App עליון: ניהול התחברות/session ---------- */
 function App() {
